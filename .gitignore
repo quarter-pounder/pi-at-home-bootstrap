@@ -1,0 +1,9 @@
+.env
+*.img
+*.img.xz
+*.tar
+*.tar.gz
+*.deb
+compose/gitlab.rb
+.DS_Store
+

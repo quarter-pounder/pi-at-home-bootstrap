@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  gitlab:
+    image: ${GITLAB_IMAGE:-gitlab/gitlab-ce:latest}
+    container_name: gitlab
+    restart: always
+    hostname: ${GITLAB_DOMAIN}
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        from_file('/omnibus_config.rb')
+    ports:
+      - "80:80"
+      - "443:443"
+      - "2222:22"
+    volumes:
+      - /srv/gitlab/config:/etc/gitlab
+      - /srv/gitlab/logs:/var/log/gitlab
+      - /srv/gitlab/data:/var/opt/gitlab
+      - ./gitlab.rb:/omnibus_config.rb:ro
+    shm_size: '256m'
+    networks:
+      - gitlab-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/-/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner
+    restart: always
+    volumes:
+      - /srv/gitlab-runner/config:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - gitlab-network
+    depends_on:
+      - gitlab
+
+  registry:
+    image: registry:2
+    container_name: registry
+    restart: always
+    ports:
+      - "5050:5000"
+    volumes:
+      - /srv/registry:/var/lib/registry
+    networks:
+      - gitlab-network
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+
+networks:
+  gitlab-network:
+    driver: bridge
+

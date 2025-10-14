@@ -1,0 +1,62 @@
+#cloud-config
+
+hostname: ${HOSTNAME}
+manage_etc_hosts: true
+timezone: ${TIMEZONE}
+locale: ${LOCALE}
+
+users:
+  - name: ${USERNAME}
+    groups: [adm, sudo]
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - ${SSH_KEY}
+
+ssh_pwauth: false
+disable_root: true
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - vim
+  - git
+  - curl
+  - wget
+  - htop
+  - iotop
+  - ncdu
+  - tmux
+  - net-tools
+  - unattended-upgrades
+  - ufw
+  - fail2ban
+  - ntp
+
+runcmd:
+  - systemctl enable ssh
+  - systemctl start ssh
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 22/tcp
+  - ufw --force enable
+  - systemctl enable unattended-upgrades
+  - systemctl start unattended-upgrades
+  - fallocate -l 2G /swapfile
+  - chmod 600 /swapfile
+  - mkswap /swapfile
+  - swapon /swapfile
+  - echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  - sysctl vm.swappiness=10
+  - echo 'vm.swappiness=10' >> /etc/sysctl.conf
+  - mkdir -p /srv/gitlab/{data,logs,config}
+  - mkdir -p /srv/prometheus
+  - mkdir -p /srv/grafana
+  - mkdir -p ${BACKUP_DIR}
+  - chown -R ${USERNAME}:${USERNAME} /srv
+
+power_state:
+  mode: reboot
+  condition: true
+
