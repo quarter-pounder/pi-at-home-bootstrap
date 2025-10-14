@@ -1,0 +1,109 @@
+groups:
+  - name: system_alerts
+    interval: 30s
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% (current value: {{ $value }}%)"
+
+      - alert: HighMemoryUsage
+        expr: 100 * (1 - ((node_memory_MemAvailable_bytes) / (node_memory_MemTotal_bytes))) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% (current value: {{ $value }}%)"
+
+      - alert: LowDiskSpace
+        expr: 100 - ((node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"}) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk usage is above 85% (current value: {{ $value }}%)"
+
+      - alert: CriticalDiskSpace
+        expr: 100 - ((node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"}) > 95
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL: Very low disk space on {{ $labels.instance }}"
+          description: "Disk usage is above 95% (current value: {{ $value }}%)"
+
+      - alert: HighTemperature
+        expr: node_hwmon_temp_celsius > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU temperature on {{ $labels.instance }}"
+          description: "CPU temperature is above 80°C (current value: {{ $value }}°C)"
+
+      - alert: CriticalTemperature
+        expr: node_hwmon_temp_celsius > 85
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL: CPU temperature very high on {{ $labels.instance }}"
+          description: "CPU temperature is above 85°C (current value: {{ $value }}°C)"
+
+  - name: gitlab_alerts
+    interval: 30s
+    rules:
+      - alert: GitLabDown
+        expr: up{job="gitlab"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "GitLab is down"
+          description: "GitLab has been down for more than 2 minutes"
+
+      - alert: GitLabHighMemory
+        expr: process_resident_memory_bytes{job="gitlab"} > 3000000000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "GitLab using high memory"
+          description: "GitLab memory usage is above 3GB (current: {{ $value | humanize }}B)"
+
+      - alert: RunnerDown
+        expr: up{job="gitlab-runner"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "GitLab Runner is down"
+          description: "GitLab Runner has been down for more than 5 minutes"
+
+  - name: docker_alerts
+    interval: 30s
+    rules:
+      - alert: ContainerDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.job }} is down"
+          description: "Container has been down for more than 2 minutes"
+
+      - alert: HighContainerMemory
+        expr: container_memory_usage_bytes{name!=""} > 1000000000
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "Container {{ $labels.name }} using high memory"
+          description: "Memory usage: {{ $value | humanize }}B"
+
