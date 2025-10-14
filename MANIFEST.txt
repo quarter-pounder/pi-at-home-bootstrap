@@ -1,0 +1,78 @@
+GITLAB BOOTSTRAP
+
+SETUP PATHS:
+├── Path A: SD → NVMe Migration (scripts/00-migrate-to-nvme.sh)
+└── Path B: Fresh Flash from Laptop (scripts/00-flash-nvme.sh)
+
+CORE SCRIPTS:
+├── 00-migrate-to-nvme.sh    - Migrate SD card to NVMe (Path A)
+├── 00-flash-nvme.sh          - Flash NVMe from workstation (Path B)
+├── 01-post-boot-setup.sh     - System packages, temp monitoring
+├── 02-security-hardening.sh  - SSH, fail2ban, firewall, auto-updates
+├── 03-install-docker.sh      - Docker + Compose
+├── 04-setup-gitlab.sh        - Deploy GitLab stack
+├── 05-register-runner.sh     - Register CI/CD runner
+├── 06-setup-monitoring.sh    - Deploy Prometheus + Grafana
+├── 07-setup-cloudflare-tunnel.sh - Remote access via Cloudflare
+└── 08-health-check.sh        - System and service health
+
+AUTOMATION:
+├── setup-all.sh              - Run scripts 01-03 in sequence
+└── setup-services.sh         - Run scripts 04-06 in sequence
+
+SERVICES DEPLOYED:
+├── GitLab CE                 - Git repository + CI/CD
+├── GitLab Runner             - Docker executor for pipelines
+├── Container Registry        - Docker image storage
+├── Prometheus                - Metrics collection
+├── Grafana                   - Monitoring dashboards
+├── Node Exporter             - System metrics
+├── cAdvisor                  - Container metrics
+└── Cloudflare Tunnel         - Secure external access
+
+SECURITY:
+├── UFW firewall (default deny)
+├── fail2ban (SSH + GitLab)
+├── SSH hardening (no password, no root)
+├── Automatic security updates
+├── Kernel hardening (sysctl)
+└── No exposed ports
+
+BACKUPS:
+├── backup.sh                 - Manual/automated backup
+├── restore.sh                - Restore from backup
+├── setup-cron.sh             - Daily backup at 2 AM
+└── S3 sync (optional)
+
+CONFIGURATION:
+├── env.example               - All environment variables
+├── docker-daemon.json        - Log rotation
+├── gitlab.rb.template        - GitLab config (Pi optimized)
+├── prometheus.yml            - Scrape configs
+├── grafana-datasource.yml    - Prometheus datasource
+├── fail2ban configs          - Brute force protection
+└── Cloud-init templates      - Initial OS setup (Path B)
+
+DOCUMENTATION:
+├── README.md                 - Main documentation + quick reference
+├── SETUP-PATH-A.md          - SD to NVMe migration guide
+├── SETUP-PATH-B.md          - Fresh flash guide
+├── SETUP-CHECKLIST.md       - Step-by-step checklist
+└── MANIFEST.txt             - This file
+
+RESOURCE OPTIMIZATION:
+- 2GB swap with low swappiness
+- GitLab Puma: 2 workers, 2 threads
+- GitLab Sidekiq: 10 concurrency
+- PostgreSQL: 256MB shared buffers
+- Docker log rotation: 10MB x 3 files
+- Temperature monitoring every 5 minutes
+
+READY TO USE:
+✓ All scripts executable
+✓ Both setup paths documented
+✓ Security hardened by default
+✓ Monitoring included
+✓ Backup/restore ready
+✓ Cloudflare Tunnel configured
+✓ GitLab CI/CD ready
