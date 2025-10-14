@@ -1,7 +1,14 @@
 # GitLab on Raspberry Pi 5 - Bootstrap
 
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![Platform: Raspberry Pi 5](https://img.shields.io/badge/Platform-Raspberry%20Pi%205-orange)
+![Ubuntu: 24.04 LTS](https://img.shields.io/badge/Ubuntu-24.04%20LTS-purple)
+![Status: Stable](https://img.shields.io/badge/Status-Stable-brightgreen)
+
 My own setup for running GitLab CE with CI/CD runners, monitoring, and Cloudflare Tunnel on Raspberry Pi 5 with Ubuntu.
 Or, we have GitLab at home.
+
+---
 
 ## Prerequisites
 
@@ -9,6 +16,8 @@ Or, we have GitLab at home.
 - NVMe drive or high-quality SD card (NVMe works better in the long term, SD card wears out quickly)
 - Domain name with Cloudflare DNS
 - Cloudflare account (free tier should do the trick)
+
+---
 
 ## Features
 
@@ -21,6 +30,24 @@ Or, we have GitLab at home.
 - Automated backup to S3 or local storage
 - Security hardening (UFW, fail2ban, SSH)
 - Temperature and health monitoring
+
+---
+
+## Setup Paths
+
+| Scenario | Recommended Path |
+|-----------|------------------|
+| Already running Ubuntu from SD card | **Path A** |
+| Starting fresh or flashing NVMe directly | **Path B** |
+| Rebuilding from backup | Path B, then restore |
+
+> **Note:** All scripts assume you’re running from the project root directory.
+> To be safe:
+> ```bash
+> cd ~/gitlab-bootstrap
+> ```
+
+---
 
 ## Quick Start
 
@@ -89,6 +116,29 @@ cd gitlab-bootstrap
 
 See [SETUP-PATH-B.md](SETUP-PATH-B.md) for detailed steps.
 
+---
+
+## Configuration
+
+Required in .env
+```.env
+HOSTNAME=gitlab
+DOMAIN=yourdomain.com
+USERNAME=spreadsheet-hater
+EMAIL=spreadsheet-hater@yourdomain.com
+SSH_KEY="ssh-ed25519 AAAAC3..."
+GITLAB_ROOT_PASSWORD=supersecret
+GRAFANA_ADMIN_PASSWORD=supersecret
+CLOUDFLARE_TUNNEL_TOKEN=xxx
+
+# Optional backups
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+BACKUP_BUCKET=
+```
+
+---
+
 ## What You Get
 
 - GitLab CE at `https://gitlab.yourdomain.com`
@@ -100,17 +150,7 @@ See [SETUP-PATH-B.md](SETUP-PATH-B.md) for detailed steps.
 - Full security hardening
 - No exposed ports (Cloudflare Tunnel only)
 
-## Configuration
-
-**Required in .env:**
-- HOSTNAME, DOMAIN, USERNAME, EMAIL
-- SSH_KEY
-- GITLAB_ROOT_PASSWORD
-- GRAFANA_ADMIN_PASSWORD
-- CLOUDFLARE_TUNNEL_TOKEN (get after creating tunnel)
-
-**Optional in .env:**
-- AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, BACKUP_BUCKET
+---
 
 ## Maintenance
 
@@ -172,6 +212,20 @@ sudo systemctl status cloudflared
 ./scripts/99-cleanup.sh
 ```
 
+---
+
+## Updating the System
+
+Keep things current:
+```bash
+sudo apt update && sudo apt full-upgrade -y
+docker compose -f compose/gitlab.yml pull
+docker compose -f compose/monitoring.yml pull
+./scripts/09-update-services.sh
+```
+
+---
+
 ## Resource Tuning
 
 GitLab is configured for Pi 5 with conservative settings in `config/gitlab.rb.template`:
@@ -184,41 +238,47 @@ GitLab is configured for Pi 5 with conservative settings in `config/gitlab.rb.te
 ./scripts/12-scale-resources.sh
 ```
 
-Choose from Light (4GB), Medium (8GB), Heavy (8GB+), or Custom profiles.
+Profiles: Light (4GB), Medium (8GB), Heavy (8GB+), or Custom.
+
+---
 
 ## Troubleshooting
 
-### GitLab won't start
+### Common Issues
+
+#### GitLab won't start
 ```bash
 docker logs gitlab
 sudo dmesg | grep oom
 ```
-Check memory usage. GitLab needs at least 4GB total RAM (including swap). What a beast.
+Check memory usage. GitLab needs at least 4GB total RAM (including swap). Beastly but hungry.
 
-### Services can't communicate
+#### Services can't communicate
 ```bash
 docker network ls
 docker network inspect gitlab-network
 ```
 
-### Cloudflare Tunnel not connecting
+#### Cloudflare Tunnel not connecting
 ```bash
 sudo systemctl status cloudflared
 sudo journalctl -u cloudflared -f
 ```
 
-### High temperature
+#### High temperature
 ```bash
 /usr/local/bin/check-temp
 vcgencmd measure_temp
 ```
-Ensure proper cooling. Pi 5 benefits from active cooling under load.
+Ensure proper cooling. You wouldn't want to risk getting burned from a hot pi.
 
-### Out of disk
+#### Out of disk
 ```bash
 ncdu /srv
 ```
-Find large directories and clean up old backups or logs.
+Clean up old backups or logs.
+
+---
 
 ## Monitoring & Alerts
 
@@ -235,6 +295,8 @@ Import dashboards: `./scripts/15-import-dashboards.sh`
 
 View alerts: http://localhost:9090/alerts
 
+---
+
 ## Security Notes
 
 - SSH password authentication is disabled
@@ -243,6 +305,8 @@ View alerts: http://localhost:9090/alerts
 - fail2ban monitors SSH and GitLab
 - Automatic security updates enabled
 - No ports exposed to internet (Cloudflare Tunnel only)
+
+---
 
 ## Migration from GitHub
 
@@ -256,6 +320,8 @@ Check the `examples/` directory for ready-to-use CI/CD templates:
 - `gitlab-ci-python.yml` - Python projects
 
 See [examples/README.md](examples/README.md) for details.
+
+---
 
 ## Directory Structure
 
@@ -295,6 +361,8 @@ gitlab-bootstrap/
 ├── MANIFEST.txt         # Complete inventory
 └── README.md            # This file
 ```
+
+---
 
 ## License
 
