@@ -13,7 +13,7 @@
 ```bash
 ssh username@pi-ip
 sudo apt update && sudo apt install -y git
-git clone <your-repo-url> gitlab-bootstrap
+git clone <repo-url> gitlab-bootstrap
 cd gitlab-bootstrap
 ```
 

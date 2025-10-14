@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
+cd "$(dirname "$0")/.."
+
+source scripts/utils.sh
+load_env || true
+
+RED=$(tput setaf 1); GREEN=$(tput setaf 2); YELLOW=$(tput setaf 3); RESET=$(tput sgr0)
+trap 'echo ""; echo "${YELLOW}[!] Setup interrupted by user.${RESET}"; exit 1' INT TERM
 
 cat << "EOF"
 ╔════════════════════════════════════════════════════════════╗
@@ -7,38 +14,41 @@ cat << "EOF"
 ╚════════════════════════════════════════════════════════════╝
 EOF
 
-if ! docker ps >/dev/null 2>&1; then
-  echo "[!] Docker is not accessible. Did you logout and login after installing Docker?"
+if ! command -v docker >/dev/null 2>&1 || ! docker ps >/dev/null 2>&1; then
+  echo "${RED}[!] Docker is not accessible.${RESET} Log out/in after install, then retry."
   exit 1
 fi
 
-echo ""
-echo "Step 4/7: Setting up GitLab..."
+step() {
+  echo ""
+  echo "──────────────────────────────────────────────"
+  echo "${YELLOW}Step $1:${RESET} $2"
+  echo "──────────────────────────────────────────────"
+}
+
+step 4 "Setting up GitLab..."
 ./scripts/04-setup-gitlab.sh
 
 echo ""
-echo "[!] Before continuing, you need to:"
+echo "${YELLOW}[!] Before continuing, please:${RESET}"
 echo "    1. Login to GitLab at http://$(hostname -I | awk '{print $1}')"
-echo "    2. Go to Admin Area > CI/CD > Runners"
-echo "    3. Create new instance runner and copy the token"
-echo "    4. Add token to .env as GITLAB_RUNNER_TOKEN"
+echo "    2. Go to Admin Area → CI/CD → Runners"
+echo "    3. Create a new instance runner and copy the token"
+echo "    4. Add it to .env as GITLAB_RUNNER_TOKEN"
 echo ""
-read -p "Have you added GITLAB_RUNNER_TOKEN to .env? (yes/no): " -r
+read -p "Have you updated .env? (yes/no): " -r
 if [[ ! $REPLY =~ ^yes$ ]]; then
-  echo "Please complete GitLab runner setup and run this script again."
+  echo "Please update .env and rerun this script."
   exit 0
 fi
 
-echo ""
-echo "Step 5/7: Registering GitLab Runner..."
+step 5 "Registering GitLab Runner..."
 ./scripts/05-register-runner.sh
 
-echo ""
-echo "Step 6/7: Setting up monitoring..."
+step 6 "Setting up monitoring..."
 ./scripts/06-setup-monitoring.sh
 
-echo ""
-echo "Step 7/7: Setting up backups..."
+step 7 "Setting up backups..."
 ./backup/setup-cron.sh
 
 echo ""
@@ -47,13 +57,15 @@ echo "║                    Setup Complete!                         ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
 echo "Next steps:"
-echo "  1. Setup Cloudflare Tunnel: ./scripts/07-setup-cloudflare-tunnel.sh"
-echo "  2. Run health check: ./scripts/08-health-check.sh"
-echo "  3. Test backup: ./backup/backup.sh"
+echo "  1. Setup Cloudflare Tunnel: ${YELLOW}./scripts/07-setup-cloudflare-tunnel.sh${RESET}"
+echo "  2. Run health check:        ${YELLOW}./scripts/08-health-check.sh${RESET}"
+echo "  3. Test backup:             ${YELLOW}./backup/backup.sh${RESET}"
 echo ""
 echo "Access your services:"
-echo "  GitLab:     http://$(hostname -I | awk '{print $1}')"
-echo "  Grafana:    http://$(hostname -I | awk '{print $1}'):3000"
-echo "  Prometheus: http://$(hostname -I | awk '{print $1}'):9090"
+IP=$(hostname -I | awk '{print $1}')
+echo "  GitLab:     http://$IP"
+echo "  Grafana:    http://$IP:3000"
+echo "  Prometheus: http://$IP:9090"
 echo ""
 
+echo "${GREEN}✓ Setup completed successfully.${RESET}"

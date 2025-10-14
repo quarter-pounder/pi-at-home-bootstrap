@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
+cd "$(dirname "$0")/.."
+
+# Load helpers
+source scripts/utils.sh
+load_env || true
+
+# Colors
+RED=$(tput setaf 1); GREEN=$(tput setaf 2); YELLOW=$(tput setaf 3); RESET=$(tput sgr0)
+
+trap 'echo ""; echo "${YELLOW}[!] Setup interrupted by user.${RESET}"; exit 1' INT TERM
 
 cat << "EOF"
 ╔════════════════════════════════════════════════════════════╗
@@ -8,11 +18,11 @@ cat << "EOF"
 EOF
 
 if [[ ! -f .env ]]; then
-  echo "[!] .env file not found. Please copy env.example to .env and configure it."
+  echo "${RED}[!] .env file not found. Copy env.example to .env and configure it.${RESET}"
   exit 1
 fi
 
-source .env
+START_STEP=${1:-1}
 
 echo ""
 echo "[i] This script will set up:"
@@ -28,22 +38,28 @@ if [[ ! $REPLY =~ ^yes$ ]]; then
   exit 0
 fi
 
-echo ""
-echo "Step 1/7: Post-boot system setup..."
-./scripts/01-post-boot-setup.sh
+step() {
+  echo ""
+  echo "──────────────────────────────────────────────"
+  echo "${YELLOW}Step $1:${RESET} $2"
+  echo "──────────────────────────────────────────────"
+}
 
-echo ""
-echo "Step 2/7: Security hardening..."
-./scripts/02-security-hardening.sh
+if (( START_STEP <= 1 )); then
+  step 1 "Post-boot system setup..."
+  ./scripts/01-post-boot-setup.sh
+fi
 
-echo ""
-echo "Step 3/7: Installing Docker..."
-./scripts/03-install-docker.sh
+if (( START_STEP <= 2 )); then
+  step 2 "Security hardening..."
+  ./scripts/02-security-hardening.sh
+fi
 
-echo ""
-echo "[i] Docker installed. You need to logout and login again for group changes."
-echo "[!] After re-login, run this script again to continue from Step 4."
-echo ""
-read -p "Press Enter to logout now, or Ctrl+C to cancel..."
-kill -HUP $PPID
-
+if (( START_STEP <= 3 )); then
+  step 3 "Installing Docker..."
+  ./scripts/03-install-docker.sh
+  echo ""
+  echo "${YELLOW}[i] Docker installed.${RESET} Log out/in so your user joins the docker group."
+  echo "${YELLOW}After re-login, run: ${RESET} ./setup-services.sh"
+  exit 0
+fi

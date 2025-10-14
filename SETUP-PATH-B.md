@@ -10,7 +10,7 @@
 ### 1. Configure on Workstation
 
 ```bash
-git clone <your-repo-url> gitlab-bootstrap
+git clone <repo-url> gitlab-bootstrap
 cd gitlab-bootstrap
 cp env.example .env
 vim .env
@@ -47,7 +47,7 @@ This will:
 ### 4. Clone Repo on Pi
 
 ```bash
-git clone <your-repo-url> gitlab-bootstrap
+git clone <repo-url> gitlab-bootstrap
 cd gitlab-bootstrap
 cp /path/to/.env .env  # Copy .env from workstation or recreate it
 ```
