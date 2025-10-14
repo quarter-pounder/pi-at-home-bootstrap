@@ -3,7 +3,20 @@
 *.img.xz
 *.tar
 *.tar.gz
+*.tgz
 *.deb
+*.rpm
+*.log
+
 compose/gitlab.rb
+
 .DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+backups/
+*.backup
 
