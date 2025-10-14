@@ -1,8 +1,10 @@
 # Setup Path B: Fresh Flash from Workstation
 
+Hi, please stop staring at Pi's one and only USB-C port. It's for power supply.
+
 ## Prerequisites
+- NVMe USB-C enclosure and Ethernet connection (the Pi 5 USB-C port does **NOT** expose USB device mode)
 - Laptop/Workstation (macOS or Linux)
-- NVMe drive (can connect via USB adapter)
 - Pi 5 (can be brand new, no SD card needed)
 
 ## Steps

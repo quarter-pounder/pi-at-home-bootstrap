@@ -89,6 +89,8 @@ See [SETUP-PATH-A.md](SETUP-PATH-A.md) for detailed steps.
 
 ### Path B: Fresh Flash from laptop
 
+NVMe enclosure is required.
+
 ```bash
 # 1. On laptop
 git clone <this-repo> gitlab-bootstrap
