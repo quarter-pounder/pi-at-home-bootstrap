@@ -1,7 +1,7 @@
 # GitLab on Raspberry Pi 5 - Bootstrap
 
 My own setup for running GitLab CE with CI/CD runners, monitoring, and Cloudflare Tunnel on Raspberry Pi 5 with Ubuntu.
-Or, a proof that you don't need a $4000/month RHEL EC2 instance for a GitLab server.
+Or, we have GitLab at home.
 
 ## Prerequisites
 
@@ -34,6 +34,9 @@ git clone <this-repo> gitlab-bootstrap
 cd gitlab-bootstrap
 cp env.example .env
 vim .env  # Fill in all variables
+
+# Optional: Run pre-flight checks
+./scripts/00-preflight-check.sh
 
 # 2. Migrate to NVMe
 ./scripts/00-migrate-to-nvme.sh
@@ -114,8 +117,32 @@ See [SETUP-PATH-B.md](SETUP-PATH-B.md) for detailed steps.
 ### Common Commands
 
 ```bash
+# Pre-flight check (before setup)
+./scripts/00-preflight-check.sh
+
 # Health check
 ./scripts/08-health-check.sh
+
+# Update services
+./scripts/09-update-services.sh
+
+# Performance benchmark
+./scripts/10-benchmark.sh
+
+# Network diagnostics
+./scripts/11-network-diag.sh
+
+# Scale resources (adjust workers/memory)
+./scripts/12-scale-resources.sh
+
+# Setup Git LFS
+./scripts/13-setup-lfs.sh
+
+# Add additional runner
+./scripts/14-add-runner.sh
+
+# Import Grafana dashboards
+./scripts/15-import-dashboards.sh
 
 # Manual backup
 ./backup/backup.sh
@@ -132,10 +159,6 @@ cd compose
 docker compose -f gitlab.yml restart
 docker compose -f monitoring.yml restart
 
-# Update GitLab
-docker compose -f gitlab.yml pull
-docker compose -f gitlab.yml up -d
-
 # Check temperature
 /usr/local/bin/check-temp
 
@@ -144,6 +167,9 @@ sudo ufw status
 
 # Tunnel status
 sudo systemctl status cloudflared
+
+# Full cleanup (removes everything)
+./scripts/99-cleanup.sh
 ```
 
 ## Resource Tuning
@@ -153,7 +179,12 @@ GitLab is configured for Pi 5 with conservative settings in `config/gitlab.rb.te
 - Sidekiq: 10 concurrency
 - PostgreSQL: 256MB shared buffers
 
-For a 4GB Pi, consider reducing Sidekiq concurrency to 5.
+**Quick scaling:**
+```bash
+./scripts/12-scale-resources.sh
+```
+
+Choose from Light (4GB), Medium (8GB), Heavy (8GB+), or Custom profiles.
 
 ## Troubleshooting
 
@@ -189,6 +220,21 @@ ncdu /srv
 ```
 Find large directories and clean up old backups or logs.
 
+## Monitoring & Alerts
+
+**Grafana Dashboards:**
+- GitLab metrics (requests, memory, CI/CD jobs)
+- System metrics (CPU, RAM, disk, temperature, network)
+
+**Prometheus Alerts:**
+- System: High CPU/memory, low disk, high temperature
+- GitLab: Service down, high memory usage
+- Docker: Container failures
+
+Import dashboards: `./scripts/15-import-dashboards.sh`
+
+View alerts: http://localhost:9090/alerts
+
 ## Security Notes
 
 - SSH password authentication is disabled
@@ -202,37 +248,14 @@ Find large directories and clean up old backups or logs.
 
 1. In GitLab, go to Projects > New Project > Import Project > GitHub
 2. Follow the import wizard
-3. Convert GitHub Actions to `.gitlab-ci.yml`:
+3. Convert GitHub Actions to `.gitlab-ci.yml`
 
-GitHub Actions:
-```yaml
-name: Build
-on: [push]
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - run: npm install
-      - run: npm test
-```
+Check the `examples/` directory for ready-to-use CI/CD templates:
+- `gitlab-ci-docker.yml` - Docker build and push
+- `gitlab-ci-nodejs.yml` - Node.js projects
+- `gitlab-ci-python.yml` - Python projects
 
-GitLab CI:
-```yaml
-stages:
-  - build
-  - test
-
-build:
-  stage: build
-  script:
-    - npm install
-
-test:
-  stage: test
-  script:
-    - npm test
-```
+See [examples/README.md](examples/README.md) for details.
 
 ## Directory Structure
 
@@ -242,10 +265,34 @@ gitlab-bootstrap/
 ├── cloudinit/           # Cloud-init templates (Path B only)
 ├── compose/             # Docker Compose files
 ├── config/              # Configuration files
+│   ├── Dashboards (2) + Alerts + Service configs
+│   └── README.md
+├── examples/            # GitLab CI/CD example templates
+│   ├── Docker, Node.js, Python workflows
+│   └── README.md
 ├── scripts/             # Installation and setup scripts
+│   ├── 00-preflight-check.sh      # Validate prerequisites
+│   ├── 00-migrate-to-nvme.sh      # SD to NVMe migration
+│   ├── 00-flash-nvme.sh           # Flash from workstation
+│   ├── 01-08-*.sh                 # Setup and maintenance
+│   ├── 09-update-services.sh      # Update management
+│   ├── 10-benchmark.sh            # Performance testing
+│   ├── 11-network-diag.sh         # Network diagnostics
+│   ├── 12-scale-resources.sh      # Resource scaling
+│   ├── 13-setup-lfs.sh            # Git LFS setup
+│   ├── 14-add-runner.sh           # Multi-runner setup
+│   ├── 15-import-dashboards.sh    # Dashboard import
+│   └── 99-cleanup.sh              # Complete removal
 ├── env.example          # Environment variable template
-├── SETUP-PATH-A.md      # SD card to NVMe migration path
-├── SETUP-PATH-B.md      # Fresh flash from workstation path
+├── install.sh           # One-liner installer
+├── setup-all.sh         # Automated setup (part 1)
+├── setup-services.sh    # Automated setup (part 2)
+├── SETUP-PATH-A.md      # SD to NVMe guide
+├── SETUP-PATH-B.md      # Fresh flash guide
+├── SETUP-CHECKLIST.md   # Step-by-step checklist
+├── FEATURES.md          # Complete feature list
+├── IMPROVEMENTS.md      # Recent updates
+├── MANIFEST.txt         # Complete inventory
 └── README.md            # This file
 ```
 

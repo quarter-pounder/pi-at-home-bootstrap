@@ -5,7 +5,8 @@ SETUP PATHS:
 └── Path B: Fresh Flash from Laptop (scripts/00-flash-nvme.sh)
 
 CORE SCRIPTS:
-├── 00-migrate-to-nvme.sh    - Migrate SD card to NVMe (Path A)
+├── 00-preflight-check.sh     - Validate prerequisites before setup
+├── 00-migrate-to-nvme.sh     - Migrate SD card to NVMe (Path A)
 ├── 00-flash-nvme.sh          - Flash NVMe from workstation (Path B)
 ├── 01-post-boot-setup.sh     - System packages, temp monitoring
 ├── 02-security-hardening.sh  - SSH, fail2ban, firewall, auto-updates
@@ -14,9 +15,18 @@ CORE SCRIPTS:
 ├── 05-register-runner.sh     - Register CI/CD runner
 ├── 06-setup-monitoring.sh    - Deploy Prometheus + Grafana
 ├── 07-setup-cloudflare-tunnel.sh - Remote access via Cloudflare
-└── 08-health-check.sh        - System and service health
+├── 08-health-check.sh        - System and service health
+├── 09-update-services.sh     - Update GitLab/monitoring/system
+├── 10-benchmark.sh           - Performance testing
+├── 11-network-diag.sh        - Network diagnostics
+├── 12-scale-resources.sh     - Adjust GitLab workers/memory
+├── 13-setup-lfs.sh           - Enable Git Large File Storage
+├── 14-add-runner.sh          - Add additional CI/CD runners
+├── 15-import-dashboards.sh   - Import Grafana dashboards
+└── 99-cleanup.sh             - Remove all services and data
 
 AUTOMATION:
+├── install.sh                - One-liner clone and setup
 ├── setup-all.sh              - Run scripts 01-03 in sequence
 └── setup-services.sh         - Run scripts 04-06 in sequence
 
@@ -48,17 +58,26 @@ CONFIGURATION:
 ├── env.example               - All environment variables
 ├── docker-daemon.json        - Log rotation
 ├── gitlab.rb.template        - GitLab config (Pi optimized)
-├── prometheus.yml            - Scrape configs
+├── prometheus.yml            - Scrape configs + alert rules
+├── prometheus-alerts.yml     - System/GitLab/Docker alerts
 ├── grafana-datasource.yml    - Prometheus datasource
+├── grafana-dashboard-gitlab.json - GitLab metrics dashboard
+├── grafana-dashboard-system.json - Pi system metrics dashboard
 ├── fail2ban configs          - Brute force protection
+├── runner-config.toml.template - GitLab Runner settings
 └── Cloud-init templates      - Initial OS setup (Path B)
 
 DOCUMENTATION:
 ├── README.md                 - Main documentation + quick reference
-├── SETUP-PATH-A.md          - SD to NVMe migration guide
-├── SETUP-PATH-B.md          - Fresh flash guide
-├── SETUP-CHECKLIST.md       - Step-by-step checklist
-└── MANIFEST.txt             - This file
+├── SETUP-PATH-A.md           - SD to NVMe migration guide
+├── SETUP-PATH-B.md           - Fresh flash guide
+├── SETUP-CHECKLIST.md        - Step-by-step checklist
+├── MANIFEST.txt              - This file
+└── examples/
+    ├── README.md             - CI/CD template guide
+    ├── gitlab-ci-docker.yml  - Docker build/push template
+    ├── gitlab-ci-nodejs.yml  - Node.js project template
+    └── gitlab-ci-python.yml  - Python project template
 
 RESOURCE OPTIMIZATION:
 - 2GB swap with low swappiness
