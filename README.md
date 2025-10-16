@@ -25,9 +25,11 @@ Or, we have GitLab at home.
 - Docker and Docker Compose
 - GitLab CE with container registry
 - GitLab Runner with Docker executor
-- Prometheus + Grafana monitoring stack
+- Prometheus + Grafana + Loki + Alloy monitoring stack
 - Cloudflare Tunnel for secure remote access
 - Automated backup to S3 or local storage
+- GitLab Cloud mirroring for disaster recovery
+- Terraform for cloud infrastructure management
 - Security hardening (UFW, fail2ban, SSH)
 - Temperature and health monitoring
 
@@ -81,7 +83,11 @@ cd gitlab-bootstrap
 # Get token from Cloudflare dashboard, add to .env
 ./scripts/07-setup-cloudflare-tunnel.sh
 
-# 6. Verify
+# 6. Setup disaster recovery (optional)
+# Get GitLab Cloud token, add to .env
+./scripts/19-setup-complete-dr.sh
+
+# 7. Verify
 ./scripts/08-health-check.sh
 ```
 
@@ -98,7 +104,7 @@ cd gitlab-bootstrap
 cp env.example .env
 vim .env  # Fill in all variables
 
-# 2. Flash NVMe (connected via USB)
+# 2. Flash NVMe (connected via USB and an NVMe closure)
 ./scripts/00-flash-nvme.sh
 
 # 3. Install NVMe in Pi and boot
@@ -113,6 +119,11 @@ cd gitlab-bootstrap
 # 5. Continue setup
 ./setup-services.sh
 ./scripts/07-setup-cloudflare-tunnel.sh
+
+# 6. Setup disaster recovery (optional)
+./scripts/19-setup-complete-dr.sh
+
+# 7. Verify
 ./scripts/08-health-check.sh
 ```
 
@@ -148,9 +159,52 @@ BACKUP_BUCKET=
 - Grafana at `https://grafana.yourdomain.com`
 - GitLab Runner for CI/CD
 - Daily automated backups (local + S3)
+- GitLab Cloud mirroring for disaster recovery
 - Prometheus monitoring
 - Full security hardening
 - No exposed ports (Cloudflare Tunnel only)
+
+---
+
+## Disaster Recovery
+
+### GitLab Cloud Mirroring
+- **Automatic mirroring**: All repositories synced to GitLab Cloud
+- **Real-time updates**: Webhook-triggered mirroring on push/merge
+- **Health monitoring**: Automated Pi health checks every 2 minutes
+- **Failover**: Automatic DR activation when Pi goes down
+- **Recovery**: Automated sync back to Pi when restored
+
+### DR Components
+- **Mirror Group**: `https://gitlab.com/groups/yourhostname-mirror`
+- **Health Monitor**: Checks Pi services every 2 minutes
+- **Status Server**: `http://pi-ip:8080/status`
+- **Webhook Handler**: `http://pi-ip:8080/webhook`
+
+### DR Commands
+```bash
+# Check DR status
+curl http://localhost:8080/status
+
+# Test DR system
+/srv/gitlab-dr/test-dr.sh
+
+# Manual mirror sync
+/srv/gitlab-mirror/mirror-repos.sh
+
+# Force recovery from cloud
+/srv/gitlab-dr/recover-from-cloud.sh
+
+# View DR logs
+tail -f /srv/gitlab-dr/dr.log
+```
+
+### DR Configuration
+Add to `.env`:
+```bash
+GITLAB_CLOUD_TOKEN=your_gitlab_cloud_token
+DR_WEBHOOK_URL=https://your-webhook-url.com
+```
 
 ---
 
@@ -253,7 +307,7 @@ Profiles: Light (4GB), Medium (8GB), Heavy (8GB+), or Custom.
 docker logs gitlab
 sudo dmesg | grep oom
 ```
-Check memory usage. GitLab needs at least 4GB total RAM (including swap). Beastly but hungry.
+Check memory usage. GitLab needs at least 4GB total RAM (including swap).
 
 #### Services can't communicate
 ```bash
@@ -272,7 +326,7 @@ sudo journalctl -u cloudflared -f
 /usr/local/bin/check-temp
 vcgencmd measure_temp
 ```
-Ensure proper cooling. You wouldn't want to risk getting burned from a hot pi.
+Ensure proper cooling.
 
 #### Out of disk
 ```bash
