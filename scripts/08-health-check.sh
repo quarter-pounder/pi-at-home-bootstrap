@@ -29,19 +29,20 @@ echo "[i] Docker Status:"
 if command -v docker >/dev/null 2>&1; then
   docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || true
 else
-  echo "${RED}✗ Docker not installed${RESET}"
+  echo "${RED}Docker not installed${RESET}"
 fi
 
 echo ""
 echo "[i] GitLab Health:"
 if docker ps --format '{{.Names}}' | grep -q '^gitlab$'; then
   if docker exec gitlab gitlab-rake gitlab:check SANITIZE=true >/dev/null 2>&1; then
-    echo "${GREEN}✓ GitLab is healthy${RESET}"
+    echo "${GREEN}GitLab is healthy${RESET}"
   else
-    echo "${RED}✗ GitLab health check failed${RESET}"
+   echo "${RED}GitLab health check failed. Checking logs..."
+   docker logs gitlab --tail 50
   fi
 else
-  echo "${YELLOW}⚠ GitLab container not running${RESET}"
+  echo "${YELLOW}GitLab container not running${RESET}"
 fi
 
 echo ""
@@ -54,9 +55,9 @@ for endpoint in \
   name=$(echo "$endpoint" | cut -d: -f1)
   url=$(echo "$endpoint" | cut -d: -f2-)
   if timeout 5 curl -sf "$url" >/dev/null 2>&1; then
-    echo "${GREEN}✓ $name is responding${RESET}"
+    echo "${GREEN}$name is responding${RESET}"
   else
-    echo "${RED}✗ $name is not responding${RESET}"
+    echo "${RED}$name is not responding${RESET}"
   fi
 done
 
@@ -64,12 +65,12 @@ echo ""
 echo "[i] Cloudflare Tunnel:"
 if systemctl list-unit-files | grep -q '^cloudflared.service'; then
   if sudo systemctl is-active cloudflared >/dev/null 2>&1; then
-    echo "${GREEN}✓ Cloudflare Tunnel is running${RESET}"
+    echo "${GREEN}Cloudflare Tunnel is running${RESET}"
   else
-    echo "${RED}✗ Cloudflare Tunnel is not running${RESET}"
+    echo "${RED}Cloudflare Tunnel is not running${RESET}"
   fi
 else
-  echo "${YELLOW}⚠ Cloudflared not installed${RESET}"
+  echo "${YELLOW}Cloudflared not installed${RESET}"
 fi
 
 echo ""
