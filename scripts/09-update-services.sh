@@ -26,7 +26,7 @@ update_gitlab() {
   if docker exec gitlab gitlab-rake gitlab:check SANITIZE=true >/dev/null 2>&1; then
     echo "${GREEN}✓ GitLab updated successfully${RESET}"
   else
-    echo "${YELLOW}⚠ GitLab may need more time to start. Check: docker logs gitlab${RESET}"
+    echo "${YELLOW}WARNING: GitLab may need more time to start. Check: docker logs gitlab${RESET}"
   fi
   cd ..
 }

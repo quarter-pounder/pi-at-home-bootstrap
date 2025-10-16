@@ -46,7 +46,7 @@ echo "5. GitLab Metrics"
 if curl -sf http://localhost/-/health >/dev/null; then
   echo "   ${GREEN}✓${RESET} GitLab health check: OK"
 else
-  echo "   ${YELLOW}⚠${RESET} GitLab health check: FAILED"
+  echo "   ${YELLOW}WARNING${RESET} GitLab health check: FAILED"
 fi
 
 echo ""

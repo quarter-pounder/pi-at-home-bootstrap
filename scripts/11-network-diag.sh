@@ -58,7 +58,7 @@ if systemctl is-active cloudflared >/dev/null 2>&1; then
   echo "${GREEN}✓${RESET} Cloudflare Tunnel is running"
   sudo journalctl -u cloudflared -n 5 --no-pager | grep -i "connection\|registered"
 else
-  echo "${YELLOW}⚠${RESET} Cloudflare Tunnel is not running"
+  echo "${YELLOW}WARNING${RESET} Cloudflare Tunnel is not running"
 fi
 
 echo ""
