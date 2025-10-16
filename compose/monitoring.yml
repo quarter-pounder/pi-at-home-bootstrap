@@ -70,6 +70,37 @@ services:
     networks:
       - monitoring-network
 
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: always
+    ports:
+      - "3100:3100"
+    volumes:
+      - /srv/loki:/loki
+      - ../config/loki.yml:/etc/loki/local-config.yaml:ro
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitoring-network
+
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    restart: always
+    ports:
+      - "12345:12345"
+    volumes:
+      - ../config/alloy.river:/etc/alloy/config.river:ro
+      - /var/log:/var/log:ro
+      - /srv/gitlab/logs:/srv/gitlab/logs:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: run --config.file=/etc/alloy/config.river --server.http.listen-addr=0.0.0.0:12345
+    networks:
+      - monitoring-network
+    depends_on:
+      - loki
+
 networks:
   monitoring-network:
     driver: bridge

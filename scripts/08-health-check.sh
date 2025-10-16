@@ -51,7 +51,9 @@ for endpoint in \
   "GitLab:http://localhost:80/-/health" \
   "Registry:http://localhost:5050/" \
   "Prometheus:http://localhost:${PROM_PORT}/-/healthy" \
-  "Grafana:http://localhost:${GRAFANA_PORT}/api/health"; do
+  "Grafana:http://localhost:${GRAFANA_PORT}/api/health" \
+  "Loki:http://localhost:3100/ready" \
+  "Alloy:http://localhost:12345/-/healthy"; do
   name=$(echo "$endpoint" | cut -d: -f1)
   url=$(echo "$endpoint" | cut -d: -f2-)
   if timeout 5 curl -sf "$url" >/dev/null 2>&1; then
