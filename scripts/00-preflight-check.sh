@@ -20,7 +20,7 @@ check_os() {
   if [[ "$ID" == "ubuntu" ]]; then
     echo "${GREEN}✓${RESET} OS: Ubuntu $VERSION_ID"
   else
-    echo "${YELLOW}⚠${RESET} OS: $ID $VERSION_ID (Ubuntu recommended)"
+    echo "${YELLOW}WARNING${RESET} OS: $ID $VERSION_ID (Ubuntu recommended)"
   fi
 }
 
@@ -39,7 +39,7 @@ check_memory() {
   if (( MEM_GB >= 4 )); then
     echo "${GREEN}✓${RESET} Memory: ${MEM_GB}GB"
   elif (( MEM_GB >= 2 )); then
-    echo "${YELLOW}⚠${RESET} Memory: ${MEM_GB}GB (4GB+ recommended)"
+    echo "${YELLOW}WARNING${RESET} Memory: ${MEM_GB}GB (4GB+ recommended)"
   else
     echo "${RED}✗${RESET} Memory: ${MEM_GB}GB (insufficient)"
     ((ERRORS++))
@@ -51,7 +51,7 @@ check_disk() {
   if (( DISK_GB >= 50 )); then
     echo "${GREEN}✓${RESET} Disk space: ${DISK_GB}GB available"
   elif (( DISK_GB >= 20 )); then
-    echo "${YELLOW}⚠${RESET} Disk space: ${DISK_GB}GB (50GB+ recommended)"
+    echo "${YELLOW}WARNING${RESET} Disk space: ${DISK_GB}GB (50GB+ recommended)"
   else
     echo "${RED}✗${RESET} Disk space: ${DISK_GB}GB (insufficient)"
     ((ERRORS++))
