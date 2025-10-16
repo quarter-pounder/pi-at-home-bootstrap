@@ -1,7 +1,4 @@
 // Alloy configuration for log collection
-// Target logs: system, GitLab, Docker containers
-
-// Log sources
 local.file_match "system_logs" {
   path_targets = [
     {
@@ -78,7 +75,6 @@ discovery.docker "containers" {
   host = "unix:///var/run/docker.sock"
 }
 
-// Log processing pipeline
 loki.source.file "system" {
   targets    = local.file_match.system_logs.targets
   forward_to = [loki.process.system.receiver]
@@ -100,7 +96,6 @@ loki.source.docker "containers" {
   forward_to = [loki.process.docker.receiver]
 }
 
-// Log processing
 loki.process "system" {
   forward_to = [loki.write.default.receiver]
 
@@ -166,14 +161,12 @@ loki.process "docker" {
   }
 }
 
-// Loki write endpoint
 loki.write "default" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"
   }
 }
 
-// Prometheus metrics for Alloy
 prometheus.exporter.self "alloy" {}
 
 prometheus.scrape "alloy" {
@@ -182,7 +175,6 @@ prometheus.scrape "alloy" {
   forward_to = [prometheus.remote_write.default.receiver]
 }
 
-// Prometheus remote write (optional, for metrics)
 prometheus.remote_write "default" {
   endpoint {
     url = "http://prometheus:9090/api/v1/write"
