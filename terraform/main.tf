@@ -36,7 +36,7 @@ resource "random_id" "bucket_suffix" {
 module "cloudflare" {
   source = "./modules/cloudflare"
 
-  domain                = var.domain
+  domain               = var.domain
   tunnel_name          = var.cloudflare_tunnel_name
   pi5_ip               = var.pi5_ip
   grafana_port         = var.grafana_port
