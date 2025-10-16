@@ -19,5 +19,3 @@ compose/gitlab.rb
 
 backups/
 *.backup
-
-to-do.md
