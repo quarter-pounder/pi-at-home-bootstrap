@@ -20,3 +20,4 @@ compose/gitlab.rb
 backups/
 *.backup
 
+todo.md
