@@ -34,7 +34,7 @@ fi
 
 echo "[i] Installing required tools..."
 sudo apt update
-sudo apt install -y rsync parted
+sudo apt install -y rsync parted rpi-eeprom
 
 echo "[i] Unmounting NVMe if mounted..."
 sudo umount ${NVME_DEVICE}* 2>/dev/null || true
@@ -299,6 +299,28 @@ program_usb_boot_timeout=1
 EOF
 
 echo "[i] Pi 5 NVMe boot configuration created"
+
+# Configure EEPROM boot order for Pi 5
+echo "[i] Configuring EEPROM boot order for Pi 5..."
+if command -v rpi-eeprom-config >/dev/null 2>&1; then
+  echo "[i] Setting boot order to 0xf416 (NVMe first, then SD card)..."
+  if ! sudo rpi-eeprom-config --edit <<EOF
+BOOT_ORDER=0xf416
+EOF
+  then
+    echo "[!] Warning: Failed to set EEPROM boot order"
+    echo "[i] You may need to set this manually:"
+    echo "    sudo rpi-eeprom-config --edit"
+    echo "    Add: BOOT_ORDER=0xf416"
+  else
+    echo "[i] EEPROM boot order configured successfully"
+  fi
+else
+  echo "[!] Warning: rpi-eeprom-config not found"
+  echo "[i] Install it with: sudo apt install rpi-eeprom"
+  echo "[i] Then run: sudo rpi-eeprom-config --edit"
+  echo "[i] Add: BOOT_ORDER=0xf416"
+fi
 
 # Ensure Pi 5 bootloader is up to date
 echo "[i] Updating Pi 5 bootloader..."
