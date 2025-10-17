@@ -14,6 +14,8 @@ The Terraform configuration manages:
 2. **Cloudflare API Token**: Create a token with Zone:Read and Zone:Edit permissions
 3. **AWS Credentials**: Configure AWS CLI or environment variables
 
+Note that AWS doesn't offer an always-free tier, but you can find 100% S3 compatible alternatives.
+
 ## Quick Start
 
 1. **Copy the example variables file:**

@@ -1,5 +1,38 @@
 # Recent Improvements
 
+## Major New Features Added
+
+### Log Aggregation Stack
+**Services**: Loki + Alloy
+- **Loki**: Centralized log storage and querying
+- **Alloy**: Modern log collection agent (replaces Promtail)
+- **Integration**: Grafana datasource for log analysis
+- **Collection**: System logs, GitLab logs, Docker container logs
+- **Configuration**: `config/loki.yml` and `config/alloy.river`
+
+### Ad Blocker (Pi-hole)
+**Service**: Pi-hole + Unbound
+- **Pi-hole**: DNS-based ad blocking for entire network
+- **Unbound**: Local recursive DNS resolver for privacy
+- **Web Interface**: Management and statistics dashboard
+- **Network-wide**: All devices benefit automatically
+- **Cloudflare Integration**: Accessible via tunnel
+
+### Disaster Recovery System
+**Scripts**: 17-19
+- **GitLab Cloud Mirroring**: Automatic repository sync
+- **Health Monitoring**: Pi status checks every 2 minutes
+- **Automated Failover**: DR activation when Pi goes down
+- **Recovery Automation**: Sync back when Pi recovers
+- **Webhook Integration**: External monitoring support
+
+### Infrastructure as Code (Terraform)
+**Directory**: `terraform/`
+- **Cloudflare Module**: DNS records and tunnels
+- **AWS Module**: S3 buckets, IAM, SNS alerts
+- **Free Tier Optimized**: All resources within free limits
+- **Automated Deployment**: One-command cloud setup
+
 ## New Features Added
 
 ### Pre-flight Validation
@@ -147,7 +180,10 @@ Now includes:
 ✓ Fresh flash from workstation
 ✓ Security hardening
 ✓ GitLab + Registry + Runners
-✓ Prometheus + Grafana + Alerts
+✓ Prometheus + Grafana + Loki + Alloy
+✓ Pi-hole ad blocker + Unbound DNS
+✓ GitLab Cloud mirroring + DR automation
+✓ Terraform infrastructure as code
 ✓ Automated backups (local + S3)
 ✓ Cloudflare Tunnel
 ✓ Health monitoring

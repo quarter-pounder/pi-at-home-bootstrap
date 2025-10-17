@@ -1,4 +1,4 @@
-GITLAB BOOTSTRAP
+PI AT HOME BOOTSTRAP (WITH GITLAB)
 
 SETUP PATHS:
 ├── Path A: SD → NVMe Migration (scripts/00-migrate-to-nvme.sh)
@@ -13,7 +13,7 @@ CORE SCRIPTS:
 ├── 03-install-docker.sh      - Docker + Compose
 ├── 04-setup-gitlab.sh        - Deploy GitLab stack
 ├── 05-register-runner.sh     - Register CI/CD runner
-├── 06-setup-monitoring.sh    - Deploy Prometheus + Grafana
+├── 06-setup-monitoring.sh    - Deploy Prometheus + Grafana + Loki
 ├── 07-setup-cloudflare-tunnel.sh - Remote access via Cloudflare
 ├── 08-health-check.sh        - System and service health
 ├── 09-update-services.sh     - Update GitLab/monitoring/system
@@ -23,6 +23,11 @@ CORE SCRIPTS:
 ├── 13-setup-lfs.sh           - Enable Git Large File Storage
 ├── 14-add-runner.sh          - Add additional CI/CD runners
 ├── 15-import-dashboards.sh   - Import Grafana dashboards
+├── 16-setup-terraform.sh     - Deploy cloud infrastructure
+├── 17-setup-gitlab-mirror.sh - Setup GitLab Cloud mirroring
+├── 18-setup-dr-automation.sh - Setup disaster recovery automation
+├── 19-setup-complete-dr.sh   - Complete DR system setup
+├── 20-setup-adblocker.sh     - Setup Pi-hole ad blocker
 └── 99-cleanup.sh             - Remove all services and data
 
 AUTOMATION:
@@ -36,9 +41,14 @@ SERVICES DEPLOYED:
 ├── Container Registry        - Docker image storage
 ├── Prometheus                - Metrics collection
 ├── Grafana                   - Monitoring dashboards
+├── Loki                      - Log aggregation
+├── Alloy                     - Log collection agent
 ├── Node Exporter             - System metrics
 ├── cAdvisor                  - Container metrics
-└── Cloudflare Tunnel         - Secure external access
+├── Pi-hole                   - DNS ad blocker
+├── Unbound                   - Local DNS resolver
+├── Cloudflare Tunnel         - Secure external access
+└── DR Automation             - Disaster recovery system
 
 SECURITY:
 ├── UFW firewall (default deny)
@@ -60,12 +70,20 @@ CONFIGURATION:
 ├── gitlab.rb.template        - GitLab config (Pi optimized)
 ├── prometheus.yml            - Scrape configs + alert rules
 ├── prometheus-alerts.yml     - System/GitLab/Docker alerts
-├── grafana-datasource.yml    - Prometheus datasource
+├── grafana-datasource.yml    - Prometheus + Loki datasources
 ├── grafana-dashboard-gitlab.json - GitLab metrics dashboard
 ├── grafana-dashboard-system.json - Pi system metrics dashboard
+├── loki.yml                  - Loki log aggregation config
+├── alloy.river               - Alloy log collection config
+├── unbound.conf              - Local DNS resolver config
 ├── fail2ban configs          - Brute force protection
 ├── runner-config.toml.template - GitLab Runner settings
-└── Cloud-init templates      - Initial OS setup (Path B)
+├── Cloud-init templates      - Initial OS setup (Path B)
+└── terraform/                - Infrastructure as Code
+    ├── main.tf               - Root Terraform config
+    ├── variables.tf          - Input variables
+    ├── outputs.tf            - Output values
+    └── modules/              - Cloudflare + AWS modules
 
 DOCUMENTATION:
 ├── README.md                 - Main documentation + quick reference
@@ -73,6 +91,8 @@ DOCUMENTATION:
 ├── SETUP-PATH-B.md           - Fresh flash guide
 ├── SETUP-CHECKLIST.md        - Step-by-step checklist
 ├── MANIFEST.txt              - This file
+├── FEATURES.md               - Feature overview
+├── IMPROVEMENTS.md           - Future enhancements
 └── examples/
     ├── README.md             - CI/CD template guide
     ├── gitlab-ci-docker.yml  - Docker build/push template

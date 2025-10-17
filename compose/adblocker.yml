@@ -1,0 +1,55 @@
+services:
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    restart: always
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "8080:80/tcp"
+    environment:
+      TZ: ${TIMEZONE:-UTC}
+      WEBPASSWORD: ${PIHOLE_WEB_PASSWORD:-admin}
+      DNS1: 127.0.0.1#5053
+      DNS2: 1.1.1.1
+      DNSSEC: "true"
+      DNS_BOGUS_PRIV: "true"
+      DNS_FQDN_REQUIRED: "false"
+      INTERFACE: eth0
+      VIRTUAL_HOST: pihole.${DOMAIN}
+      VIRTUAL_PORT: 80
+      LETSENCRYPT_EMAIL: ${EMAIL}
+      LETSENCRYPT_HOST: pihole.${DOMAIN}
+      PIHOLE_DNS_: "127.0.0.1#5053;1.1.1.1;1.0.0.1"
+      PIHOLE_DOMAIN: ${DOMAIN}
+      FTLCONF_LOCAL_IPV4: ${PI_IP:-192.168.1.100}
+    volumes:
+      - /srv/pihole/pihole:/etc/pihole
+      - /srv/pihole/dnsmasq.d:/etc/dnsmasq.d
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - adblocker-network
+      - gitlab-network
+    depends_on:
+      - unbound
+
+  unbound:
+    image: mvance/unbound:latest
+    container_name: unbound
+    restart: always
+    ports:
+      - "5053:53/tcp"
+      - "5053:53/udp"
+    volumes:
+      - /srv/unbound/unbound.conf:/etc/unbound/unbound.conf:ro
+      - /srv/unbound/root.hints:/etc/unbound/root.hints:ro
+    networks:
+      - adblocker-network
+    command: unbound -d -v
+
+networks:
+  adblocker-network:
+    driver: bridge
+  gitlab-network:
+    external: true

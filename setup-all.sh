@@ -13,7 +13,7 @@ trap 'echo ""; echo "${YELLOW}[!] Setup interrupted by user.${RESET}"; exit 1' I
 
 cat << "EOF"
 ╔════════════════════════════════════════════════════════════╗
-║     GitLab on Raspberry Pi 5 - Off we go!                  ║
+║     Pi 5 at Home             - Off we go!                  ║
 ╚════════════════════════════════════════════════════════════╝
 EOF
 

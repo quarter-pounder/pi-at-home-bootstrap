@@ -1,12 +1,92 @@
-# GitLab on Raspberry Pi 5 - Bootstrap
+# Pi at Home Bootstrap (with GitLab)
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Platform: Raspberry Pi 5](https://img.shields.io/badge/Platform-Raspberry%20Pi%205-orange)
 ![Ubuntu: 24.04 LTS](https://img.shields.io/badge/Ubuntu-24.04%20LTS-purple)
 ![Status: Stable](https://img.shields.io/badge/Status-Stable-brightgreen)
 
-My own setup for running GitLab CE with CI/CD runners, monitoring, and Cloudflare Tunnel on Raspberry Pi 5 with Ubuntu.
-Or, we have GitLab at home.
+My setup for Raspberry Pi 5 featuring GitLab, monitoring, ad blocking, disaster recovery, and cloud integration.
+
+Yes, we have GitLab at home.
+
+---
+
+## Directory Structure
+
+```
+pi-at-home-bootstrap/
+├── backup/                    # Backup and restore scripts
+│   ├── backup.sh
+│   ├── restore.sh
+│   └── setup-cron.sh
+├── cloudinit/                 # Cloud-init templates for fresh flash
+│   ├── meta-data.template
+│   ├── network-config.template
+│   └── user-data.template
+├── compose/                   # Docker Compose configurations
+│   ├── gitlab.yml
+│   ├── monitoring.yml
+│   └── adblocker.yml
+├── config/                    # Service configurations
+│   ├── docker-daemon.json
+│   ├── gitlab.rb.template
+│   ├── prometheus.yml
+│   ├── grafana-datasource.yml
+│   ├── loki.yml
+│   ├── alloy.river
+│   ├── unbound.conf
+│   └── fail2ban-*.conf
+├── examples/                  # CI/CD templates
+│   ├── gitlab-ci-docker.yml
+│   ├── gitlab-ci-nodejs.yml
+│   └── gitlab-ci-python.yml
+├── scripts/                   # Setup and maintenance scripts
+│   ├── 00-preflight-check.sh
+│   ├── 00-migrate-to-nvme.sh
+│   ├── 00-flash-nvme.sh
+│   ├── 01-post-boot-setup.sh
+│   ├── 02-security-hardening.sh
+│   ├── 03-install-docker.sh
+│   ├── 04-setup-gitlab.sh
+│   ├── 05-register-runner.sh
+│   ├── 06-setup-monitoring.sh
+│   ├── 07-setup-cloudflare-tunnel.sh
+│   ├── 08-health-check.sh
+│   ├── 09-update-services.sh
+│   ├── 10-benchmark.sh
+│   ├── 11-network-diag.sh
+│   ├── 12-scale-resources.sh
+│   ├── 13-setup-lfs.sh
+│   ├── 14-add-runner.sh
+│   ├── 15-import-dashboards.sh
+│   ├── 16-setup-terraform.sh
+│   ├── 17-setup-gitlab-mirror.sh
+│   ├── 18-setup-dr-automation.sh
+│   ├── 19-setup-complete-dr.sh
+│   ├── 20-setup-adblocker.sh
+│   ├── 99-cleanup.sh
+│   └── utils.sh
+├── terraform/                 # Infrastructure as Code
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   ├── terraform.tfvars.example
+│   └── modules/
+│       ├── cloudflare/
+│       └── aws/
+├── .env.example              # Environment variables template
+├── .gitignore
+├── install.sh                # One-liner installation
+├── setup-all.sh              # Automated setup
+├── setup-services.sh         # Service deployment
+├── README.md
+├── SETUP-CHECKLIST.md
+├── SETUP-PATH-A.md
+├── SETUP-PATH-B.md
+├── MANIFEST.txt
+├── FEATURES.md
+└── IMPROVEMENTS.md
+```
 
 ---
 
@@ -27,6 +107,7 @@ Or, we have GitLab at home.
 - GitLab Runner with Docker executor
 - Prometheus + Grafana + Loki + Alloy monitoring stack
 - Cloudflare Tunnel for secure remote access
+- Pi-hole ad blocker for network-wide protection
 - Automated backup to S3 or local storage
 - GitLab Cloud mirroring for disaster recovery
 - Terraform for cloud infrastructure management
@@ -43,10 +124,10 @@ Or, we have GitLab at home.
 | Starting fresh or flashing NVMe directly | **Path B** |
 | Rebuilding from backup | Path B, then restore |
 
-> **Note:** All scripts assume you’re running from the project root directory.
+> **Note:** All scripts assume you're running from the project root directory.
 > To be safe:
 > ```bash
-> cd ~/gitlab-bootstrap
+> cd ~/pi-at-home-bootstrap
 > ```
 
 ---
@@ -59,8 +140,8 @@ Choose a setup path:
 
 ```bash
 # 1. On Pi (running from SD card)
-git clone <this-repo> gitlab-bootstrap
-cd gitlab-bootstrap
+git clone <this-repo> pi-at-home-bootstrap
+cd pi-at-home-bootstrap
 cp env.example .env
 vim .env  # Fill in all variables
 
@@ -72,7 +153,7 @@ vim .env  # Fill in all variables
 # Poweroff, remove SD card, boot from NVMe
 
 # 3. After booting from NVMe
-cd gitlab-bootstrap
+cd pi-at-home-bootstrap
 ./setup-all.sh
 # Logout and login
 
@@ -83,11 +164,15 @@ cd gitlab-bootstrap
 # Get token from Cloudflare dashboard, add to .env
 ./scripts/07-setup-cloudflare-tunnel.sh
 
-# 6. Setup disaster recovery (optional)
+# 6. Setup ad blocker (optional)
+# Add Pi-hole password to .env
+./scripts/20-setup-adblocker.sh
+
+# 7. Setup disaster recovery (optional)
 # Get GitLab Cloud token, add to .env
 ./scripts/19-setup-complete-dr.sh
 
-# 7. Verify
+# 8. Verify
 ./scripts/08-health-check.sh
 ```
 
@@ -95,12 +180,12 @@ See [SETUP-PATH-A.md](SETUP-PATH-A.md) for detailed steps.
 
 ### Path B: Fresh Flash from laptop
 
-NVMe enclosure is required.
+**NVMe enclosure is required.**
 
 ```bash
 # 1. On laptop
-git clone <this-repo> gitlab-bootstrap
-cd gitlab-bootstrap
+git clone <this-repo> pi-at-home-bootstrap
+cd pi-at-home-bootstrap
 cp env.example .env
 vim .env  # Fill in all variables
 
@@ -112,7 +197,7 @@ vim .env  # Fill in all variables
 
 # 4. SSH into Pi
 ssh username@hostname
-cd gitlab-bootstrap
+cd pi-at-home-bootstrap
 ./setup-all.sh
 # Logout and login
 
@@ -120,10 +205,13 @@ cd gitlab-bootstrap
 ./setup-services.sh
 ./scripts/07-setup-cloudflare-tunnel.sh
 
-# 6. Setup disaster recovery (optional)
+# 6. Setup ad blocker (optional)
+./scripts/20-setup-adblocker.sh
+
+# 7. Setup disaster recovery (optional)
 ./scripts/19-setup-complete-dr.sh
 
-# 7. Verify
+# 8. Verify
 ./scripts/08-health-check.sh
 ```
 
@@ -139,10 +227,17 @@ HOSTNAME=gitlab
 DOMAIN=yourdomain.com
 USERNAME=spreadsheet-hater
 EMAIL=spreadsheet-hater@yourdomain.com
-SSH_KEY="ssh-ed25519 AAAAC3..."
+SSH_PUBLIC_KEY="ssh-ed25519 AAAAC3..."
 GITLAB_ROOT_PASSWORD=supersecret
 GRAFANA_ADMIN_PASSWORD=supersecret
+TIMEZONE=UTC
+CLOUDFLARE_ACCOUNT_ID=your_account_id
 CLOUDFLARE_TUNNEL_TOKEN=xxx
+
+# Optional features
+PIHOLE_WEB_PASSWORD=change_this_secure_password
+GITLAB_CLOUD_TOKEN=your_gitlab_cloud_token
+DR_WEBHOOK_URL=https://your-webhook-url.com
 
 # Optional backups
 AWS_ACCESS_KEY_ID=
@@ -152,11 +247,12 @@ BACKUP_BUCKET=
 
 ---
 
-## What You Get
+## What to Expect
 
 - GitLab CE at `https://gitlab.yourdomain.com`
 - Container Registry at `https://registry.yourdomain.com`
 - Grafana at `https://grafana.yourdomain.com`
+- Pi-hole at `https://pihole.yourdomain.com`
 - GitLab Runner for CI/CD
 - Daily automated backups (local + S3)
 - GitLab Cloud mirroring for disaster recovery
@@ -166,7 +262,49 @@ BACKUP_BUCKET=
 
 ---
 
+## Ad Blocker (Pi-hole)
+
+### Network-wide Ad Blocking
+- **Pi-hole**: Industry-standard DNS-based ad blocker
+- **Unbound**: Local recursive DNS resolver for privacy
+- **Network-wide**: All devices benefit automatically
+- **Web interface**: Easy management and monitoring
+- **Cloudflare integration**: Accessible via tunnel
+
+### Features
+- **DNS filtering**: Blocks ads at DNS level
+- **Privacy protection**: No external DNS queries
+- **Performance**: DNS caching improves speed
+- **Customization**: Whitelist/blacklist management
+- **Statistics**: Detailed query and blocking stats
+
+### Access Points
+- **Local**: `http://pi-ip:8080/admin`
+- **External**: `https://pihole.yourdomain.com/admin`
+- **Password**: Set in `.env` as `PIHOLE_WEB_PASSWORD`
+
+### Configuration
+```bash
+# Setup ad blocker
+./scripts/20-setup-adblocker.sh
+
+# Configure network
+/srv/pihole/configure-network.sh
+
+# Check status
+/srv/pihole/monitor.sh
+```
+
+### Network Setup
+1. **Router DNS**: Set to Pi IP address
+2. **Device DNS**: Configure individual devices
+3. **Test**: `nslookup doubleclick.net pi-ip`
+
+---
+
 ## Disaster Recovery
+
+The disaster recovery that nobody asks for... but why not?
 
 ### GitLab Cloud Mirroring
 - **Automatic mirroring**: All repositories synced to GitLab Cloud
@@ -249,11 +387,19 @@ DR_WEBHOOK_URL=https://your-webhook-url.com
 # View logs
 docker compose -f compose/gitlab.yml logs -f gitlab
 docker compose -f compose/monitoring.yml logs -f grafana
+docker compose -f compose/adblocker.yml logs -f pihole
 
 # Restart services
 cd compose
 docker compose -f gitlab.yml restart
 docker compose -f monitoring.yml restart
+docker compose -f adblocker.yml restart
+
+# Check Pi-hole status
+/srv/pihole/monitor.sh
+
+# Check DR status
+curl http://localhost:8080/status
 
 # Check temperature
 /usr/local/bin/check-temp
@@ -277,6 +423,7 @@ Keep things current:
 sudo apt update && sudo apt full-upgrade -y
 docker compose -f compose/gitlab.yml pull
 docker compose -f compose/monitoring.yml pull
+docker compose -f compose/adblocker.yml pull
 ./scripts/09-update-services.sh
 ```
 
@@ -341,15 +488,22 @@ Clean up old backups or logs.
 **Grafana Dashboards:**
 - GitLab metrics (requests, memory, CI/CD jobs)
 - System metrics (CPU, RAM, disk, temperature, network)
+- Log analysis (Loki integration)
 
 **Prometheus Alerts:**
 - System: High CPU/memory, low disk, high temperature
 - GitLab: Service down, high memory usage
 - Docker: Container failures
 
+**Log Aggregation:**
+- Loki: Centralized log storage
+- Alloy: Log collection agent
+- Integration with Grafana for log analysis
+
 Import dashboards: `./scripts/15-import-dashboards.sh`
 
 View alerts: http://localhost:9090/alerts
+View logs: http://localhost:3000/explore (Loki datasource)
 
 ---
 
@@ -376,47 +530,6 @@ Check the `examples/` directory for ready-to-use CI/CD templates:
 - `gitlab-ci-python.yml` - Python projects
 
 See [examples/README.md](examples/README.md) for details.
-
----
-
-## Directory Structure
-
-```
-gitlab-bootstrap/
-├── backup/              # Backup and restore scripts
-├── cloudinit/           # Cloud-init templates (Path B only)
-├── compose/             # Docker Compose files
-├── config/              # Configuration files
-│   ├── Dashboards (2) + Alerts + Service configs
-│   └── README.md
-├── examples/            # GitLab CI/CD example templates
-│   ├── Docker, Node.js, Python workflows
-│   └── README.md
-├── scripts/             # Installation and setup scripts
-│   ├── 00-preflight-check.sh      # Validate prerequisites
-│   ├── 00-migrate-to-nvme.sh      # SD to NVMe migration
-│   ├── 00-flash-nvme.sh           # Flash from workstation
-│   ├── 01-08-*.sh                 # Setup and maintenance
-│   ├── 09-update-services.sh      # Update management
-│   ├── 10-benchmark.sh            # Performance testing
-│   ├── 11-network-diag.sh         # Network diagnostics
-│   ├── 12-scale-resources.sh      # Resource scaling
-│   ├── 13-setup-lfs.sh            # Git LFS setup
-│   ├── 14-add-runner.sh           # Multi-runner setup
-│   ├── 15-import-dashboards.sh    # Dashboard import
-│   └── 99-cleanup.sh              # Complete removal
-├── env.example          # Environment variable template
-├── install.sh           # One-liner installer
-├── setup-all.sh         # Automated setup (part 1)
-├── setup-services.sh    # Automated setup (part 2)
-├── SETUP-PATH-A.md      # SD to NVMe guide
-├── SETUP-PATH-B.md      # Fresh flash guide
-├── SETUP-CHECKLIST.md   # Step-by-step checklist
-├── FEATURES.md          # Complete feature list
-├── IMPROVEMENTS.md      # Recent updates
-├── MANIFEST.txt         # Complete inventory
-└── README.md            # This file
-```
 
 ---
 

@@ -9,7 +9,7 @@ if [[ -z "$REPO_URL" ]]; then
   exit 1
 fi
 
-echo "GitLab Pi Bootstrap - Quick Install"
+echo "Pi at Home - Quick Install"
 echo ""
 
 if [[ ! -f /etc/os-release ]] || ! grep -q "ID=ubuntu" /etc/os-release; then

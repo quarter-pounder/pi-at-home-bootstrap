@@ -2,9 +2,24 @@
 
 ## Pre-Flash (on workstation)
 - [ ] Copy `env.example` to `.env`
-- [ ] Fill in all required variables in `.env`
+- [ ] Fill in all required variables in `.env`:
+  - [ ] `HOSTNAME` - Pi hostname
+  - [ ] `USERNAME` - Admin username
+  - [ ] `SSH_PUBLIC_KEY` - SSH public key
+  - [ ] `GITLAB_ROOT_PASSWORD` - GitLab root password
+  - [ ] `GRAFANA_ADMIN_PASSWORD` - Grafana admin password
+  - [ ] `DOMAIN` - Your domain name
+  - [ ] `EMAIL` - Your email address
+  - [ ] `TIMEZONE` - Your timezone
+  - [ ] `PIHOLE_WEB_PASSWORD` - Pi-hole web password
+  - [ ] `GITLAB_CLOUD_TOKEN` - GitLab Cloud token (optional)
+  - [ ] `DR_WEBHOOK_URL` - DR webhook URL (optional)
+  - [ ] `CLOUDFLARE_ACCOUNT_ID` - Cloudflare account ID
+  - [ ] `CLOUDFLARE_TUNNEL_TOKEN` - Cloudflare tunnel token
+  - [ ] `AWS_ACCESS_KEY_ID` - AWS access key (optional)
+  - [ ] `AWS_SECRET_ACCESS_KEY` - AWS secret key (optional)
+  - [ ] `BACKUP_BUCKET` - S3 backup bucket (optional)
 - [ ] Generate SSH key if needed: `ssh-keygen -t ed25519`
-- [ ] Add SSH public key to `.env`
 - [ ] Connect NVMe drive to workstation
 - [ ] Run `./scripts/00-flash-nvme.sh`
 - [ ] Install NVMe in Pi 5 and boot
@@ -39,6 +54,8 @@
 - [ ] Import GitLab dashboard (ID: 10131)
 - [ ] Import Node Exporter dashboard (ID: 1860)
 - [ ] Import cAdvisor dashboard (ID: 14282)
+- [ ] Verify Loki is collecting logs
+- [ ] Check Alloy log collection agent
 
 ## Cloudflare Tunnel
 - [ ] Login to Cloudflare dashboard
@@ -49,9 +66,27 @@
   - [ ] `gitlab.domain.com` → `http://localhost:80`
   - [ ] `registry.domain.com` → `http://localhost:5050`
   - [ ] `grafana.domain.com` → `http://localhost:3000`
+  - [ ] `pihole.domain.com` → `http://localhost:8080`
 - [ ] Run `./scripts/07-setup-cloudflare-tunnel.sh`
 - [ ] Verify tunnel is connected in Cloudflare dashboard
 - [ ] Test access to `https://gitlab.domain.com`
+
+## Ad Blocker (Optional)
+- [ ] Run `./scripts/20-setup-adblocker.sh`
+- [ ] Access Pi-hole at `http://<pi-ip>:8080/admin`
+- [ ] Login with password from `.env`
+- [ ] Configure network DNS to use Pi IP
+- [ ] Test ad blocking: `nslookup doubleclick.net <pi-ip>`
+- [ ] Verify external access at `https://pihole.domain.com`
+
+## Disaster Recovery (Optional)
+- [ ] Get GitLab Cloud token from https://gitlab.com/-/profile/personal_access_tokens
+- [ ] Add `GITLAB_CLOUD_TOKEN` to `.env`
+- [ ] Set up webhook URL for DR notifications
+- [ ] Add `DR_WEBHOOK_URL` to `.env`
+- [ ] Run `./scripts/19-setup-complete-dr.sh`
+- [ ] Verify mirror group created on GitLab Cloud
+- [ ] Test DR system: `/srv/gitlab-dr/test-dr.sh`
 
 ## Backup Configuration
 - [ ] Configure S3 credentials in `.env` (optional)
@@ -62,13 +97,15 @@
 
 ## Final Verification
 - [ ] Run `./scripts/08-health-check.sh`
-- [ ] All services show as healthy
+- [ ] All services show as healthy (GitLab, Prometheus, Grafana, Loki, Alloy, Pi-hole)
 - [ ] Create test project in GitLab
 - [ ] Add `.gitlab-ci.yml` and verify runner picks up job
 - [ ] Verify container registry works
 - [ ] Check Grafana dashboards showing metrics
 - [ ] Test external access via Cloudflare Tunnel
 - [ ] Verify backups are running (check crontab)
+- [ ] Test ad blocking functionality
+- [ ] Verify DR system status (if enabled)
 
 ## Optional Enhancements
 - [ ] Configure SMTP for email notifications
@@ -78,10 +115,17 @@
 - [ ] Configure alert rules in Prometheus
 - [ ] Setup external monitoring/uptime check
 - [ ] Document any custom CI/CD templates
+- [ ] Configure custom Pi-hole blocklists
+- [ ] Setup Terraform cloud infrastructure
+- [ ] Configure additional GitLab runners
 
 ## Notes
 - Default GitLab SSH port: 2222
 - Temperature monitoring runs every 5 minutes
 - Backups run daily at 2 AM
+- Pi-hole DNS port: 53
+- DR health checks run every 2 minutes
 - Keep `.env` file secure (never commit to git)
+- All services accessible via Cloudflare Tunnel
+- Pi-hole provides network-wide ad blocking
 
