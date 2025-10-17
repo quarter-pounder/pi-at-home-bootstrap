@@ -66,6 +66,17 @@ sudo mkdir -p /mnt/nvme-root
 sudo mount ${BOOT_PART} /mnt/nvme-boot
 sudo mount ${ROOT_PART} /mnt/nvme-root
 
+# Verify mounts
+if ! mountpoint -q /mnt/nvme-boot; then
+  echo "[!] Error: Boot partition not mounted properly"
+  exit 1
+fi
+if ! mountpoint -q /mnt/nvme-root; then
+  echo "[!] Error: Root partition not mounted properly"
+  exit 1
+fi
+echo "[i] Partitions mounted successfully"
+
 echo "[i] Copying boot partition..."
 sudo rsync -axHAWX --info=progress2 /boot/firmware/ /mnt/nvme-boot/
 
@@ -93,7 +104,15 @@ PARTUUID=${BOOT_UUID}  /boot/firmware  vfat   defaults          0 2
 EOF
 
 echo "[i] Updating boot configuration..."
-sudo sed -i "s/root=[^ ]*/root=PARTUUID=${ROOT_UUID}/" /mnt/nvme-boot/cmdline.txt
+if [[ -f /mnt/nvme-boot/cmdline.txt ]]; then
+  sudo sed -i "s/root=[^ ]*/root=PARTUUID=${ROOT_UUID}/" /mnt/nvme-boot/cmdline.txt
+  echo "[i] Updated cmdline.txt with new root UUID"
+else
+  echo "[!] Warning: cmdline.txt not found in boot partition"
+  echo "[i] Checking boot partition contents..."
+  ls -la /mnt/nvme-boot/
+  echo "[i] This might be normal for some Ubuntu configurations"
+fi
 
 echo "[i] Syncing filesystems..."
 sync
