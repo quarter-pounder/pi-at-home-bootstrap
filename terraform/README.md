@@ -164,7 +164,7 @@ terraform destroy
 
 ## Security Notes
 
-- S3 bucket is encrypted and private
+- Storage (s3 bucket) is encrypted and private
 - IAM user has minimal required permissions
 - Cloudflare tunnel provides secure access
 - All sensitive outputs are marked as sensitive
