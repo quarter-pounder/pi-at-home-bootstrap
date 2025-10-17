@@ -288,7 +288,7 @@ enable_uart=1
 gpu_mem=16
 
 # Boot order: try NVMe first, then SD card
-boot_order=0xf41
+boot_order=0xf416
 EOF
 
 # Create usercfg.txt for additional Pi 5 settings
