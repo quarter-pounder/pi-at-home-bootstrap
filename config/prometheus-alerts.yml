@@ -107,3 +107,56 @@ groups:
           summary: "Container {{ $labels.name }} using high memory"
           description: "Memory usage: {{ $value | humanize }}B"
 
+  - name: dr_alerts
+    interval: 30s
+    rules:
+      - alert: PiSystemDown
+        expr: up{job="node-exporter"} == 0
+        for: 3m
+        labels:
+          severity: critical
+          action: "trigger_dr"
+        annotations:
+          summary: "Pi system is down - triggering DR"
+          description: "Node exporter has been down for more than 3 minutes. Activating disaster recovery."
+
+      - alert: GitLabCriticalDown
+        expr: up{job="gitlab"} == 0
+        for: 3m
+        labels:
+          severity: critical
+          action: "trigger_dr"
+        annotations:
+          summary: "GitLab critical failure - triggering DR"
+          description: "GitLab has been down for more than 3 minutes. Activating disaster recovery."
+
+      - alert: MultipleServicesDown
+        expr: (up{job="gitlab"} == 0) + (up{job="prometheus"} == 0) + (up{job="grafana"} == 0) >= 2
+        for: 2m
+        labels:
+          severity: critical
+          action: "trigger_dr"
+        annotations:
+          summary: "Multiple services down - triggering DR"
+          description: "Multiple critical services are down. Activating disaster recovery."
+
+      - alert: PiRecovered
+        expr: up{job="node-exporter"} == 1 and up{job="gitlab"} == 1
+        for: 1m
+        labels:
+          severity: info
+          action: "recover_dr"
+        annotations:
+          summary: "Pi system recovered - deactivating DR"
+          description: "Pi system is back online. Deactivating disaster recovery and syncing data."
+
+      - alert: HeartbeatMissing
+        expr: time() - node_boot_time_seconds > 300 and (up{job="node-exporter"} == 0 or absent(up{job="node-exporter"}))
+        for: 1m
+        labels:
+          severity: critical
+          action: "trigger_dr"
+        annotations:
+          summary: "Pi heartbeat missing - triggering DR"
+          description: "No heartbeat from Pi system for more than 5 minutes. Activating disaster recovery."
+

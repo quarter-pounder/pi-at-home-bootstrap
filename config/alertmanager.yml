@@ -1,0 +1,48 @@
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@gitlab.local'
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'webhook'
+  routes:
+    - match:
+        action: trigger_dr
+      receiver: 'dr-webhook'
+      group_wait: 5s
+      group_interval: 5s
+      repeat_interval: 30m
+    - match:
+        action: recover_dr
+      receiver: 'dr-webhook'
+      group_wait: 5s
+      group_interval: 5s
+      repeat_interval: 5m
+
+receivers:
+  - name: 'webhook'
+    webhook_configs:
+      - url: 'http://localhost:9093/webhook'
+        send_resolved: true
+        http_config:
+          bearer_token: 'your-webhook-token'
+
+  - name: 'dr-webhook'
+    webhook_configs:
+      - url: 'http://localhost:9093/webhook'
+        send_resolved: true
+        http_config:
+          bearer_token: 'your-webhook-token'
+
+  - name: 'email'
+    email_configs:
+      - to: 'admin@gitlab.local'
+        subject: 'GitLab Pi Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}

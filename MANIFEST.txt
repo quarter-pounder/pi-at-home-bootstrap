@@ -25,7 +25,7 @@ CORE SCRIPTS:
 ├── 15-import-dashboards.sh   - Import Grafana dashboards
 ├── 16-setup-terraform.sh     - Deploy cloud infrastructure
 ├── 17-setup-gitlab-mirror.sh - Setup GitLab Cloud mirroring
-├── 18-setup-dr-automation.sh - Setup disaster recovery automation
+├── 18-setup-dr-webhook.sh     - Setup webhook-based DR automation
 ├── 19-setup-complete-dr.sh   - Complete DR system setup
 ├── 20-setup-adblocker.sh     - Setup Pi-hole ad blocker
 └── 99-cleanup.sh             - Remove all services and data
@@ -40,6 +40,7 @@ SERVICES DEPLOYED:
 ├── GitLab Runner             - Docker executor for pipelines
 ├── Container Registry        - Docker image storage
 ├── Prometheus                - Metrics collection
+├── Alertmanager              - Alert routing and management
 ├── Grafana                   - Monitoring dashboards
 ├── Loki                      - Log aggregation
 ├── Alloy                     - Log collection agent
@@ -48,6 +49,7 @@ SERVICES DEPLOYED:
 ├── Pi-hole                   - DNS ad blocker
 ├── Unbound                   - Local DNS resolver
 ├── Cloudflare Tunnel         - Secure external access
+├── Webhook Receiver          - Prometheus alert processing
 └── DR Automation             - Disaster recovery system
 
 SECURITY:
@@ -69,7 +71,8 @@ CONFIGURATION:
 ├── docker-daemon.json        - Log rotation
 ├── gitlab.rb.template        - GitLab config (Pi optimized)
 ├── prometheus.yml            - Scrape configs + alert rules
-├── prometheus-alerts.yml     - System/GitLab/Docker alerts
+├── prometheus-alerts.yml     - System/GitLab/Docker/DR alerts
+├── alertmanager.yml          - Alert routing and management
 ├── grafana-datasource.yml    - Prometheus + Loki datasources
 ├── grafana-dashboard-gitlab.json - GitLab metrics dashboard
 ├── grafana-dashboard-system.json - Pi system metrics dashboard
@@ -108,10 +111,10 @@ RESOURCE OPTIMIZATION:
 - Temperature monitoring every 5 minutes
 
 READY TO USE:
-✓ All scripts executable
-✓ Both setup paths documented
-✓ Security hardened by default
-✓ Monitoring included
-✓ Backup/restore ready
-✓ Cloudflare Tunnel configured
-✓ GitLab CI/CD ready
+- All scripts executable
+- Both setup paths documented
+- Security hardened by default
+- Monitoring included
+- Backup/restore ready
+- Cloudflare Tunnel configured
+- GitLab CI/CD ready

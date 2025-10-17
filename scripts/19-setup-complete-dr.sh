@@ -33,10 +33,10 @@ echo ""
 echo "Step 1: Setting up GitLab Cloud mirroring..."
 ./scripts/17-setup-gitlab-mirror.sh
 
-# Step 2: Setup DR automation
+# Step 2: Setup DR automation (webhook-based)
 echo ""
 echo "Step 2: Setting up DR automation..."
-./scripts/18-setup-dr-automation.sh
+./scripts/18-setup-dr-webhook.sh
 
 # Step 3: Create DR documentation
 echo ""
@@ -64,8 +64,9 @@ This system provides automated disaster recovery for GitLab Pi using GitLab Clou
 - **Config**: \`/srv/gitlab-mirror/config.json\`
 
 ### DR Monitoring
-- **Health Check**: \`/srv/gitlab-dr/check-pi-status.sh\`
-- **Timer**: \`gitlab-dr-monitor.timer\`
+- **Prometheus Alerts**: Automatic DR triggers based on metrics
+- **Alertmanager**: Routes alerts to webhook receiver
+- **Webhook Receiver**: \`prometheus-webhook-receiver\`
 - **Status Server**: \`gitlab-dr-status\`
 - **Recovery**: \`/srv/gitlab-dr/recover-from-cloud.sh\`
 
@@ -78,8 +79,9 @@ curl http://localhost:8080/status
 
 ### Check DR Status
 \`\`\`bash
-sudo systemctl status gitlab-dr-monitor.timer
+sudo systemctl status prometheus-webhook-receiver
 sudo systemctl status gitlab-dr-status
+sudo systemctl status alertmanager
 \`\`\`
 
 ### View Logs
@@ -101,9 +103,10 @@ tail -f /srv/gitlab-dr/webhook.log
 /srv/gitlab-mirror/mirror-repos.sh
 \`\`\`
 
-### Force DR Check
+### Check Prometheus Alerts
 \`\`\`bash
-/srv/gitlab-dr/check-pi-status.sh
+curl http://localhost:9090/api/v1/alerts
+curl http://localhost:9093/api/v1/alerts
 \`\`\`
 
 ### Manual Recovery
@@ -225,7 +228,6 @@ echo "Next steps:"
 echo "  1. Test the system: /srv/gitlab-dr/test-dr.sh"
 echo "  2. Configure webhooks in GitLab Pi"
 echo "  3. Set up external monitoring"
-echo "  4. Review DR documentation: /srv/gitlab-dr/docs/DR_GUIDE.md"
 echo ""
 echo "Services created:"
 echo "  - GitLab Cloud mirroring"
@@ -233,4 +235,4 @@ echo "  - DR health monitoring"
 echo "  - Status server (port 8080)"
 echo "  - Webhook handlers"
 echo ""
-echo "Your GitLab Pi now has enterprise-grade disaster recovery!"
+echo "Disaster recovery is now set!"

@@ -51,6 +51,20 @@ step 6 "Setting up monitoring..."
 step 7 "Setting up backups..."
 ./backup/setup-cron.sh
 
+step 8 "Setting up ad blocker (optional)..."
+if [[ -n "${PIHOLE_WEB_PASSWORD:-}" ]]; then
+  ./scripts/20-setup-adblocker.sh
+else
+  echo "Skipping Pi-hole setup (PIHOLE_WEB_PASSWORD not set)"
+fi
+
+step 9 "Setting up disaster recovery (optional)..."
+if [[ -n "${GITLAB_CLOUD_TOKEN:-}" && -n "${DR_WEBHOOK_URL:-}" ]]; then
+  ./scripts/19-setup-complete-dr.sh
+else
+  echo "Skipping DR setup (GITLAB_CLOUD_TOKEN or DR_WEBHOOK_URL not set)"
+fi
+
 echo ""
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║                    Setup Complete!                         ║"
@@ -63,9 +77,13 @@ echo "  3. Test backup:             ${YELLOW}./backup/backup.sh${RESET}"
 echo ""
 echo "Access your services:"
 IP=$(hostname -I | awk '{print $1}')
-echo "  GitLab:     http://$IP"
-echo "  Grafana:    http://$IP:3000"
-echo "  Prometheus: http://$IP:9090"
+echo "  GitLab:       http://$IP"
+echo "  Grafana:      http://$IP:3000"
+echo "  Prometheus:   http://$IP:9090"
+echo "  Alertmanager: http://$IP:9093"
+if [[ -n "${PIHOLE_WEB_PASSWORD:-}" ]]; then
+  echo "  Pi-hole:      http://$IP:8080/admin"
+fi
 echo ""
 
 echo "${GREEN}✓ Setup completed successfully.${RESET}"

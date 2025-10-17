@@ -25,6 +25,7 @@ echo "[i] Stopping services..."
 cd compose
 docker compose -f gitlab.yml down -v 2>/dev/null || true
 docker compose -f monitoring.yml down -v 2>/dev/null || true
+docker compose -f adblocker.yml down -v 2>/dev/null || true
 cd ..
 
 echo "[i] Removing data directories..."
@@ -33,6 +34,12 @@ sudo rm -rf /srv/gitlab-runner
 sudo rm -rf /srv/registry
 sudo rm -rf /srv/prometheus
 sudo rm -rf /srv/grafana
+sudo rm -rf /srv/loki
+sudo rm -rf /srv/alertmanager
+sudo rm -rf /srv/pihole
+sudo rm -rf /srv/unbound
+sudo rm -rf /srv/gitlab-mirror
+sudo rm -rf /srv/gitlab-dr
 
 echo "[i] Removing backups..."
 if [[ -d "${BACKUP_DIR:-/srv/backups}/gitlab" ]]; then
@@ -52,6 +59,17 @@ echo "[i] Removing fail2ban GitLab rules..."
 sudo rm -f /etc/fail2ban/filter.d/gitlab.conf
 sudo rm -f /etc/fail2ban/jail.d/gitlab.conf
 sudo systemctl restart fail2ban 2>/dev/null || true
+
+echo "[i] Removing systemd services..."
+sudo systemctl stop prometheus-webhook-receiver 2>/dev/null || true
+sudo systemctl disable prometheus-webhook-receiver 2>/dev/null || true
+sudo systemctl stop gitlab-dr-status 2>/dev/null || true
+sudo systemctl disable gitlab-dr-status 2>/dev/null || true
+sudo systemctl stop gitlab-mirror-webhook 2>/dev/null || true
+sudo systemctl disable gitlab-mirror-webhook 2>/dev/null || true
+sudo rm -f /etc/systemd/system/prometheus-webhook-receiver.service
+sudo rm -f /etc/systemd/system/gitlab-dr-status.service
+sudo rm -f /etc/systemd/system/gitlab-mirror-webhook.service
 
 echo "[i] Removing cron jobs..."
 crontab -l 2>/dev/null | grep -v gitlab-backup | crontab - 2>/dev/null || true

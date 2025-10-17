@@ -51,9 +51,11 @@ for endpoint in \
   "GitLab:http://localhost:80/-/health" \
   "Registry:http://localhost:5050/" \
   "Prometheus:http://localhost:${PROM_PORT}/-/healthy" \
+  "Alertmanager:http://localhost:9093/-/healthy" \
   "Grafana:http://localhost:${GRAFANA_PORT}/api/health" \
   "Loki:http://localhost:3100/ready" \
-  "Alloy:http://localhost:12345/-/healthy"; do
+  "Alloy:http://localhost:12345/-/healthy" \
+  "Pi-hole:http://localhost:8080/admin/api.php?summary"; do
   name=$(echo "$endpoint" | cut -d: -f1)
   url=$(echo "$endpoint" | cut -d: -f2-)
   if timeout 5 curl -sf "$url" >/dev/null 2>&1; then
@@ -73,6 +75,32 @@ if systemctl list-unit-files | grep -q '^cloudflared.service'; then
   fi
 else
   echo "${YELLOW}Cloudflared not installed${RESET}"
+fi
+
+echo ""
+echo "[i] DR System:"
+if systemctl list-unit-files | grep -q '^prometheus-webhook-receiver.service'; then
+  if sudo systemctl is-active prometheus-webhook-receiver >/dev/null 2>&1; then
+    echo "${GREEN}DR webhook receiver is running${RESET}"
+  else
+    echo "${RED}DR webhook receiver is not running${RESET}"
+  fi
+else
+  echo "${YELLOW}DR system not installed${RESET}"
+fi
+
+echo ""
+echo "[i] Recent Backup:"
+if [[ -d "${BACKUP_DIR:-/srv/backups}/gitlab" ]]; then
+  latest_backup=$(find "${BACKUP_DIR:-/srv/backups}/gitlab" -name "gitlab-backup-*.tar" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2-)
+  if [[ -n "$latest_backup" ]]; then
+    backup_date=$(stat -c %y "$latest_backup" 2>/dev/null | cut -d' ' -f1)
+    echo "Latest backup: $backup_date"
+  else
+    echo "${YELLOW}No backups found${RESET}"
+  fi
+else
+  echo "${YELLOW}Backup directory not found${RESET}"
 fi
 
 echo ""

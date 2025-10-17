@@ -43,6 +43,18 @@ update_monitoring() {
   cd ..
 }
 
+update_adblocker() {
+  echo ""
+  echo "${YELLOW}Updating ad blocker...${RESET}"
+  cd compose
+
+  docker compose -f adblocker.yml pull
+  docker compose -f adblocker.yml up -d
+
+  echo "${GREEN}✓ Ad blocker updated${RESET}"
+  cd ..
+}
+
 update_system() {
   echo ""
   echo "${YELLOW}Updating system packages...${RESET}"
@@ -55,10 +67,11 @@ update_system() {
 echo "Update options:"
 echo "  1. GitLab only"
 echo "  2. Monitoring only"
-echo "  3. System packages only"
-echo "  4. Everything (recommended)"
+echo "  3. Ad blocker only"
+echo "  4. System packages only"
+echo "  5. Everything (recommended)"
 echo ""
-read -p "Choose [1-4]: " -r choice
+read -p "Choose [1-5]: " -r choice
 
 case $choice in
   1)
@@ -69,12 +82,16 @@ case $choice in
     update_monitoring
     ;;
   3)
-    update_system
+    update_adblocker
     ;;
   4)
+    update_system
+    ;;
+  5)
     backup_first
     update_gitlab
     update_monitoring
+    update_adblocker
     update_system
     ;;
   *)

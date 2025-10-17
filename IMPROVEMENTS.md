@@ -175,26 +175,26 @@ vim ~/my-project/.gitlab-ci.yml
 ## Complete Feature List
 
 Now includes:
-✓ Pre-flight validation
-✓ SD to NVMe migration
-✓ Fresh flash from workstation
-✓ Security hardening
-✓ GitLab + Registry + Runners
-✓ Prometheus + Grafana + Loki + Alloy
-✓ Pi-hole ad blocker + Unbound DNS
-✓ GitLab Cloud mirroring + DR automation
-✓ Terraform infrastructure as code
-✓ Automated backups (local + S3)
-✓ Cloudflare Tunnel
-✓ Health monitoring
-✓ Update management
-✓ Performance benchmarking
-✓ Network diagnostics
-✓ Resource scaling
-✓ Git LFS support
-✓ Multi-runner setup
-✓ Pre-configured dashboards
-✓ Alert rules
-✓ Complete cleanup
-✓ CI/CD templates
-✓ One-liner installer
+- Pre-flight validation
+- SD to NVMe migration
+- Fresh flash from workstation
+- Security hardening
+- GitLab + Registry + Runners
+- Prometheus + Grafana + Loki + Alloy
+- Pi-hole ad blocker + Unbound DNS
+- GitLab Cloud mirroring + DR automation
+- Terraform infrastructure as code
+- Automated backups (local + S3)
+- Cloudflare Tunnel
+- Health monitoring
+- Update management
+- Performance benchmarking
+- Network diagnostics
+- Resource scaling
+- Git LFS support
+- Multi-runner setup
+- Pre-configured dashboards
+- Alert rules
+- Complete cleanup
+- CI/CD templates
+- One-liner installer
