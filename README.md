@@ -3,7 +3,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Platform: Raspberry Pi 5](https://img.shields.io/badge/Platform-Raspberry%20Pi%205-orange)
 ![Ubuntu: 24.04 LTS](https://img.shields.io/badge/Ubuntu-24.04%20LTS-purple)
-![Status: Stable](https://img.shields.io/badge/Status-Stable-brightgreen)
+![Status: Testing](https://img.shields.io/badge/Status-Testing-yellow)
 
 My setup for Raspberry Pi 5 featuring GitLab, monitoring, ad blocking, disaster recovery, and cloud integration.
 
