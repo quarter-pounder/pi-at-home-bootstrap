@@ -58,6 +58,18 @@ fi
 if (( START_STEP <= 3 )); then
   step 3 "Installing Docker..."
   ./scripts/03-install-docker.sh
+
+  # Check if running from SD card and offer optimization
+  if [[ -b /dev/mmcblk0 ]] && [[ ! -b /dev/nvme0n1 ]]; then
+    echo ""
+    echo "${YELLOW}[!] Detected SD card usage (no NVMe found)${RESET}"
+    echo "[i] SD cards have limited write cycles. Consider optimizing for longevity."
+    read -p "Run SD card optimization? (yes/no): " -r
+    if [[ $REPLY =~ ^yes$ ]]; then
+      ./scripts/00-optimize-sd-card.sh
+    fi
+  fi
+
   echo ""
   echo "${YELLOW}[i] Docker installed.${RESET} Log out/in so your user joins the docker group."
   echo "${YELLOW}After re-login, run: ${RESET} ./setup-services.sh"

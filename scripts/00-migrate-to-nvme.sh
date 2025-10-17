@@ -39,9 +39,41 @@ sudo apt install -y rsync parted
 echo "[i] Unmounting NVMe if mounted..."
 sudo umount ${NVME_DEVICE}* 2>/dev/null || true
 
+echo "[i] Checking NVMe drive status..."
+if ! lsblk ${NVME_DEVICE} >/dev/null 2>&1; then
+  echo "[!] Error: NVMe drive not accessible at ${NVME_DEVICE}"
+  echo "[i] Available NVMe devices:"
+  lsblk | grep nvme || echo "No NVMe devices found"
+  exit 1
+fi
+
+echo "[i] Checking drive health before wipe..."
+sudo nvme smart-log ${NVME_DEVICE} 2>/dev/null || echo "[!] Warning: Could not read SMART data"
+
 echo "[i] Wiping NVMe device..."
-sudo wipefs -a ${NVME_DEVICE}
-sudo blkdiscard ${NVME_DEVICE} 2>/dev/null || true
+if ! sudo wipefs -a ${NVME_DEVICE}; then
+  echo "[!] Error: Failed to wipe NVMe device"
+  echo "[i] This indicates a serious drive issue. Possible causes:"
+  echo "    - Drive is failing or corrupted"
+  echo "    - Drive is not compatible with Pi 5"
+  echo "    - Power supply is inadequate (Pi 5 needs 5V/3A minimum)"
+  echo "    - Drive is not properly seated in M.2 slot"
+  echo ""
+  echo "[i] Trying alternative wipe method..."
+  if ! sudo dd if=/dev/zero of=${NVME_DEVICE} bs=1M count=100 2>/dev/null; then
+    echo "[!] Error: Alternative wipe method also failed"
+    echo "[i] This drive appears to be unusable. Please check:"
+    echo "    1. Drive is properly seated in M.2 slot"
+    echo "    2. Power supply provides adequate current (5V/3A minimum)"
+    echo "    3. Try a different NVMe drive"
+    echo "    4. Check if drive works in another system"
+    exit 1
+  fi
+  echo "[i] Alternative wipe method succeeded"
+fi
+
+echo "[i] Discarding unused blocks..."
+sudo blkdiscard ${NVME_DEVICE} 2>/dev/null || echo "[!] Warning: blkdiscard failed (this is often normal)"
 
 echo "[i] Creating partition table..."
 echo "[i] Checking NVMe drive health..."
@@ -54,6 +86,12 @@ if ! sudo parted -s ${NVME_DEVICE} mklabel gpt; then
   echo "    - NVMe drive is properly seated"
   echo "    - Power supply is adequate (Pi 5 needs 5V/3A minimum)"
   echo "    - Drive is compatible with Pi 5"
+  echo ""
+  echo "[i] Alternative: You can continue with SD card (SanDisk Extreme Pro)"
+  echo "    - SD cards have limited write cycles"
+  echo "    - Consider using tmpfs for logs and temp files"
+  echo "    - Enable swap on SD card for better performance"
+  echo "    - Plan to migrate to NVMe when possible"
   exit 1
 fi
 

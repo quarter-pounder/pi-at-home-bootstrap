@@ -8,6 +8,7 @@ CORE SCRIPTS:
 ├── 00-preflight-check.sh     - Validate prerequisites before setup
 ├── 00-migrate-to-nvme.sh     - Migrate SD card to NVMe (Path A)
 ├── 00-flash-nvme.sh          - Flash NVMe from workstation (Path B)
+├── 00-optimize-sd-card.sh    - Optimize system for SD card longevity
 ├── 01-post-boot-setup.sh     - System packages, temp monitoring
 ├── 02-security-hardening.sh  - SSH, fail2ban, firewall, auto-updates
 ├── 03-install-docker.sh      - Docker + Compose
