@@ -82,6 +82,11 @@ echo "[i] DR System:"
 if systemctl list-unit-files | grep -q '^prometheus-webhook-receiver.service'; then
   if sudo systemctl is-active prometheus-webhook-receiver >/dev/null 2>&1; then
     echo "${GREEN}DR webhook receiver is running${RESET}"
+    if curl -s http://localhost:8081/status >/dev/null 2>&1; then
+      echo "${GREEN}DR status endpoint is responding${RESET}"
+    else
+      echo "${YELLOW}DR status endpoint is not responding${RESET}"
+    fi
   else
     echo "${RED}DR webhook receiver is not running${RESET}"
   fi

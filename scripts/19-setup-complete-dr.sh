@@ -74,7 +74,7 @@ This system provides automated disaster recovery for GitLab Pi using GitLab Clou
 
 ### Check Pi Status
 \`\`\`bash
-curl http://localhost:8080/status
+curl http://localhost:8081/status
 \`\`\`
 
 ### Check DR Status
@@ -117,12 +117,12 @@ curl http://localhost:9093/api/v1/alerts
 ## Webhook Configuration
 
 ### GitLab Pi Webhook
-- **URL**: \`http://$(hostname -I | awk '{print $1}'):8080/webhook\`
+- **URL**: \`http://$(hostname -I | awk '{print $1}'):8081/webhook\`
 - **Events**: Push events, Merge request events, Project events
 - **Secret**: (optional)
 
 ### External Monitoring
-- **Status URL**: \`http://$(hostname -I | awk '{print $1}'):8080/status\`
+- **Status URL**: \`http://$(hostname -I | awk '{print $1}'):8081/status\`
 - **Webhook URL**: \`${DR_WEBHOOK_URL}\`
 
 ## Troubleshooting

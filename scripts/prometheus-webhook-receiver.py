@@ -160,7 +160,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
 
 def main():
     """Start the webhook server"""
-    port = int(os.environ.get('WEBHOOK_PORT', '9093'))
+    port = int(os.environ.get('WEBHOOK_PORT', '8081'))
 
     server = HTTPServer(('0.0.0.0', port), WebhookHandler)
     logger.info(f"Starting Prometheus webhook receiver on port {port}")

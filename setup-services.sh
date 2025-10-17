@@ -84,6 +84,9 @@ echo "  Alertmanager: http://$IP:9093"
 if [[ -n "${PIHOLE_WEB_PASSWORD:-}" ]]; then
   echo "  Pi-hole:      http://$IP:8080/admin"
 fi
+if [[ -n "${GITLAB_CLOUD_TOKEN:-}" && -n "${DR_WEBHOOK_URL:-}" ]]; then
+  echo "  DR Status:    http://$IP:8081/status"
+fi
 echo ""
 
 echo "${GREEN}✓ Setup completed successfully.${RESET}"

@@ -316,13 +316,13 @@ The disaster recovery that nobody asks for... but why not?
 ### DR Components
 - **Mirror Group**: `https://gitlab.com/groups/yourhostname-mirror`
 - **Health Monitor**: Checks Pi services every 2 minutes
-- **Status Server**: `http://pi-ip:8080/status`
-- **Webhook Handler**: `http://pi-ip:8080/webhook`
+- **Status Server**: `http://pi-ip:8081/status`
+- **Webhook Handler**: `http://pi-ip:8081/webhook`
 
 ### DR Commands
 ```bash
 # Check DR status
-curl http://localhost:8080/status
+curl http://localhost:8081/status
 
 # Test DR system
 /srv/gitlab-dr/test-dr.sh
@@ -399,7 +399,7 @@ docker compose -f adblocker.yml restart
 /srv/pihole/monitor.sh
 
 # Check DR status
-curl http://localhost:8080/status
+curl http://localhost:8081/status
 
 # Check temperature
 /usr/local/bin/check-temp
