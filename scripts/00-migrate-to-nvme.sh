@@ -104,6 +104,8 @@ PARTUUID=${BOOT_UUID}  /boot/firmware  vfat   defaults          0 2
 EOF
 
 echo "[i] Updating boot configuration..."
+
+# Update cmdline.txt if it exists
 if [[ -f /mnt/nvme-boot/cmdline.txt ]]; then
   sudo sed -i "s/root=[^ ]*/root=PARTUUID=${ROOT_UUID}/" /mnt/nvme-boot/cmdline.txt
   echo "[i] Updated cmdline.txt with new root UUID"
@@ -112,6 +114,49 @@ else
   echo "[i] Checking boot partition contents..."
   ls -la /mnt/nvme-boot/
   echo "[i] This might be normal for some Ubuntu configurations"
+fi
+
+# Create or update config.txt for Pi 5 NVMe boot
+echo "[i] Configuring Pi 5 for NVMe boot..."
+sudo tee /mnt/nvme-boot/config.txt >/dev/null <<EOF
+# Pi 5 NVMe boot configuration
+[all]
+# Enable NVMe boot
+program_usb_boot_mode=1
+program_usb_boot_timeout=1
+
+# Disable Bluetooth to free up GPIO
+dtoverlay=disable-bt
+
+# Enable UART
+enable_uart=1
+
+# GPU memory split
+gpu_mem=16
+
+# Boot order: try NVMe first, then SD card
+boot_order=0xf41
+EOF
+
+# Create usercfg.txt for additional Pi 5 settings
+sudo tee /mnt/nvme-boot/usercfg.txt >/dev/null <<EOF
+# Pi 5 user configuration
+program_usb_boot_mode=1
+program_usb_boot_timeout=1
+EOF
+
+echo "[i] Pi 5 NVMe boot configuration created"
+
+# Ensure Pi 5 bootloader is up to date
+echo "[i] Updating Pi 5 bootloader..."
+if [[ -f /mnt/nvme-boot/firmware/start4.elf ]]; then
+  echo "[i] Pi 4 bootloader detected, copying Pi 5 bootloader..."
+  # Copy Pi 5 bootloader files if available
+  if [[ -f /boot/firmware/firmware/start4.elf ]]; then
+    sudo cp /boot/firmware/firmware/* /mnt/nvme-boot/firmware/ 2>/dev/null || true
+  fi
+else
+  echo "[i] Bootloader files will be copied from current system"
 fi
 
 echo "[i] Syncing filesystems..."
