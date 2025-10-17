@@ -50,6 +50,35 @@ fi
 echo "[i] Checking drive health before wipe..."
 sudo nvme smart-log ${NVME_DEVICE} 2>/dev/null || echo "[!] Warning: Could not read SMART data"
 
+echo "[i] Running additional diagnostics..."
+echo "[i] Drive information:"
+DRIVE_INFO=$(sudo nvme id-ctrl ${NVME_DEVICE} 2>/dev/null || echo "Cannot read controller info")
+echo "$DRIVE_INFO"
+
+echo "[i] Checking power supply status:"
+vcgencmd get_throttled 2>/dev/null || echo "[!] Cannot check power status"
+
+echo "[i] Drive temperature:"
+sudo nvme get-feature -f 0x02 -n 1 ${NVME_DEVICE} 2>/dev/null || echo "[!] Cannot read temperature"
+
+echo "[i] Testing basic read/write capability..."
+if ! sudo dd if=${NVME_DEVICE} of=/dev/null bs=1M count=1 2>/dev/null; then
+  echo "[!] Error: Cannot read from drive - this indicates a serious hardware issue"
+  echo "[i] Possible causes:"
+  echo "    - Drive is not properly seated in M.2 slot"
+  echo "    - Drive is defective or damaged"
+  echo "    - Power supply cannot provide enough current"
+  echo "    - M.2 slot is damaged"
+  echo ""
+  echo "[i] Troubleshooting steps:"
+  echo "    1. Power off and re-seat the NVMe drive"
+  echo "    2. Check for physical damage to the drive"
+  echo "    3. Try a different power supply (5V/3A minimum)"
+  echo "    4. Test the drive in another system if possible"
+  echo "    5. Check if the M.2 slot works with another drive"
+  exit 1
+fi
+
 echo "[i] Wiping NVMe device..."
 if ! sudo wipefs -a ${NVME_DEVICE}; then
   echo "[!] Error: Failed to wipe NVMe device"
