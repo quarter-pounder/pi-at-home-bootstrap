@@ -61,7 +61,7 @@ pi-at-home-bootstrap/
 │   ├── 15-import-dashboards.sh
 │   ├── 16-setup-terraform.sh
 │   ├── 17-setup-gitlab-mirror.sh
-│   ├── 18-setup-dr-automation.sh
+│   ├── 18-setup-dr-webhook.sh
 │   ├── 19-setup-complete-dr.sh
 │   ├── 20-setup-adblocker.sh
 │   ├── 99-cleanup.sh
@@ -73,7 +73,8 @@ pi-at-home-bootstrap/
 │   ├── terraform.tfvars.example
 │   └── modules/
 │       ├── cloudflare/
-│       └── aws/
+│       ├── aws/
+│       └── gcp/
 ├── .env.example              # Environment variables template
 ├── .gitignore
 ├── install.sh                # One-liner installation
@@ -108,7 +109,7 @@ pi-at-home-bootstrap/
 - Prometheus + Grafana + Loki + Alloy monitoring stack
 - Cloudflare Tunnel for secure remote access
 - Pi-hole ad blocker for network-wide protection
-- Automated backup to S3 or local storage
+- Automated backup to GCP/AWS or local storage
 - GitLab Cloud mirroring for disaster recovery
 - Terraform for cloud infrastructure management
 - Security hardening (UFW, fail2ban, SSH)
@@ -239,10 +240,19 @@ PIHOLE_WEB_PASSWORD=change_this_secure_password
 GITLAB_CLOUD_TOKEN=your_gitlab_cloud_token
 DR_WEBHOOK_URL=https://your-webhook-url.com
 
-# Optional backups
+# Cloud Provider Selection
+USE_GCP=true  # Use GCP instead of AWS (better Always Free Tier)
+
+# GCP Configuration (if USE_GCP=true)
+GCP_PROJECT_ID=
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/gcp-key.json
+
+# AWS Configuration (if USE_GCP=false)
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
-BACKUP_BUCKET=
+
+# Cloud Backup (works with both GCP and AWS)
+BACKUP_BUCKET=  # Format: gs://bucket-name (GCP) or s3://bucket-name (AWS)
 ```
 
 ---
@@ -254,7 +264,7 @@ BACKUP_BUCKET=
 - Grafana at `https://grafana.yourdomain.com`
 - Pi-hole at `https://pihole.yourdomain.com`
 - GitLab Runner for CI/CD
-- Daily automated backups (local + S3)
+- Daily automated backups (local + GCP/AWS)
 - GitLab Cloud mirroring for disaster recovery
 - Prometheus monitoring
 - Full security hardening
@@ -309,13 +319,13 @@ The disaster recovery that nobody asks for... but why not?
 ### GitLab Cloud Mirroring
 - **Automatic mirroring**: All repositories synced to GitLab Cloud
 - **Real-time updates**: Webhook-triggered mirroring on push/merge
-- **Health monitoring**: Automated Pi health checks every 2 minutes
+- **Health monitoring**: Prometheus metrics-based health checks (webhook-triggered)
 - **Failover**: Automatic DR activation when Pi goes down
 - **Recovery**: Automated sync back to Pi when restored
 
 ### DR Components
 - **Mirror Group**: `https://gitlab.com/groups/yourhostname-mirror`
-- **Health Monitor**: Checks Pi services every 2 minutes
+- **Health Monitor**: Prometheus alerts trigger DR actions
 - **Status Server**: `http://pi-ip:8081/status`
 - **Webhook Handler**: `http://pi-ip:8081/webhook`
 

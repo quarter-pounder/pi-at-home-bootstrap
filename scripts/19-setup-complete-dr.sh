@@ -213,12 +213,12 @@ echo "Step 5: Updating main setup scripts..."
 
 # Update setup-services.sh to include DR setup
 if ! grep -q "17-setup-gitlab-mirror.sh" setup-services.sh; then
-  sed -i '/step 7 "Setting up backups..."/a\\nstep 8 "Setting up GitLab Cloud mirroring..."\n./scripts/17-setup-gitlab-mirror.sh\n\nstep 9 "Setting up DR automation..."\n./scripts/18-setup-dr-automation.sh' setup-services.sh
+  sed -i '/step 7 "Setting up backups..."/a\\nstep 8 "Setting up GitLab Cloud mirroring..."\n./scripts/17-setup-gitlab-mirror.sh\n\nstep 9 "Setting up DR automation..."\n./scripts/18-setup-dr-webhook.sh' setup-services.sh
 fi
 
 # Update health check script
 if ! grep -q "DR Status" scripts/08-health-check.sh; then
-  sed -i '/echo "\[i\] Recent Backup:"/a\\necho ""\necho "\[i\] DR Status:"\nif curl -s http://localhost:8080/status >/dev/null 2>&1; then\n  echo "${GREEN}✓ DR system is responding${RESET}"\nelse\n  echo "${YELLOW}WARNING${RESET} DR system is not responding"\nfi' scripts/08-health-check.sh
+  sed -i '/echo "\[i\] Recent Backup:"/a\\necho ""\necho "\[i\] DR Status:"\nif curl -s http://localhost:8081/status >/dev/null 2>&1; then\n  echo "${GREEN}✓ DR system is responding${RESET}"\nelse\n  echo "${YELLOW}WARNING${RESET} DR system is not responding"\nfi' scripts/08-health-check.sh
 fi
 
 echo ""

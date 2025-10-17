@@ -62,7 +62,7 @@
 ## Disaster Recovery
 
 - **GitLab Cloud Mirroring**: Automatic repository sync to GitLab Cloud
-- **Health Monitoring**: Pi status checks every 2 minutes
+- **Health Monitoring**: Prometheus metrics-based health checks
 - **Automated Failover**: DR activation when Pi goes down
 - **Recovery Automation**: Sync back when Pi recovers
 - **Webhook Integration**: External monitoring support
@@ -172,6 +172,6 @@
 
 - **16-setup-terraform.sh**: Deploy cloud infrastructure
 - **17-setup-gitlab-mirror.sh**: Setup GitLab Cloud mirroring
-- **18-setup-dr-automation.sh**: Setup disaster recovery automation
+- **18-setup-dr-webhook.sh**: Setup webhook-based disaster recovery automation
 - **19-setup-complete-dr.sh**: Complete DR system setup
 - **20-setup-adblocker.sh**: Setup Pi-hole ad blocker

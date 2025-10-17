@@ -23,7 +23,8 @@ CORE SCRIPTS:
 ├── 13-setup-lfs.sh           - Enable Git Large File Storage
 ├── 14-add-runner.sh          - Add additional CI/CD runners
 ├── 15-import-dashboards.sh   - Import Grafana dashboards
-├── 16-setup-terraform.sh     - Deploy cloud infrastructure
+├── 16-setup-terraform.sh     - Deploy AWS cloud infrastructure
+├── 16-setup-terraform-gcp.sh - Deploy GCP cloud infrastructure (recommended)
 ├── 17-setup-gitlab-mirror.sh - Setup GitLab Cloud mirroring
 ├── 18-setup-dr-webhook.sh     - Setup webhook-based DR automation
 ├── 19-setup-complete-dr.sh   - Complete DR system setup
@@ -50,6 +51,7 @@ SERVICES DEPLOYED:
 ├── Unbound                   - Local DNS resolver
 ├── Cloudflare Tunnel         - Secure external access
 ├── Webhook Receiver          - Prometheus alert processing
+├── GCP/AWS Storage           - Cloud backup storage
 └── DR Automation             - Disaster recovery system
 
 SECURITY:

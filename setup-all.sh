@@ -30,7 +30,7 @@ echo "    - System hardening and security"
 echo "    - Docker and dependencies"
 echo "    - GitLab CE with container registry"
 echo "    - Prometheus + Grafana monitoring"
-echo "    - Automated backups"
+echo "    - Automated backups (GCP/AWS)"
 echo ""
 read -p "Continue? (yes/no): " -r
 if [[ ! $REPLY =~ ^yes$ ]]; then

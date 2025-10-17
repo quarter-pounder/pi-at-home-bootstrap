@@ -11,6 +11,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.0"
@@ -25,6 +29,11 @@ provider "cloudflare" {
 
 provider "aws" {
   region = var.aws_region
+}
+
+provider "google" {
+  project = var.gcp_project_id
+  region  = var.gcp_region
 }
 
 # Random ID for unique resource naming
@@ -49,5 +58,18 @@ module "aws" {
   bucket_suffix        = random_id.bucket_suffix.hex
   domain               = var.domain
   alert_email          = var.alert_email
+  backup_retention_days = var.backup_retention_days
+}
+
+# GCP resources (Always Free Tier)
+module "gcp" {
+  source = "./modules/gcp"
+  count  = var.use_gcp ? 1 : 0
+
+  project_id            = var.gcp_project_id
+  region               = var.gcp_region
+  pi_domain            = var.domain
+  dr_webhook_url       = var.dr_webhook_url
+  notification_email   = var.alert_email
   backup_retention_days = var.backup_retention_days
 }

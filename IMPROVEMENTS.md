@@ -21,7 +21,7 @@
 ### Disaster Recovery System
 **Scripts**: 17-19
 - **GitLab Cloud Mirroring**: Automatic repository sync
-- **Health Monitoring**: Pi status checks every 2 minutes
+- **Health Monitoring**: Prometheus metrics-based health checks
 - **Automated Failover**: DR activation when Pi goes down
 - **Recovery Automation**: Sync back when Pi recovers
 - **Webhook Integration**: External monitoring support

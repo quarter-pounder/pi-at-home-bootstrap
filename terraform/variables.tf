@@ -31,6 +31,13 @@ variable "grafana_port" {
   default     = 3000
 }
 
+# Cloud Provider Selection
+variable "use_gcp" {
+  description = "Use GCP instead of AWS (GCP has better Always Free Tier)"
+  type        = bool
+  default     = true
+}
+
 # AWS Configuration
 variable "aws_region" {
   description = "AWS region for resources"
@@ -38,8 +45,27 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
+# GCP Configuration
+variable "gcp_project_id" {
+  description = "GCP Project ID"
+  type        = string
+  default     = ""
+}
+
+variable "gcp_region" {
+  description = "GCP region for resources"
+  type        = string
+  default     = "us-central1"
+}
+
 variable "alert_email" {
   description = "Email address for alerts and notifications"
+  type        = string
+  default     = ""
+}
+
+variable "dr_webhook_url" {
+  description = "External webhook URL for DR notifications"
   type        = string
   default     = ""
 }

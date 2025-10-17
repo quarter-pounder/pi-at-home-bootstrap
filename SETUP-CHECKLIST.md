@@ -16,9 +16,11 @@
   - [ ] `DR_WEBHOOK_URL` - DR webhook URL (optional)
   - [ ] `CLOUDFLARE_ACCOUNT_ID` - Cloudflare account ID
   - [ ] `CLOUDFLARE_TUNNEL_TOKEN` - Cloudflare tunnel token
-  - [ ] `AWS_ACCESS_KEY_ID` - AWS access key (optional)
-  - [ ] `AWS_SECRET_ACCESS_KEY` - AWS secret key (optional)
-  - [ ] `BACKUP_BUCKET` - S3 backup bucket (optional)
+  - [ ] `USE_GCP` - Use GCP instead of AWS (recommended)
+  - [ ] `GCP_PROJECT_ID` - GCP project ID (if USE_GCP=true)
+  - [ ] `AWS_ACCESS_KEY_ID` - AWS access key (if USE_GCP=false)
+  - [ ] `AWS_SECRET_ACCESS_KEY` - AWS secret key (if USE_GCP=false)
+  - [ ] `BACKUP_BUCKET` - Cloud backup bucket (gs:// or s3://)
 - [ ] Generate SSH key if needed: `ssh-keygen -t ed25519`
 - [ ] Connect NVMe drive to workstation
 - [ ] Run `./scripts/00-flash-nvme.sh`
@@ -88,12 +90,19 @@
 - [ ] Verify mirror group created on GitLab Cloud
 - [ ] Test DR system: `/srv/gitlab-dr/test-dr.sh`
 
+## Cloud Infrastructure (Optional)
+- [ ] Choose cloud provider: GCP (recommended) or AWS
+- [ ] For GCP: Run `./scripts/16-setup-terraform-gcp.sh`
+- [ ] For AWS: Run `./scripts/16-setup-terraform.sh`
+- [ ] Copy generated credentials to Pi
+- [ ] Update `.env` with cloud provider settings
+
 ## Backup Configuration
-- [ ] Configure S3 credentials in `.env` (optional)
+- [ ] Configure cloud credentials in `.env` (GCP recommended)
 - [ ] Run `./backup/setup-cron.sh` for automatic backups
 - [ ] Run `./backup/backup.sh` to test backup manually
 - [ ] Verify backup files in `${BACKUP_DIR}/gitlab/`
-- [ ] If using S3, verify files in bucket
+- [ ] If using cloud storage, verify files in bucket
 
 ## Final Verification
 - [ ] Run `./scripts/08-health-check.sh`
@@ -116,7 +125,7 @@
 - [ ] Setup external monitoring/uptime check
 - [ ] Document any custom CI/CD templates
 - [ ] Configure custom Pi-hole blocklists
-- [ ] Setup Terraform cloud infrastructure
+- [ ] Setup Terraform cloud infrastructure (GCP recommended)
 - [ ] Configure additional GitLab runners
 
 ## Notes
@@ -124,7 +133,7 @@
 - Temperature monitoring runs every 5 minutes
 - Backups run daily at 2 AM
 - Pi-hole DNS port: 53
-- DR health checks run every 2 minutes
+- DR health checks are webhook-triggered by Prometheus alerts
 - Keep `.env` file secure (never commit to git)
 - All services accessible via Cloudflare Tunnel
 - Pi-hole provides network-wide ad blocking

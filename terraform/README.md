@@ -2,24 +2,43 @@
 
 Terraform configurations for managing cloud resources used by the GitLab Pi setup.
 
+## Cloud Providers
+
+### GCP (Recommended - Better Always Free Tier)
+- **Cloud Storage**: 5GB Always Free
+- **Cloud Functions**: 2M invocations/month Always Free
+- **Cloud Scheduler**: 3 jobs Always Free
+- **Pub/Sub**: 10GB/month Always Free
+- **Cloud Logging**: 50GB/month Always Free
+- **Secret Manager**: 6 secrets Always Free
+- **Cloud Monitoring**: 150GB/month Always Free
+
+### AWS (Alternative)
+- **S3**: 5GB Always Free (first 12 months)
+- **SNS**: 1M requests/month Always Free
+- **CloudWatch**: 10 custom metrics Always Free
+
 ## Overview
 
 The Terraform configuration manages:
 - **Cloudflare**: DNS records and tunnel configuration
-- **AWS**: S3 backup bucket, IAM users, monitoring, and alerting
+- **GCP/AWS**: Cloud storage for backups, monitoring, and DR automation
 
 ## Prerequisites
 
 1. **Terraform**: Install [Terraform](https://terraform.io/downloads) >= 1.0
 2. **Cloudflare API Token**: Create a token with Zone:Read and Zone:Edit permissions
-3. **AWS Credentials**: Configure AWS CLI or environment variables
-
-Note that AWS doesn't offer an always-free tier, but you can find 100% S3 compatible alternatives.
+3. **GCP Project** (recommended): Create a GCP project and enable billing
+4. **AWS Credentials** (alternative): Configure AWS CLI or environment variables
 
 ## Quick Start
 
-1. **Copy the example variables file:**
+1. **Choose your cloud provider:**
    ```bash
+   # For GCP (recommended)
+   cp terraform-gcp.tfvars.example terraform.tfvars
+
+   # For AWS (alternative)
    cp terraform.tfvars.example terraform.tfvars
    ```
 
@@ -69,6 +88,16 @@ Note that AWS doesn't offer an always-free tier, but you can find 100% S3 compat
 - **DNS Records**: A records or CNAMEs for gitlab, registry, grafana subdomains
 - **Tunnel Configuration**: Routes traffic to your Pi services
 
+### GCP
+- **Cloud Storage**: Encrypted backup storage with lifecycle policies
+- **Service Account**: Dedicated account for backup operations
+- **Cloud Functions**: DR webhook processing
+- **Cloud Scheduler**: Health check automation
+- **Pub/Sub**: DR notifications
+- **Cloud Logging**: Centralized log aggregation
+- **Secret Manager**: Secure credential storage
+- **Cloud Monitoring**: Alerting and metrics
+
 ### AWS
 - **S3 Bucket**: Encrypted backup storage with lifecycle policies
 - **IAM User**: Dedicated user for backup operations
@@ -80,7 +109,14 @@ Note that AWS doesn't offer an always-free tier, but you can find 100% S3 compat
 After running `terraform apply`, you'll get outputs that can be added to your `.env` file:
 
 ```bash
-# Add these to your .env file
+# For GCP (recommended)
+CLOUDFLARE_TUNNEL_TOKEN="your-tunnel-token"
+BACKUP_BUCKET="gs://your-bucket-name"
+GCP_PROJECT_ID="your-project-id"
+GCP_SERVICE_ACCOUNT="your-service-account@project.iam.gserviceaccount.com"
+DR_WEBHOOK_URL="https://your-function-url"
+
+# For AWS (alternative)
 CLOUDFLARE_TUNNEL_TOKEN="your-tunnel-token"
 BACKUP_BUCKET="s3://your-bucket-name"
 AWS_ACCESS_KEY_ID="your-access-key"
