@@ -26,7 +26,7 @@ vim .env
 
 Fill in all variables. Most importantly:
 - `HOSTNAME`, `DOMAIN`, `USERNAME`, `EMAIL`
-- `SSH_KEY` (your public key)
+- `SSH_PUBLIC_KEY` (your public key)
 - `GITLAB_ROOT_PASSWORD`
 - `GRAFANA_ADMIN_PASSWORD`
 

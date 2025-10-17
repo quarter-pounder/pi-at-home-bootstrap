@@ -11,7 +11,7 @@ users:
     shell: /bin/bash
     sudo: ALL=(ALL) NOPASSWD:ALL
     ssh_authorized_keys:
-      - ${SSH_KEY}
+      - ${SSH_PUBLIC_KEY}
 
 ssh_pwauth: false
 disable_root: true
