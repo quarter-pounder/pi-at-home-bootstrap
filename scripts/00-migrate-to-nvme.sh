@@ -44,17 +44,84 @@ sudo wipefs -a ${NVME_DEVICE}
 sudo blkdiscard ${NVME_DEVICE} 2>/dev/null || true
 
 echo "[i] Creating partition table..."
-sudo parted -s ${NVME_DEVICE} mklabel gpt
-sudo parted -s ${NVME_DEVICE} mkpart primary fat32 0% 512MB
-sudo parted -s ${NVME_DEVICE} mkpart primary ext4 512MB 100%
-sudo parted -s ${NVME_DEVICE} set 1 boot on
+echo "[i] Checking NVMe drive health..."
+sudo nvme smart-log ${NVME_DEVICE} 2>/dev/null || echo "[!] Warning: Could not read NVMe SMART data"
+
+echo "[i] Creating GPT partition table..."
+if ! sudo parted -s ${NVME_DEVICE} mklabel gpt; then
+  echo "[!] Error: Failed to create GPT partition table"
+  echo "[i] This might indicate a drive issue. Check:"
+  echo "    - NVMe drive is properly seated"
+  echo "    - Power supply is adequate (Pi 5 needs 5V/3A minimum)"
+  echo "    - Drive is compatible with Pi 5"
+  exit 1
+fi
+
+echo "[i] Creating boot partition (512MB)..."
+if ! sudo parted -s ${NVME_DEVICE} mkpart primary fat32 0% 512MB; then
+  echo "[!] Error: Failed to create boot partition"
+  exit 1
+fi
+
+echo "[i] Creating root partition (remaining space)..."
+if ! sudo parted -s ${NVME_DEVICE} mkpart primary ext4 512MB 100%; then
+  echo "[!] Error: Failed to create root partition"
+  exit 1
+fi
+
+echo "[i] Setting boot flag..."
+if ! sudo parted -s ${NVME_DEVICE} set 1 boot on; then
+  echo "[!] Error: Failed to set boot flag"
+  exit 1
+fi
 
 sleep 2
+echo "[i] Refreshing partition table..."
 sudo partprobe ${NVME_DEVICE}
 sleep 2
 
+# Verify partitions were created
+echo "[i] Verifying partitions..."
+if ! lsblk ${NVME_DEVICE} | grep -q "p1\|p2"; then
+  echo "[!] Error: Partitions not detected after creation"
+  echo "[i] Trying alternative partitioning method..."
+
+  # Try using fdisk as fallback
+  echo "[i] Using fdisk as fallback..."
+  sudo fdisk ${NVME_DEVICE} <<EOF
+g
+n
+1
+
++512M
+t
+1
+c
+n
+2
+
+
+w
+EOF
+
+  sleep 2
+  sudo partprobe ${NVME_DEVICE}
+  sleep 2
+fi
+
 BOOT_PART="${NVME_DEVICE}p1"
 ROOT_PART="${NVME_DEVICE}p2"
+
+# Final verification
+if [[ ! -b ${BOOT_PART} ]] || [[ ! -b ${ROOT_PART} ]]; then
+  echo "[!] Error: Required partitions not found"
+  echo "[i] Available partitions:"
+  lsblk ${NVME_DEVICE}
+  exit 1
+fi
+
+echo "[i] Partitions created successfully:"
+lsblk ${NVME_DEVICE}
 
 echo "[i] Formatting partitions..."
 sudo mkfs.vfat -F 32 -n BOOT ${BOOT_PART}
