@@ -184,6 +184,25 @@ envsubst < cloudinit/user-data.template | sudo tee /mnt/boot/user-data >/dev/nul
 envsubst < cloudinit/network-config.template | sudo tee /mnt/boot/network-config >/dev/null
 envsubst < cloudinit/meta-data.template | sudo tee /mnt/boot/meta-data >/dev/null
 
+# Preserve .env file for post-boot setup
+if [[ -f ".env" ]]; then
+  echo "[i] Preserving .env file for post-boot setup..."
+  sudo cp .env /mnt/boot/.env
+
+  # Create a script to restore .env after boot
+  cat << 'EOF' | sudo tee /mnt/boot/restore-env.sh >/dev/null
+#!/bin/bash
+# Restore .env file after boot
+if [[ -f /boot/.env ]]; then
+  cp /boot/.env /home/$(logname)/pi-at-home-bootstrap/.env 2>/dev/null || true
+  chown $(logname):$(logname) /home/$(logname)/pi-at-home-bootstrap/.env 2>/dev/null || true
+  rm -f /boot/.env
+  rm -f /boot/restore-env.sh
+fi
+EOF
+  sudo chmod +x /mnt/boot/restore-env.sh
+fi
+
 # Ensure cmdline.txt exists
 if [[ ! -f "/mnt/boot/cmdline.txt" ]]; then
   echo "[i] Creating missing cmdline.txt..."
