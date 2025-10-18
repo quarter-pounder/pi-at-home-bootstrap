@@ -54,7 +54,7 @@ runcmd:
   - mkdir -p /srv/prometheus
   - mkdir -p /srv/grafana
   - mkdir -p /srv/backup
-  - chown -R ${USERNAME}:${USERNAME} /srv
+  - chown -R ${CFG_USERNAME}:${CFG_USERNAME} /srv
 
 power_state:
   mode: reboot
