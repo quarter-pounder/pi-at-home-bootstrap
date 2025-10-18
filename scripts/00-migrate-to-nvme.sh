@@ -231,9 +231,19 @@ fi
 echo "[i] Partitions mounted successfully"
 
 echo "[i] Copying boot partition..."
-sudo rsync -axHAWX --info=progress2 /boot/firmware/ /mnt/nvme-boot/
+# Detect if /boot/firmware exists (Ubuntu) or just /boot (Raspberry Pi OS)
+if [[ -d /boot/firmware && -n "$(ls -A /boot/firmware 2>/dev/null)" ]]; then
+  echo "[i] Detected Ubuntu-style boot layout (/boot/firmware)"
+  BOOT_SRC="/boot/firmware"
+else
+  echo "[i] Detected Raspberry Pi OS-style boot layout (/boot)"
+  BOOT_SRC="/boot"
+fi
 
-echo "[i] Copying root filesystem (this may take 5-10 minutes)..."
+echo "[i] Copying boot files from ${BOOT_SRC}..."
+sudo rsync -axHAWX --info=progress2 ${BOOT_SRC}/ /mnt/nvme-boot/
+
+echo "[i] Copying root filesystem (this may take several minutes)..."
 sudo rsync -axHAWX --info=progress2 \
   --exclude /mnt/nvme-root \
   --exclude /mnt/nvme-boot \
@@ -252,55 +262,73 @@ ROOT_UUID=$(sudo blkid -s PARTUUID -o value ${ROOT_PART})
 
 echo "[i] Updating fstab on NVMe..."
 sudo tee /mnt/nvme-root/etc/fstab >/dev/null <<EOF
-PARTUUID=${ROOT_UUID}  /            ext4   defaults,noatime  0 1
+PARTUUID=${ROOT_UUID}  /               ext4   defaults,noatime  0 1
 PARTUUID=${BOOT_UUID}  /boot/firmware  vfat   defaults          0 2
 EOF
 
 echo "[i] Updating boot configuration..."
 
-# Update cmdline.txt if it exists
+# --- Kernel and initrd handling ---
+echo "[i] Searching for kernel and initrd images..."
+KERNEL_IMG=$(ls ${BOOT_SRC}/vmlinuz* 2>/dev/null | sort -V | tail -1 || true)
+INITRD_IMG=$(ls ${BOOT_SRC}/initrd.img* 2>/dev/null | sort -V | tail -1 || true)
+
+if [[ -f "$KERNEL_IMG" ]]; then
+  echo "[i] Copying kernel image to NVMe as kernel_2712.img"
+  sudo cp "$KERNEL_IMG" /mnt/nvme-boot/kernel_2712.img
+else
+  echo "[!] Warning: No kernel image found in ${BOOT_SRC}"
+fi
+
+if [[ -f "$INITRD_IMG" ]]; then
+  echo "[i] Copying initrd image to NVMe"
+  sudo cp "$INITRD_IMG" /mnt/nvme-boot/initrd.img
+else
+  echo "[!] Warning: No initrd image found in ${BOOT_SRC}"
+fi
+
+# --- Device tree and overlays ---
+echo "[i] Ensuring device tree and overlays are present..."
+sudo mkdir -p /mnt/nvme-boot/overlays
+if compgen -G "${BOOT_SRC}/bcm2712*" > /dev/null; then
+  sudo cp ${BOOT_SRC}/bcm2712* /mnt/nvme-boot/ 2>/dev/null || true
+fi
+sudo cp -r ${BOOT_SRC}/overlays/* /mnt/nvme-boot/overlays/ 2>/dev/null || true
+
+# --- cmdline.txt ---
+echo "[i] Updating cmdline.txt..."
 if [[ -f /mnt/nvme-boot/cmdline.txt ]]; then
   sudo sed -i "s/root=[^ ]*/root=PARTUUID=${ROOT_UUID}/" /mnt/nvme-boot/cmdline.txt
   echo "[i] Updated cmdline.txt with new root UUID"
 else
-  echo "[!] Warning: cmdline.txt not found in boot partition"
-  echo "[i] Checking boot partition contents..."
-  ls -la /mnt/nvme-boot/
-  echo "[i] This might be normal for some Ubuntu configurations"
+  echo "console=serial0,115200 console=tty1 root=PARTUUID=${ROOT_UUID} rootfstype=ext4 fsck.repair=yes rootwait quiet splash" \
+    | sudo tee /mnt/nvme-boot/cmdline.txt >/dev/null
+  echo "[i] Created default cmdline.txt"
 fi
 
-# Create or update config.txt for Pi 5 NVMe boot
-echo "[i] Configuring Pi 5 for NVMe boot..."
+# --- config.txt ---
+echo "[i] Creating config.txt for Pi 5 NVMe boot..."
 sudo tee /mnt/nvme-boot/config.txt >/dev/null <<EOF
-# Pi 5 NVMe boot configuration
 [all]
-# Enable NVMe boot
-program_usb_boot_mode=1
-program_usb_boot_timeout=1
-
-# Disable Bluetooth to free up GPIO
+arm_64bit=1
+kernel=kernel_2712.img
+initramfs initrd.img followkernel
+device_tree=bcm2712-rpi-5-b.dtb
 dtoverlay=disable-bt
-
-# Enable UART
 enable_uart=1
-
-# GPU memory split
 gpu_mem=16
-
-# Boot order: try NVMe first, then SD card
 boot_order=0xf416
 EOF
 
-# Create usercfg.txt for additional Pi 5 settings
+# --- usercfg.txt ---
+echo "[i] Creating usercfg.txt for Pi 5..."
 sudo tee /mnt/nvme-boot/usercfg.txt >/dev/null <<EOF
-# Pi 5 user configuration
+# Additional user configuration
 program_usb_boot_mode=1
 program_usb_boot_timeout=1
 EOF
 
-echo "[i] Pi 5 NVMe boot configuration created"
-
-# Configure EEPROM boot order for Pi 5
+# --- EEPROM Configuration ---
 echo "[i] Configuring EEPROM boot order for Pi 5..."
 if command -v rpi-eeprom-config >/dev/null 2>&1; then
   echo "[i] Setting boot order to 0xf416 (NVMe first, then SD card)..."
@@ -322,46 +350,10 @@ else
   echo "[i] Add: BOOT_ORDER=0xf416"
 fi
 
-# Ensure Pi 5 bootloader and all boot files are properly copied
-echo "[i] Copying all Pi 5 boot files to NVMe..."
-
-# Copy all kernel files
-echo "[i] Copying kernel files..."
-sudo cp /boot/firmware/kernel* /mnt/nvme-boot/ 2>/dev/null || true
-
-# Copy all device tree files
-echo "[i] Copying device tree files..."
-sudo cp /boot/firmware/*.dtb /mnt/nvme-boot/ 2>/dev/null || true
-
-# Copy Pi 5 specific files
-echo "[i] Copying Pi 5 specific files..."
-sudo cp /boot/firmware/armstub8-2712.bin /mnt/nvme-boot/ 2>/dev/null || true
-sudo cp /boot/firmware/start4.elf /mnt/nvme-boot/ 2>/dev/null || true
-sudo cp /boot/firmware/fixup4.dat /mnt/nvme-boot/ 2>/dev/null || true
-
-# Copy overlays directory
-echo "[i] Copying overlays directory..."
-sudo cp -r /boot/firmware/overlays /mnt/nvme-boot/ 2>/dev/null || true
-
-# Copy firmware directory
-echo "[i] Copying firmware directory..."
-sudo mkdir -p /mnt/nvme-boot/firmware
-sudo cp -r /boot/firmware/firmware/* /mnt/nvme-boot/firmware/ 2>/dev/null || true
-
-# Set correct permissions
-echo "[i] Setting correct permissions..."
-sudo chmod 644 /mnt/nvme-boot/kernel* 2>/dev/null || true
-sudo chmod 644 /mnt/nvme-boot/*.dtb 2>/dev/null || true
-sudo chmod 644 /mnt/nvme-boot/armstub8-2712.bin 2>/dev/null || true
-sudo chmod 644 /mnt/nvme-boot/start4.elf 2>/dev/null || true
-sudo chmod 644 /mnt/nvme-boot/fixup4.dat 2>/dev/null || true
-sudo chmod -R 644 /mnt/nvme-boot/overlays/ 2>/dev/null || true
-sudo chmod -R 644 /mnt/nvme-boot/firmware/ 2>/dev/null || true
-
-# Verify critical files exist
+# --- Verify critical files ---
 echo "[i] Verifying critical boot files..."
 MISSING_FILES=()
-for file in "kernel8.img" "bcm2712-rpi-5-b.dtb" "armstub8-2712.bin" "start4.elf" "fixup4.dat"; do
+for file in "kernel_2712.img" "bcm2712-rpi-5-b.dtb" "armstub8-2712.bin" "start4.elf" "fixup4.dat"; do
   if [[ ! -f "/mnt/nvme-boot/$file" ]]; then
     MISSING_FILES+=("$file")
   fi
@@ -372,22 +364,23 @@ if [[ ${#MISSING_FILES[@]} -gt 0 ]]; then
   for file in "${MISSING_FILES[@]}"; do
     echo "    - $file"
   done
-  echo "[i] This may cause boot failures"
+  echo "[i] Attempting to recover missing firmware files..."
+  sudo cp ${BOOT_SRC}/armstub8-2712.bin /mnt/nvme-boot/ 2>/dev/null || true
+  sudo cp ${BOOT_SRC}/start4.elf /mnt/nvme-boot/ 2>/dev/null || true
+  sudo cp ${BOOT_SRC}/fixup4.dat /mnt/nvme-boot/ 2>/dev/null || true
 else
   echo "[i] All critical boot files present"
 fi
 
-# Final verification of NVMe boot partition
 echo "[i] Final verification of NVMe boot partition..."
-echo "[i] Boot partition contents:"
 ls -la /mnt/nvme-boot/ | head -20
 
 echo "[i] Critical files check:"
-for file in "kernel8.img" "bcm2712-rpi-5-b.dtb" "armstub8-2712.bin" "start4.elf" "fixup4.dat" "config.txt" "cmdline.txt"; do
+for file in "kernel_2712.img" "bcm2712-rpi-5-b.dtb" "armstub8-2712.bin" "start4.elf" "fixup4.dat" "config.txt" "cmdline.txt"; do
   if [[ -f "/mnt/nvme-boot/$file" ]]; then
-    echo " $file exists"
+    echo " [OK] $file exists"
   else
-    echo " $file (MISSING)"
+    echo " [MISSING] $file"
   fi
 done
 
