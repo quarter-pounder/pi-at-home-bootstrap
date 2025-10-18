@@ -58,18 +58,19 @@ trap cleanup EXIT
 
 IMG_FILE="ubuntu-${UBUNTU_VERSION}-preinstalled-server-arm64+raspi.img.xz"
 IMG_URL=${UBUNTU_IMG_URL:-"${UBUNTU_BASE_URL}/${UBUNTU_VERSION}/release/${IMG_FILE}"}
+IMG="${IMG_FILE%.xz}"  # Initialize early for cleanup function
 
 # Check disk space before download
-AVAILABLE_SPACE=$(df . | awk 'NR==2 {print $4}')
+AVAILABLE_SPACE=$(($(df . | awk 'NR==2 {print $4}') * 1024))  # Convert KB to bytes
 REQUIRED_SPACE=$((MIN_IMAGE_SIZE * 2))
 if [[ ${AVAILABLE_SPACE} -lt ${REQUIRED_SPACE} ]]; then
-  echo "[!] Insufficient disk space. Available: $(numfmt --to=iec ${AVAILABLE_SPACE}), Required: $(numfmt --to=iec ${REQUIRED_SPACE})"
+  echo "[!] Insufficient disk space. Available: $((${AVAILABLE_SPACE} / 1024 / 1024))MB, Required: $((${REQUIRED_SPACE} / 1024 / 1024))MB"
   exit 1
 fi
 
 echo "[i] Downloading Ubuntu ${UBUNTU_VERSION} image..."
 echo "[i] URL: ${IMG_URL}"
-echo "[i] Available space: $(numfmt --to=iec ${AVAILABLE_SPACE})"
+echo "[i] Available space: $((${AVAILABLE_SPACE} / 1024 / 1024))MB"
 curl -L --retry 5 --continue-at - -o "${IMG_FILE}" "${IMG_URL}"
 
 echo "[i] Verifying download..."
@@ -79,7 +80,7 @@ if [[ ! -f "${IMG_FILE}" ]]; then
 fi
 
 FILE_SIZE=$(stat -c%s "${IMG_FILE}")
-echo "[i] Downloaded size: $(numfmt --to=iec ${FILE_SIZE})"
+echo "[i] Downloaded size: $((${FILE_SIZE} / 1024 / 1024))MB"
 if [[ ${FILE_SIZE} -lt ${MIN_IMAGE_SIZE} ]]; then
   echo "[!] Download appears truncated (${FILE_SIZE} bytes, minimum expected: ${MIN_IMAGE_SIZE})"
   exit 1
@@ -95,7 +96,6 @@ if mount | grep -q "on / "; then
 fi
 
 # Handle partial decompression
-IMG="${IMG_FILE%.xz}"
 if [[ -f "${IMG}" && $(stat -c%s "${IMG}") -lt ${MIN_IMAGE_SIZE} ]]; then
   echo "[!] Detected partial image (${IMG}), removing..."
   rm -f "${IMG}"
