@@ -180,9 +180,17 @@ sudo mount "${NVME_DEVICE}p1" /mnt/boot
 
 # Inject cloud-init templates
 echo "[i] Injecting cloud-init templates..."
-envsubst < cloudinit/user-data.template | sudo tee /mnt/boot/user-data >/dev/null
-envsubst < cloudinit/network-config.template | sudo tee /mnt/boot/network-config >/dev/null
-envsubst < cloudinit/meta-data.template | sudo tee /mnt/boot/meta-data >/dev/null
+if [[ -f ".env" ]]; then
+  source .env
+  envsubst < cloudinit/user-data.template | sudo tee /mnt/boot/user-data >/dev/null
+  envsubst < cloudinit/network-config.template | sudo tee /mnt/boot/network-config >/dev/null
+  envsubst < cloudinit/meta-data.template | sudo tee /mnt/boot/meta-data >/dev/null
+else
+  echo "[!] No .env file found - using default values"
+  envsubst < cloudinit/user-data.template | sudo tee /mnt/boot/user-data >/dev/null
+  envsubst < cloudinit/network-config.template | sudo tee /mnt/boot/network-config >/dev/null
+  envsubst < cloudinit/meta-data.template | sudo tee /mnt/boot/meta-data >/dev/null
+fi
 
 
 # Ensure cmdline.txt exists
