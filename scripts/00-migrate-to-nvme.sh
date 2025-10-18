@@ -221,8 +221,14 @@ if [[ -n "${OS_PREFIX}" ]]; then
     echo "[i] Files in boot partition:"
     ls -la "${BOOT_SRC}/" | head -20
 
+    # Check what's in the current directory
+    if [[ -d "${BOOT_SRC}/current" ]]; then
+      echo "[i] Files in current directory:"
+      ls -la "${BOOT_SRC}/current/" | head -10
+    fi
+
     # Look for kernel/initrd in other locations
-    for kernel_path in "${BOOT_SRC}/vmlinuz" "${BOOT_SRC}/vmlinuz-*"; do
+    for kernel_path in "${BOOT_SRC}/vmlinuz" "${BOOT_SRC}/vmlinuz-*" "${BOOT_SRC}/current/vmlinuz" "${BOOT_SRC}/current/vmlinuz-*"; do
       if [[ -f "${kernel_path}" ]]; then
         echo "[i] Found kernel at ${kernel_path}, copying to ${OS_PREFIX} location..."
         sudo cp "${kernel_path}" "${BOOT_SRC}/${OS_PREFIX}vmlinuz" 2>/dev/null || true
@@ -230,7 +236,7 @@ if [[ -n "${OS_PREFIX}" ]]; then
       fi
     done
 
-    for initrd_path in "${BOOT_SRC}/initrd.img" "${BOOT_SRC}/initrd.img-*"; do
+    for initrd_path in "${BOOT_SRC}/initrd.img" "${BOOT_SRC}/initrd.img-*" "${BOOT_SRC}/current/initrd.img" "${BOOT_SRC}/current/initrd.img-*"; do
       if [[ -f "${initrd_path}" ]]; then
         echo "[i] Found initrd at ${initrd_path}, copying to ${OS_PREFIX} location..."
         sudo cp "${initrd_path}" "${BOOT_SRC}/${OS_PREFIX}initrd.img" 2>/dev/null || true
