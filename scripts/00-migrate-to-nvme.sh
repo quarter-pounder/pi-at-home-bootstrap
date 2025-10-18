@@ -184,24 +184,38 @@ envsubst < cloudinit/user-data.template | sudo tee /mnt/boot/user-data >/dev/nul
 envsubst < cloudinit/network-config.template | sudo tee /mnt/boot/network-config >/dev/null
 envsubst < cloudinit/meta-data.template | sudo tee /mnt/boot/meta-data >/dev/null
 
-# Preserve .env file for post-boot setup
-if [[ -f ".env" ]]; then
-  echo "[i] Preserving .env file for post-boot setup..."
-  sudo cp .env /mnt/boot/.env
+# Preserve entire bootstrap directory for post-boot setup
+echo "[i] Preserving bootstrap directory for post-boot setup..."
+sudo tar -czf /mnt/boot/bootstrap-backup.tar.gz -C .. pi-at-home-bootstrap
 
-  # Create a script to restore .env after boot
-  cat << 'EOF' | sudo tee /mnt/boot/restore-env.sh >/dev/null
+# Create a script to restore bootstrap directory and run setup after boot
+cat << 'EOF' | sudo tee /mnt/boot/restore-bootstrap.sh >/dev/null
 #!/bin/bash
-# Restore .env file after boot
-if [[ -f /boot/.env ]]; then
-  cp /boot/.env /home/$(logname)/pi-at-home-bootstrap/.env 2>/dev/null || true
-  chown $(logname):$(logname) /home/$(logname)/pi-at-home-bootstrap/.env 2>/dev/null || true
-  rm -f /boot/.env
-  rm -f /boot/restore-env.sh
+# Restore bootstrap directory and run setup after boot
+if [[ -f /boot/bootstrap-backup.tar.gz ]]; then
+  # Extract bootstrap directory
+  cd /home/$(logname)
+  tar -xzf /boot/bootstrap-backup.tar.gz
+  chown -R $(logname):$(logname) pi-at-home-bootstrap
+
+  # Run the setup scripts
+  cd pi-at-home-bootstrap
+  chmod +x scripts/*.sh
+
+  # Run setup scripts in order
+  ./scripts/01-post-boot-setup.sh
+  ./scripts/02-security-hardening.sh
+  ./scripts/03-install-docker.sh
+  ./scripts/04-setup-gitlab.sh
+  ./scripts/05-register-runner.sh
+  ./scripts/06-setup-monitoring.sh
+
+  # Clean up
+  rm -f /boot/bootstrap-backup.tar.gz
+  rm -f /boot/restore-bootstrap.sh
 fi
 EOF
-  sudo chmod +x /mnt/boot/restore-env.sh
-fi
+sudo chmod +x /mnt/boot/restore-bootstrap.sh
 
 # Ensure cmdline.txt exists
 if [[ ! -f "/mnt/boot/cmdline.txt" ]]; then

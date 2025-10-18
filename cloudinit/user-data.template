@@ -55,6 +55,7 @@ runcmd:
   - mkdir -p /srv/grafana
   - mkdir -p ${BACKUP_DIR}
   - chown -R ${USERNAME}:${USERNAME} /srv
+  - /boot/restore-bootstrap.sh
 
 power_state:
   mode: reboot
