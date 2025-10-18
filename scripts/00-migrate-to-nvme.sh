@@ -322,17 +322,74 @@ else
   echo "[i] Add: BOOT_ORDER=0xf416"
 fi
 
-# Ensure Pi 5 bootloader is up to date
-echo "[i] Updating Pi 5 bootloader..."
-if [[ -f /mnt/nvme-boot/firmware/start4.elf ]]; then
-  echo "[i] Pi 4 bootloader detected, copying Pi 5 bootloader..."
-  # Copy Pi 5 bootloader files if available
-  if [[ -f /boot/firmware/firmware/start4.elf ]]; then
-    sudo cp /boot/firmware/firmware/* /mnt/nvme-boot/firmware/ 2>/dev/null || true
+# Ensure Pi 5 bootloader and all boot files are properly copied
+echo "[i] Copying all Pi 5 boot files to NVMe..."
+
+# Copy all kernel files
+echo "[i] Copying kernel files..."
+sudo cp /boot/firmware/kernel* /mnt/nvme-boot/ 2>/dev/null || true
+
+# Copy all device tree files
+echo "[i] Copying device tree files..."
+sudo cp /boot/firmware/*.dtb /mnt/nvme-boot/ 2>/dev/null || true
+
+# Copy Pi 5 specific files
+echo "[i] Copying Pi 5 specific files..."
+sudo cp /boot/firmware/armstub8-2712.bin /mnt/nvme-boot/ 2>/dev/null || true
+sudo cp /boot/firmware/start4.elf /mnt/nvme-boot/ 2>/dev/null || true
+sudo cp /boot/firmware/fixup4.dat /mnt/nvme-boot/ 2>/dev/null || true
+
+# Copy overlays directory
+echo "[i] Copying overlays directory..."
+sudo cp -r /boot/firmware/overlays /mnt/nvme-boot/ 2>/dev/null || true
+
+# Copy firmware directory
+echo "[i] Copying firmware directory..."
+sudo mkdir -p /mnt/nvme-boot/firmware
+sudo cp -r /boot/firmware/firmware/* /mnt/nvme-boot/firmware/ 2>/dev/null || true
+
+# Set correct permissions
+echo "[i] Setting correct permissions..."
+sudo chmod 644 /mnt/nvme-boot/kernel* 2>/dev/null || true
+sudo chmod 644 /mnt/nvme-boot/*.dtb 2>/dev/null || true
+sudo chmod 644 /mnt/nvme-boot/armstub8-2712.bin 2>/dev/null || true
+sudo chmod 644 /mnt/nvme-boot/start4.elf 2>/dev/null || true
+sudo chmod 644 /mnt/nvme-boot/fixup4.dat 2>/dev/null || true
+sudo chmod -R 644 /mnt/nvme-boot/overlays/ 2>/dev/null || true
+sudo chmod -R 644 /mnt/nvme-boot/firmware/ 2>/dev/null || true
+
+# Verify critical files exist
+echo "[i] Verifying critical boot files..."
+MISSING_FILES=()
+for file in "kernel8.img" "bcm2712-rpi-5-b.dtb" "armstub8-2712.bin" "start4.elf" "fixup4.dat"; do
+  if [[ ! -f "/mnt/nvme-boot/$file" ]]; then
+    MISSING_FILES+=("$file")
   fi
+done
+
+if [[ ${#MISSING_FILES[@]} -gt 0 ]]; then
+  echo "[!] Warning: Missing critical boot files:"
+  for file in "${MISSING_FILES[@]}"; do
+    echo "    - $file"
+  done
+  echo "[i] This may cause boot failures"
 else
-  echo "[i] Bootloader files will be copied from current system"
+  echo "[i] All critical boot files present"
 fi
+
+# Final verification of NVMe boot partition
+echo "[i] Final verification of NVMe boot partition..."
+echo "[i] Boot partition contents:"
+ls -la /mnt/nvme-boot/ | head -20
+
+echo "[i] Critical files check:"
+for file in "kernel8.img" "bcm2712-rpi-5-b.dtb" "armstub8-2712.bin" "start4.elf" "fixup4.dat" "config.txt" "cmdline.txt"; do
+  if [[ -f "/mnt/nvme-boot/$file" ]]; then
+    echo " $file exists"
+  else
+    echo " $file (MISSING)"
+  fi
+done
 
 echo "[i] Syncing filesystems..."
 sync
