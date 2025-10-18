@@ -217,6 +217,10 @@ if [[ -n "${OS_PREFIX}" ]]; then
   else
     echo "[!] Missing kernel/initrd - checking if they exist elsewhere..."
 
+    # List all files in boot partition for debugging
+    echo "[i] Files in boot partition:"
+    ls -la "${BOOT_SRC}/" | head -20
+
     # Look for kernel/initrd in other locations
     for kernel_path in "${BOOT_SRC}/vmlinuz" "${BOOT_SRC}/vmlinuz-*"; do
       if [[ -f "${kernel_path}" ]]; then
@@ -233,6 +237,12 @@ if [[ -n "${OS_PREFIX}" ]]; then
         break
       fi
     done
+
+    # Check if we found anything
+    if [[ ! -f "${BOOT_SRC}/${OS_PREFIX}vmlinuz" || ! -f "${BOOT_SRC}/${OS_PREFIX}initrd.img" ]]; then
+      echo "[!] No kernel/initrd found in image - this may cause boot failure"
+      echo "[i] The system may still boot using the existing boot files"
+    fi
   fi
 
   # Pi 5 DTB checks
