@@ -167,36 +167,72 @@ envsubst < cloudinit/meta-data.template | sudo tee "${BOOT_MNT}/meta-data" >/dev
 sudo cp .env "${BOOT_MNT}/.env.generated" 2>/dev/null || true
 
 # --------------------------------------------------
-# Firmware & Boot Validation
+# Firmware & Boot Verification (handles both legacy and os_prefix layouts)
 # --------------------------------------------------
 echo "[i] Verifying firmware and kernel files..."
+
 OS_PREFIX=$(grep -Po '^(?i)os_prefix=\K.*' "${BOOT_MNT}/config.txt" 2>/dev/null | tail -1 || true)
 if [[ -n "${OS_PREFIX}" ]]; then
   echo "[i] os_prefix detected: ${OS_PREFIX}"
-  for f in vmlinuz initrd.img; do
-    if [[ ! -f "${BOOT_MNT}/${OS_PREFIX}${f}" ]]; then
-      if [[ -f "${BOOT_MNT}/current/${f}" ]]; then
-        echo "[i] Copying ${f} from current/ directory..."
-        sudo cp "${BOOT_MNT}/current/${f}" "${BOOT_MNT}/${OS_PREFIX}${f}"
-      else
-        echo "[!] Missing ${f}, attempting fetch..."
-        download_file "${FIRMWARE_BASE_URL}/${f}" "${BOOT_MNT}/${OS_PREFIX}${f}" "${f}" || true
-      fi
+
+  # Make sure the prefixed directory exists
+  sudo mkdir -p "${BOOT_MNT}/${OS_PREFIX}"
+
+  # Copy kernel/initrd from current/ if they exist but are missing in os_prefix
+  if [[ -f "${BOOT_MNT}/current/vmlinuz" && ! -f "${BOOT_MNT}/${OS_PREFIX}vmlinuz" ]]; then
+    echo "[i] Copying vmlinuz from current/..."
+    sudo cp "${BOOT_MNT}/current/vmlinuz" "${BOOT_MNT}/${OS_PREFIX}vmlinuz"
+  fi
+  if [[ -f "${BOOT_MNT}/current/initrd.img" && ! -f "${BOOT_MNT}/${OS_PREFIX}initrd.img" ]]; then
+    echo "[i] Copying initrd.img from current/..."
+    sudo cp "${BOOT_MNT}/current/initrd.img" "${BOOT_MNT}/${OS_PREFIX}initrd.img"
+  fi
+
+  # Ensure DTB exists at root level for Pi 5
+  if [[ ! -f "${BOOT_MNT}/bcm2712-rpi-5-b.dtb" ]]; then
+    if [[ -f "${BOOT_MNT}/current/bcm2712-rpi-5-b.dtb" ]]; then
+      echo "[i] Copying Pi 5 DTB from current/..."
+      sudo cp "${BOOT_MNT}/current/bcm2712-rpi-5-b.dtb" "${BOOT_MNT}/bcm2712-rpi-5-b.dtb"
+    else
+      echo "[!] bcm2712-rpi-5-b.dtb missing; fetching from firmware repo..."
+      download_file \
+        "${FIRMWARE_BASE_URL}/bcm2712-rpi-5-b.dtb" \
+        "${BOOT_MNT}/bcm2712-rpi-5-b.dtb" \
+        "Pi 5 DTB" || true
+    fi
+  fi
+
+  # Ensure low-level blobs exist (start4.elf / fixup4.dat)
+  for fw in start4.elf fixup4.dat; do
+    if [[ ! -f "${BOOT_MNT}/${fw}" ]]; then
+      echo "[i] Downloading missing ${fw}..."
+      download_file "${FIRMWARE_BASE_URL}/${fw}" "${BOOT_MNT}/${fw}" "${fw}" || true
     fi
   done
+
 else
-  echo "[i] Legacy layout detected — ensuring minimal boot blobs"
+  echo "[i] Legacy layout detected — ensuring minimal boot blobs..."
+
+  # Copy kernel/initrd from current/ if needed
+  if [[ -f "${BOOT_MNT}/current/vmlinuz" && ! -f "${BOOT_MNT}/vmlinuz" ]]; then
+    echo "[i] Copying vmlinuz from current/..."
+    sudo cp "${BOOT_MNT}/current/vmlinuz" "${BOOT_MNT}/vmlinuz"
+  fi
+  if [[ -f "${BOOT_MNT}/current/initrd.img" && ! -f "${BOOT_MNT}/initrd.img" ]]; then
+    echo "[i] Copying initrd.img from current/..."
+    sudo cp "${BOOT_MNT}/current/initrd.img" "${BOOT_MNT}/initrd.img"
+  fi
+
+  # Ensure firmware blobs exist
   for f in start4.elf fixup4.dat bcm2712-rpi-5-b.dtb; do
     if [[ ! -f "${BOOT_MNT}/${f}" ]]; then
-      if [[ -f "${BOOT_MNT}/current/${f}" ]]; then
-        echo "[i] Copying ${f} from current/ directory..."
-        sudo cp "${BOOT_MNT}/current/${f}" "${BOOT_MNT}/${f}"
-      else
-        download_file "${FIRMWARE_BASE_URL}/${f}" "${BOOT_MNT}/${f}" "firmware ${f}" || true
-      fi
+      echo "[i] Downloading missing ${f}..."
+      download_file "${FIRMWARE_BASE_URL}/${f}" "${BOOT_MNT}/${f}" "${f}" || true
     fi
   done
 fi
+
+sudo chown -R root:root "${BOOT_MNT}" 2>/dev/null || true
 
 # --------------------------------------------------
 # EEPROM Configuration
