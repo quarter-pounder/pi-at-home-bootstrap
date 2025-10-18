@@ -2,220 +2,326 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-if [[ ! -f .env ]]; then
-  echo "[!] .env file not found. Please copy env.example to .env and configure it."
+source scripts/utils.sh
+load_env
+detect_latest_lts
+confirm_device
+
+# Constants
+readonly MIN_IMAGE_SIZE=500000000  # 500MB minimum image size
+readonly FIRMWARE_BASE_URL="https://raw.githubusercontent.com/raspberrypi/firmware/main/boot"
+readonly UBUNTU_BASE_URL="https://cdimage.ubuntu.com/releases"
+
+# Download files with error handling
+download_file() {
+  local url="$1"
+  local output="$2"
+  local description="$3"
+
+  echo "[i] Downloading ${description}..."
+  if ! wget -O "${output}" "${url}" 2>/dev/null; then
+    echo "[!] Failed to download ${description} from ${url}"
+    return 1
+  fi
+
+  if [[ ! -s "${output}" ]]; then
+    echo "[!] Downloaded ${description} is empty"
+    return 1
+  fi
+
+  echo "[OK] Successfully downloaded ${description}"
+  return 0
+}
+
+# Cleanup on exit
+cleanup() {
+  set +e
+  local exit_code=$?
+  echo "[i] Cleaning up..."
+
+  if mountpoint -q /mnt/boot; then
+    sudo umount /mnt/boot 2>/dev/null || true
+  fi
+
+  rm -f "${IMG_FILE}" "${IMG}" 2>/dev/null || true
+
+  if [[ $exit_code -eq 0 ]]; then
+    echo "[i] Migration completed successfully."
+  else
+    echo "[!] Migration aborted with exit code $exit_code"
+  fi
+
+  exit $exit_code
+}
+
+trap cleanup EXIT
+
+IMG_FILE="ubuntu-${UBUNTU_VERSION}-preinstalled-server-arm64+raspi.img.xz"
+IMG_URL=${UBUNTU_IMG_URL:-"${UBUNTU_BASE_URL}/${UBUNTU_VERSION}/release/${IMG_FILE}"}
+
+# Check disk space before download
+AVAILABLE_SPACE=$(df . | awk 'NR==2 {print $4}')
+REQUIRED_SPACE=$((MIN_IMAGE_SIZE * 2))
+if [[ ${AVAILABLE_SPACE} -lt ${REQUIRED_SPACE} ]]; then
+  echo "[!] Insufficient disk space. Available: $(numfmt --to=iec ${AVAILABLE_SPACE}), Required: $(numfmt --to=iec ${REQUIRED_SPACE})"
   exit 1
 fi
 
-source .env
+echo "[i] Downloading Ubuntu ${UBUNTU_VERSION} image..."
+echo "[i] URL: ${IMG_URL}"
+echo "[i] Available space: $(numfmt --to=iec ${AVAILABLE_SPACE})"
+curl -L --retry 5 --continue-at - -o "${IMG_FILE}" "${IMG_URL}"
 
-detect_nvme() {
-  NVME_DEVICE=$(lsblk -dno NAME,TYPE | grep disk | grep nvme | awk '{print "/dev/"$1}' | head -1)
-  if [[ -z "$NVME_DEVICE" ]]; then
-    echo "[!] No NVMe device found. Is it connected?"
+echo "[i] Verifying download..."
+if [[ ! -f "${IMG_FILE}" ]]; then
+  echo "[!] Download failed - file not found"
+  exit 1
+fi
+
+FILE_SIZE=$(stat -c%s "${IMG_FILE}")
+echo "[i] Downloaded size: $(numfmt --to=iec ${FILE_SIZE})"
+if [[ ${FILE_SIZE} -lt ${MIN_IMAGE_SIZE} ]]; then
+  echo "[!] Download appears truncated (${FILE_SIZE} bytes, minimum expected: ${MIN_IMAGE_SIZE})"
+  exit 1
+fi
+
+# Prevent accidental self-overwrite
+if mount | grep -q "on / "; then
+  ROOT_DEVICE=$(findmnt -no SOURCE /)
+  if [[ "$ROOT_DEVICE" == *"${NVME_DEVICE}"* ]]; then
+    echo "[!] Refusing to overwrite the current root device: $ROOT_DEVICE"
     exit 1
   fi
-  echo "[i] Detected NVMe device: ${NVME_DEVICE}"
-}
+fi
 
-detect_nvme
+# Handle partial decompression
+IMG="${IMG_FILE%.xz}"
+if [[ -f "${IMG}" && $(stat -c%s "${IMG}") -lt ${MIN_IMAGE_SIZE} ]]; then
+  echo "[!] Detected partial image (${IMG}), removing..."
+  rm -f "${IMG}"
+fi
 
-# --- Safety prompt ----------------------------------------------------------
+# Reuse decompressed image if present
+if [[ -f "${IMG}" ]]; then
+  echo "[i] Reusing existing decompressed image: ${IMG}"
+else
+  echo "[i] Decompressing image..."
+  unxz -f "${IMG_FILE}"
+fi
+
+echo "[i] Writing image to ${NVME_DEVICE}..."
 echo "[!] WARNING: This will erase all data on ${NVME_DEVICE}"
-echo "[!] Current system will be migrated from SD card to NVMe"
-echo "[!] The system will reboot after migration"
-echo ""
-lsblk
-echo ""
-read -p "Continue? Type 'yes' to proceed: " -r
-if [[ ! $REPLY =~ ^yes$ ]]; then
-  echo "Migration cancelled"
+
+# Verify NVMe device exists and is writable
+if [[ ! -b "${NVME_DEVICE}" ]]; then
+  echo "[!] Error: NVMe device ${NVME_DEVICE} not found"
+  exit 1
+fi
+
+# Skip if device already mounted
+if mount | grep -q "${NVME_DEVICE}p1"; then
+  echo "[i] ${NVME_DEVICE} already mounted — skipping flash."
   exit 0
 fi
 
-# --- Setup cleanup trap -----------------------------------------------------
-trap 'sudo umount /mnt/nvme-boot 2>/dev/null || true; sudo umount /mnt/nvme-root 2>/dev/null || true' EXIT
+# Unmount any existing partitions
+sudo umount "${NVME_DEVICE}"* 2>/dev/null || true
 
-# --- Preparation ------------------------------------------------------------
-echo "[i] Installing required tools..."
-sudo apt update
-sudo apt install -y rsync parted rpi-eeprom nvme-cli
+# Discard existing data
+echo "[i] Discarding existing data..."
+sudo blkdiscard "${NVME_DEVICE}" || true
 
-echo "[i] Unmounting NVMe if mounted..."
-sudo umount ${NVME_DEVICE}* 2>/dev/null || true
-
-echo "[i] Checking NVMe drive status..."
-if ! lsblk ${NVME_DEVICE} >/dev/null 2>&1; then
-  echo "[!] Error: NVMe drive not accessible at ${NVME_DEVICE}"
-  echo "[i] Available NVMe devices:"
-  lsblk | grep nvme || echo "No NVMe devices found"
-  exit 1
-fi
-
-echo "[i] Checking drive health before wipe..."
-sudo nvme smart-log ${NVME_DEVICE} 2>/dev/null || echo "[!] Warning: Could not read SMART data"
-sudo nvme id-ctrl ${NVME_DEVICE} 2>/dev/null || echo "[!] Warning: Cannot read controller info"
-
-echo "[i] Checking power supply status:"
-vcgencmd get_throttled 2>/dev/null || echo "[!] Cannot check power status"
-
-echo "[i] Testing basic read capability..."
-if ! sudo dd if=${NVME_DEVICE} of=/dev/null bs=1M count=1 2>/dev/null; then
-  echo "[!] NVMe read test failed. Hardware issue likely."
-  exit 1
-fi
-
-# --- Partitioning -----------------------------------------------------------
-echo "[i] Wiping NVMe device..."
-sudo wipefs -a ${NVME_DEVICE} || true
-sudo blkdiscard ${NVME_DEVICE} 2>/dev/null || echo "[!] blkdiscard failed (often harmless)"
-
-echo "[i] Creating GPT partition table..."
-sudo parted -s ${NVME_DEVICE} mklabel gpt
-sudo parted -s ${NVME_DEVICE} mkpart primary fat32 0% 512MB
-sudo parted -s ${NVME_DEVICE} mkpart primary ext4 512MB 100%
-sudo parted -s ${NVME_DEVICE} set 1 boot on
-sudo partprobe ${NVME_DEVICE}
-sleep 2
-
-BOOT_PART="${NVME_DEVICE}p1"
-ROOT_PART="${NVME_DEVICE}p2"
-
-if [[ ! -b ${BOOT_PART} || ! -b ${ROOT_PART} ]]; then
-  echo "[!] Error: Partitioning failed."
-  exit 1
-fi
-
-echo "[i] Formatting partitions..."
-sudo mkfs.vfat -F 32 -n BOOT ${BOOT_PART}
-sudo mkfs.ext4 -F -L writable ${ROOT_PART}
-
-# --- Mount and copy ---------------------------------------------------------
-echo "[i] Mounting NVMe partitions..."
-sudo mkdir -p /mnt/nvme-{boot,root}
-sudo mount ${BOOT_PART} /mnt/nvme-boot
-sudo mount ${ROOT_PART} /mnt/nvme-root
-
-echo "[i] Copying boot and root files..."
-if [[ -d /boot/firmware && -n "$(ls -A /boot/firmware 2>/dev/null)" ]]; then
-  echo "[i] Detected Ubuntu-style boot layout"
-  BOOT_SRC="/boot/firmware"
+# Write the image (use pv if available)
+echo "[i] Writing image (this may take several minutes)..."
+if command -v pv >/dev/null; then
+  pv "${IMG}" | sudo dd of="${NVME_DEVICE}" bs=4M conv=fsync
 else
-  echo "[i] Detected Raspberry Pi OS-style boot layout"
-  BOOT_SRC="/boot"
+  sudo dd if="${IMG}" of="${NVME_DEVICE}" bs=4M status=progress conv=fsync
 fi
 
-sudo rsync -axHAWX --info=progress2 ${BOOT_SRC}/ /mnt/nvme-boot/
-sudo rsync -axHAWX --info=progress2 \
-  --exclude={"/mnt/*","/proc","/sys","/dev","/tmp","/run"} / /mnt/nvme-root/
+echo "[i] Verifying write..."
+sync
+echo "[i] Image write completed"
 
-echo "[i] Creating system directories on NVMe..."
-sudo mkdir -p /mnt/nvme-root/{proc,sys,dev,tmp}
-
-# --- fstab / UUIDs ----------------------------------------------------------
-BOOT_UUID=$(sudo blkid -s PARTUUID -o value ${BOOT_PART})
-ROOT_UUID=$(sudo blkid -s PARTUUID -o value ${ROOT_PART})
-
-sudo tee /mnt/nvme-root/etc/fstab >/dev/null <<EOF
-PARTUUID=${ROOT_UUID}  /               ext4   defaults,noatime  0 1
-PARTUUID=${BOOT_UUID}  /boot/firmware  vfat   defaults          0 2
-EOF
-
-# --- Kernel / initrd / DTBs -------------------------------------------------
-echo "[i] Preparing boot files..."
-KERNEL_IMG=$(ls ${BOOT_SRC}/vmlinuz* 2>/dev/null | sort -V | tail -1 || true)
-INITRD_IMG=$(ls ${BOOT_SRC}/initrd.img* 2>/dev/null | sort -V | tail -1 || true)
-if [[ -f "$KERNEL_IMG" ]]; then
-  sudo cp "$KERNEL_IMG" /mnt/nvme-boot/kernel_2712.img
+# Mount boot partition safely
+if mountpoint -q /mnt/boot; then
+  echo "[i] Unmounting stale /mnt/boot..."
+  sudo umount /mnt/boot || true
 fi
-if [[ -f "$INITRD_IMG" ]]; then
-  sudo cp "$INITRD_IMG" /mnt/nvme-boot/initrd.img
+sudo mkdir -p /mnt/boot
+sudo mount "${NVME_DEVICE}p1" /mnt/boot
+
+# Inject cloud-init templates
+echo "[i] Injecting cloud-init templates..."
+envsubst < cloudinit/user-data.template | sudo tee /mnt/boot/user-data >/dev/null
+envsubst < cloudinit/network-config.template | sudo tee /mnt/boot/network-config >/dev/null
+envsubst < cloudinit/meta-data.template | sudo tee /mnt/boot/meta-data >/dev/null
+
+# Ensure tools for firmware fetch
+if ! command -v wget >/dev/null 2>&1; then
+  echo "[i] Installing wget..."
+  sudo apt-get update -y && sudo apt-get install -y wget
 fi
 
-sudo mkdir -p /mnt/nvme-boot/overlays
-sudo cp -r ${BOOT_SRC}/bcm2712* /mnt/nvme-boot/ 2>/dev/null || true
-sudo cp -r ${BOOT_SRC}/overlays/* /mnt/nvme-boot/overlays/ 2>/dev/null || true
+# Ubuntu 25.10+ firmware integrity checks
+echo "[i] Checking Ubuntu 25.10-style firmware layout..."
+BOOT_SRC="/mnt/boot"
 
-# --- cmdline.txt ------------------------------------------------------------
-if [[ -f /mnt/nvme-boot/cmdline.txt ]]; then
-  sudo sed -i "s/root=[^ ]*/root=PARTUUID=${ROOT_UUID}/" /mnt/nvme-boot/cmdline.txt
-else
-  echo "console=serial0,115200 console=tty1 root=PARTUUID=${ROOT_UUID} rootfstype=ext4 fsck.repair=yes rootwait quiet splash" \
-    | sudo tee /mnt/nvme-boot/cmdline.txt >/dev/null
+OS_PREFIX=""
+if [[ -f "${BOOT_SRC}/config.txt" ]]; then
+  OS_PREFIX=$(grep -Po '^(?i)os_prefix=\K.*' "${BOOT_SRC}/config.txt" | tail -1 || true)
 fi
+echo "[i] Detected os_prefix: ${OS_PREFIX:-<none>}"
 
-# --- config.txt / usercfg.txt ----------------------------------------------
-sudo tee /mnt/nvme-boot/config.txt >/dev/null <<EOF
-[all]
-arm_64bit=1
-kernel=kernel_2712.img
-initramfs initrd.img followkernel
-device_tree=bcm2712-rpi-5-b.dtb
-dtoverlay=disable-bt
-enable_uart=1
-gpu_mem=16
-boot_order=0xf416
-EOF
+if [[ -n "${OS_PREFIX}" ]]; then
+  echo "[i] Detected Ubuntu 25.10+ style boot (os_prefix=${OS_PREFIX})"
+  sudo mkdir -p "${BOOT_SRC}/${OS_PREFIX}"
 
-sudo tee /mnt/nvme-boot/usercfg.txt >/dev/null <<EOF
-# Additional user configuration
-program_usb_boot_mode=1
-program_usb_boot_timeout=1
-EOF
+  # Ensure kernel + initrd exist under prefix
+  if [[ ! -f "${BOOT_SRC}/${OS_PREFIX}vmlinuz" || ! -f "${BOOT_SRC}/${OS_PREFIX}initrd.img" ]]; then
+    echo "[!] Missing kernel/initrd under ${OS_PREFIX}; attempting fetch..."
 
-# --- Firmware stubs recovery -----------------------------------------------
-echo "[i] Ensuring mandatory firmware stubs..."
-for fw in bootcode.bin start4.elf fixup4.dat armstub8-2712.bin; do
-  if [[ ! -f /mnt/nvme-boot/$fw && -f ${BOOT_SRC}/$fw ]]; then
-    sudo cp ${BOOT_SRC}/$fw /mnt/nvme-boot/ 2>/dev/null || true
+    if [[ ! -f "${BOOT_SRC}/${OS_PREFIX}vmlinuz" ]]; then
+      download_file \
+        "https://cdimage.ubuntu.com/releases/${UBUNTU_VERSION}/release/boot/${OS_PREFIX}vmlinuz" \
+        "${BOOT_SRC}/${OS_PREFIX}vmlinuz" \
+        "kernel (${OS_PREFIX}vmlinuz)" || true
+      sudo chown root:root "${BOOT_SRC}/${OS_PREFIX}vmlinuz" 2>/dev/null || true
+    fi
+
+    if [[ ! -f "${BOOT_SRC}/${OS_PREFIX}initrd.img" ]]; then
+      download_file \
+        "https://cdimage.ubuntu.com/releases/${UBUNTU_VERSION}/release/boot/${OS_PREFIX}initrd.img" \
+        "${BOOT_SRC}/${OS_PREFIX}initrd.img" \
+        "initrd (${OS_PREFIX}initrd.img)" || true
+      sudo chown root:root "${BOOT_SRC}/${OS_PREFIX}initrd.img" 2>/dev/null || true
+    fi
   fi
+
+  # Pi 5 DTB checks
+  DTB_OK="no"
+  for cand in \
+      "${BOOT_SRC}/bcm2712-rpi-5-b.dtb" \
+      "${BOOT_SRC}/${OS_PREFIX}bcm2712-rpi-5-b.dtb" \
+      "${BOOT_SRC}/${OS_PREFIX}dtbs"/*/broadcom/bcm2712-rpi-5-b.dtb; do
+    if ls "${cand}" >/dev/null 2>&1; then DTB_OK="yes"; break; fi
+  done
+  if [[ "$DTB_OK" != "yes" ]]; then
+    echo "[!] bcm2712-rpi-5-b.dtb missing; fetching from Raspberry Pi firmware repo..."
+    download_file "${FIRMWARE_BASE_URL}/bcm2712-rpi-5-b.dtb" \
+      "${BOOT_SRC}/bcm2712-rpi-5-b.dtb" "Pi 5 DTB" || true
+    sudo chown root:root "${BOOT_SRC}/bcm2712-rpi-5-b.dtb" 2>/dev/null || true
+  fi
+
+  # Ensure low-level blobs exist
+  for fw in start4.elf fixup4.dat; do
+    if [[ ! -f "${BOOT_SRC}/${fw}" ]]; then
+      download_file "${FIRMWARE_BASE_URL}/${fw}" \
+        "${BOOT_SRC}/${fw}" "firmware blob (${fw})" || true
+      sudo chown root:root "${BOOT_SRC}/${fw}" 2>/dev/null || true
+    fi
+  done
+else
+  echo "[i] Legacy (pre-25.10) layout detected, verifying minimal boot files..."
+  for f in start4.elf fixup4.dat bcm2712-rpi-5-b.dtb; do
+    if [[ ! -f "${BOOT_SRC}/${f}" ]]; then
+      download_file "${FIRMWARE_BASE_URL}/${f}" \
+        "${BOOT_SRC}/${f}" "firmware blob (${f})" || true
+      sudo chown root:root "${BOOT_SRC}/${f}" 2>/dev/null || true
+    fi
+  done
+fi
+
+# Color-safe output
+if [[ -t 1 ]]; then
+  RED=$(tput setaf 1); GREEN=$(tput setaf 2); YELLOW=$(tput setaf 3); RESET=$(tput sgr0)
+else
+  RED=""; GREEN=""; YELLOW=""; RESET=""
+fi
+
+# Validation summary
+echo "[i] Validation: summarizing boot partition..."
+ls -lh "${BOOT_SRC}" | grep -E "vmlinuz|initrd|bcm2712|start4|fixup4|config|cmdline" || true
+
+CRIT_OK=1
+for f in "config.txt" "cmdline.txt" "start4.elf" "fixup4.dat"; do
+  [[ -f "${BOOT_SRC}/$f" ]] || { echo "[!] MISSING: ${f}"; CRIT_OK=0; }
 done
 
-# --- EEPROM configuration ---------------------------------------------------
-echo "[i] Configuring EEPROM boot order for Pi 5..."
+if [[ -n "${OS_PREFIX}" ]]; then
+  for f in "${OS_PREFIX}vmlinuz" "${OS_PREFIX}initrd.img"; do
+    [[ -f "${BOOT_SRC}/$f" ]] || { echo "[!] MISSING: ${f}"; CRIT_OK=0; }
+  done
+fi
+
+echo "[i] PARTUUID map:"
+sudo blkid | grep -E "$(basename "${NVME_DEVICE}")p[12]" || true
+
+if [[ "${CRIT_OK}" -ne 1 ]]; then
+  echo "${YELLOW}[!] Validation warnings above — boot may fail if critical files are missing.${RESET}"
+else
+  echo "${GREEN}[OK] Validation passed: required boot artifacts present.${RESET}"
+fi
+
+# EEPROM Configuration
+echo "[i] Configuring EEPROM boot order..."
+
+PI_MODEL=""
+if [[ -f /proc/device-tree/model ]]; then
+  PI_MODEL=$(cat /proc/device-tree/model 2>/dev/null || echo "")
+fi
+
+case "${PI_MODEL}" in
+  *"Pi 5"*)
+    BOOT_ORDER="0xf416"
+    echo "[i] Detected Pi 5 - configuring NVMe boot priority"
+    ;;
+  *"Pi 4"*)
+    BOOT_ORDER="0xf41"
+    echo "[i] Detected Pi 4 - configuring USB boot priority (NVMe not supported)"
+    ;;
+  *)
+    BOOT_ORDER="0xf41"
+    echo "[i] Unknown Pi model - using default USB boot order"
+    ;;
+esac
+
 if command -v rpi-eeprom-config >/dev/null 2>&1; then
   TMP=$(mktemp)
   sudo rpi-eeprom-config >"$TMP"
   if ! grep -q '^BOOT_ORDER=' "$TMP"; then
-    echo "BOOT_ORDER=0xf416" | sudo tee -a "$TMP" >/dev/null
+    echo "BOOT_ORDER=${BOOT_ORDER}" | sudo tee -a "$TMP" >/dev/null
   else
-    sudo sed -i 's/^BOOT_ORDER=.*/BOOT_ORDER=0xf416/' "$TMP"
+    sudo sed -i "s/^BOOT_ORDER=.*/BOOT_ORDER=${BOOT_ORDER}/" "$TMP"
   fi
   sudo rpi-eeprom-config --apply "$TMP"
   rm "$TMP"
-  echo "[i] EEPROM boot order configured successfully"
+  echo "[i] EEPROM boot order configured: ${BOOT_ORDER}"
 else
   echo "[!] rpi-eeprom-config not found; install with: sudo apt install rpi-eeprom"
+  echo "[i] Manual EEPROM configuration required:"
+  echo "    sudo rpi-eeprom-config --edit"
+  echo "    Add: BOOT_ORDER=${BOOT_ORDER}"
 fi
 
-# --- Final verification -----------------------------------------------------
-echo "[i] Verifying boot partition..."
-for f in kernel_2712.img bcm2712-rpi-5-b.dtb armstub8-2712.bin start4.elf fixup4.dat config.txt cmdline.txt; do
-  if [[ -f /mnt/nvme-boot/$f ]]; then
-    echo " [OK] $f"
-  else
-    echo " [MISSING] $f"
-  fi
-done
+# Post-flash validation summary
+echo ""
+echo "[i] Post-flash quick summary:"
+echo "    → $(lsblk -o NAME,SIZE,TYPE,MOUNTPOINT | grep nvme || true)"
+echo "    → Mounted boot: $(mount | grep /mnt/boot || echo 'not mounted')"
+echo ""
 
-echo "[i] Syncing filesystems..."
+sudo umount /mnt/boot
 sync
 
-# --- Cleanup and next steps -------------------------------------------------
-sudo umount /mnt/nvme-boot
-sudo umount /mnt/nvme-root
-trap - EXIT
-
-echo "[i] Migration complete!"
 echo ""
-echo "[!] Next steps:"
-echo "    1. Power off the Pi: sudo poweroff"
-echo "    2. Remove the SD card"
-echo "    3. Boot from NVMe"
-echo "    4. SSH in and run: lsblk"
-echo "    5. Continue setup scripts"
+echo "${GREEN}[OK] NVMe image prepared successfully.${RESET}"
 echo ""
-read -p "Power off now? (yes/no): " -r
-if [[ $REPLY =~ ^yes$ ]]; then
-  sudo poweroff
-fi
+echo "Next steps:"
+echo "  1. Power off the Pi: sudo poweroff"
+echo "  2. Remove the SD card"
+echo "  3. Power on the Pi (it will boot from NVMe)"
+echo "  4. SSH in and verify with: lsblk"
+echo "  5. Continue with the rest of the setup scripts"
+echo ""
+echo "On first boot, cloud-init config will apply (default user per your user-data)."
