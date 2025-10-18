@@ -136,7 +136,7 @@ if lsblk -no SIZE "${NVME_DEVICE}" | grep -q '^0B$'; then
 fi
 
 sudo umount "${NVME_DEVICE}"* 2>/dev/null || true
-sudo blkdiscard "${NVME_DEVICE}" || true
+sudo blkdiscard -f "${NVME_DEVICE}" || true
 
 # --------------------------------------------------
 # Flash image
@@ -148,6 +148,13 @@ else
   sudo dd if="${IMG}" of="${NVME_DEVICE}" bs=4M status=progress conv=fsync
 fi
 sync
+
+# --------------------------------------------------
+# Fix partition table desync (prevents I/O errors)
+# --------------------------------------------------
+echo "[i] Refreshing partition table..."
+sudo partprobe "${NVME_DEVICE}" || sudo partx -u "${NVME_DEVICE}"
+sleep 3
 
 # --------------------------------------------------
 # Mount boot partition
@@ -175,10 +182,8 @@ OS_PREFIX=$(grep -Po '^(?i)os_prefix=\K.*' "${BOOT_MNT}/config.txt" 2>/dev/null 
 if [[ -n "${OS_PREFIX}" ]]; then
   echo "[i] os_prefix detected: ${OS_PREFIX}"
 
-  # Make sure the prefixed directory exists
   sudo mkdir -p "${BOOT_MNT}/${OS_PREFIX}"
 
-  # Copy kernel/initrd from current/ if they exist but are missing in os_prefix
   if [[ -f "${BOOT_MNT}/current/vmlinuz" && ! -f "${BOOT_MNT}/${OS_PREFIX}vmlinuz" ]]; then
     echo "[i] Copying vmlinuz from current/..."
     sudo cp "${BOOT_MNT}/current/vmlinuz" "${BOOT_MNT}/${OS_PREFIX}vmlinuz"
@@ -188,21 +193,16 @@ if [[ -n "${OS_PREFIX}" ]]; then
     sudo cp "${BOOT_MNT}/current/initrd.img" "${BOOT_MNT}/${OS_PREFIX}initrd.img"
   fi
 
-  # Ensure DTB exists at root level for Pi 5
   if [[ ! -f "${BOOT_MNT}/bcm2712-rpi-5-b.dtb" ]]; then
     if [[ -f "${BOOT_MNT}/current/bcm2712-rpi-5-b.dtb" ]]; then
       echo "[i] Copying Pi 5 DTB from current/..."
       sudo cp "${BOOT_MNT}/current/bcm2712-rpi-5-b.dtb" "${BOOT_MNT}/bcm2712-rpi-5-b.dtb"
     else
       echo "[!] bcm2712-rpi-5-b.dtb missing; fetching from firmware repo..."
-      download_file \
-        "${FIRMWARE_BASE_URL}/bcm2712-rpi-5-b.dtb" \
-        "${BOOT_MNT}/bcm2712-rpi-5-b.dtb" \
-        "Pi 5 DTB" || true
+      download_file "${FIRMWARE_BASE_URL}/bcm2712-rpi-5-b.dtb" "${BOOT_MNT}/bcm2712-rpi-5-b.dtb" "Pi 5 DTB" || true
     fi
   fi
 
-  # Ensure low-level blobs exist (start4.elf / fixup4.dat)
   for fw in start4.elf fixup4.dat; do
     if [[ ! -f "${BOOT_MNT}/${fw}" ]]; then
       echo "[i] Downloading missing ${fw}..."
@@ -213,7 +213,6 @@ if [[ -n "${OS_PREFIX}" ]]; then
 else
   echo "[i] Legacy layout detected — ensuring minimal boot blobs..."
 
-  # Copy kernel/initrd from current/ if needed
   if [[ -f "${BOOT_MNT}/current/vmlinuz" && ! -f "${BOOT_MNT}/vmlinuz" ]]; then
     echo "[i] Copying vmlinuz from current/..."
     sudo cp "${BOOT_MNT}/current/vmlinuz" "${BOOT_MNT}/vmlinuz"
@@ -223,7 +222,6 @@ else
     sudo cp "${BOOT_MNT}/current/initrd.img" "${BOOT_MNT}/initrd.img"
   fi
 
-  # Ensure firmware blobs exist
   for f in start4.elf fixup4.dat bcm2712-rpi-5-b.dtb; do
     if [[ ! -f "${BOOT_MNT}/${f}" ]]; then
       echo "[i] Downloading missing ${f}..."
