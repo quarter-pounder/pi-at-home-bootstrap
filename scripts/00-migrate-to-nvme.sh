@@ -157,6 +157,12 @@ envsubst < cloudinit/user-data.template | sudo tee /mnt/boot/user-data >/dev/nul
 envsubst < cloudinit/network-config.template | sudo tee /mnt/boot/network-config >/dev/null
 envsubst < cloudinit/meta-data.template | sudo tee /mnt/boot/meta-data >/dev/null
 
+# Ensure cmdline.txt exists
+if [[ ! -f "/mnt/boot/cmdline.txt" ]]; then
+  echo "[i] Creating missing cmdline.txt..."
+  echo "console=serial0,115200 console=tty1 root=LABEL=writable rootfstype=ext4 rootwait fixrtc" | sudo tee /mnt/boot/cmdline.txt >/dev/null
+fi
+
 # Ensure tools for firmware fetch
 if ! command -v wget >/dev/null 2>&1; then
   echo "[i] Installing wget..."
@@ -177,25 +183,29 @@ if [[ -n "${OS_PREFIX}" ]]; then
   echo "[i] Detected Ubuntu 25.10+ style boot (os_prefix=${OS_PREFIX})"
   sudo mkdir -p "${BOOT_SRC}/${OS_PREFIX}"
 
-  # Ensure kernel + initrd exist under prefix
-  if [[ ! -f "${BOOT_SRC}/${OS_PREFIX}vmlinuz" || ! -f "${BOOT_SRC}/${OS_PREFIX}initrd.img" ]]; then
-    echo "[!] Missing kernel/initrd under ${OS_PREFIX}; attempting fetch..."
+  # Check if kernel/initrd exist in the image
+  echo "[i] Checking for kernel/initrd in image..."
+  if [[ -f "${BOOT_SRC}/${OS_PREFIX}vmlinuz" && -f "${BOOT_SRC}/${OS_PREFIX}initrd.img" ]]; then
+    echo "[OK] Kernel and initrd found in image"
+  else
+    echo "[!] Missing kernel/initrd - checking if they exist elsewhere..."
 
-    if [[ ! -f "${BOOT_SRC}/${OS_PREFIX}vmlinuz" ]]; then
-      download_file \
-        "https://cdimage.ubuntu.com/releases/${UBUNTU_VERSION}/release/boot/${OS_PREFIX}vmlinuz" \
-        "${BOOT_SRC}/${OS_PREFIX}vmlinuz" \
-        "kernel (${OS_PREFIX}vmlinuz)" || true
-      sudo chown root:root "${BOOT_SRC}/${OS_PREFIX}vmlinuz" 2>/dev/null || true
-    fi
+    # Look for kernel/initrd in other locations
+    for kernel_path in "${BOOT_SRC}/vmlinuz" "${BOOT_SRC}/vmlinuz-*"; do
+      if [[ -f "${kernel_path}" ]]; then
+        echo "[i] Found kernel at ${kernel_path}, copying to ${OS_PREFIX} location..."
+        sudo cp "${kernel_path}" "${BOOT_SRC}/${OS_PREFIX}vmlinuz" 2>/dev/null || true
+        break
+      fi
+    done
 
-    if [[ ! -f "${BOOT_SRC}/${OS_PREFIX}initrd.img" ]]; then
-      download_file \
-        "https://cdimage.ubuntu.com/releases/${UBUNTU_VERSION}/release/boot/${OS_PREFIX}initrd.img" \
-        "${BOOT_SRC}/${OS_PREFIX}initrd.img" \
-        "initrd (${OS_PREFIX}initrd.img)" || true
-      sudo chown root:root "${BOOT_SRC}/${OS_PREFIX}initrd.img" 2>/dev/null || true
-    fi
+    for initrd_path in "${BOOT_SRC}/initrd.img" "${BOOT_SRC}/initrd.img-*"; do
+      if [[ -f "${initrd_path}" ]]; then
+        echo "[i] Found initrd at ${initrd_path}, copying to ${OS_PREFIX} location..."
+        sudo cp "${initrd_path}" "${BOOT_SRC}/${OS_PREFIX}initrd.img" 2>/dev/null || true
+        break
+      fi
+    done
   fi
 
   # Pi 5 DTB checks
