@@ -1,41 +1,49 @@
-external_url '${GITLAB_EXTERNAL_URL}'
+external_url "${GITLAB_EXTERNAL_URL}"
+
+gitlab_rails['gitlab_email_from'] = "${EMAIL}"
+gitlab_rails['gitlab_email_display_name'] = "GitLab Pi"
+gitlab_rails['gitlab_default_can_create_group'] = true
+gitlab_rails['time_zone'] = "${TIMEZONE}"
+
+gitlab_rails['initial_root_password'] = "${GITLAB_ROOT_PASSWORD}"
+
 gitlab_rails['gitlab_shell_ssh_port'] = 2222
 
-nginx['listen_port'] = 80
-nginx['listen_https'] = false
+gitlab_rails['log_level'] = "info"
+gitlab_rails['manage_backup_path'] = true
+gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
+gitlab_rails['backup_keep_time'] = 604800  # 7 days
 
-gitlab_rails['time_zone'] = '${TIMEZONE}'
-
-gitlab_rails['initial_root_password'] = '${GITLAB_ROOT_PASSWORD}'
-
-gitlab_rails['gitlab_email_enabled'] = true
-gitlab_rails['gitlab_email_from'] = 'gitlab@${DOMAIN}'
-gitlab_rails['gitlab_email_display_name'] = 'GitLab'
-gitlab_rails['gitlab_email_reply_to'] = 'noreply@${DOMAIN}'
-
-gitlab_rails['smtp_enable'] = false
-
-gitlab_rails['registry_enabled'] = true
-gitlab_rails['registry_host'] = 'registry.${DOMAIN}'
-gitlab_rails['registry_port'] = '5050'
-registry_external_url 'https://registry.${DOMAIN}'
-registry_nginx['listen_port'] = 5050
-registry_nginx['listen_https'] = false
-
-gitlab_rails['backup_keep_time'] = 604800
-
-puma['worker_processes'] = 2
-puma['min_threads'] = 1
-puma['max_threads'] = 2
-
+unicorn['worker_processes'] = 2
 sidekiq['max_concurrency'] = 10
 
+prometheus_monitoring['enable'] = false
+alertmanager['enable'] = false
+node_exporter['enable'] = false
+redis_exporter['enable'] = false
+postgres_exporter['enable'] = false
+gitlab_exporter['enable'] = false
+
+registry_external_url "http://${DOMAIN}:5050"
+registry['enable'] = true
+registry['log_level'] = "info"
+registry['env_directory'] = "/var/opt/gitlab/registry"
+registry_nginx['enable'] = false
+
+# SMTP placeholder (edit as needed)
+gitlab_rails['smtp_enable'] = false
+
+# Let's Encrypt disabled (Cloudflare tunnel handles TLS)
+letsencrypt['enable'] = false
+
+logging['logrotate_frequency'] = "daily"
+logging['logrotate_rotate'] = 7
+logging['logrotate_compress'] = "compress"
+
+gitlab_rails['backup_archive_permissions'] = 0640
+gitlab_rails['backup_keep_time'] = 604800
+
 postgresql['shared_buffers'] = "256MB"
-postgresql['max_worker_processes'] = 4
-
-prometheus_monitoring['enable'] = true
-
-gitlab_rails['env'] = {
-  'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000'
-}
-
+postgresql['max_connections'] = 100
+redis['maxmemory'] = "256mb"
+redis['maxmemory_policy'] = "allkeys-lru"

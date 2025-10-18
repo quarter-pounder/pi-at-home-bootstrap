@@ -2,41 +2,56 @@ services:
   gitlab:
     image: ${GITLAB_IMAGE}
     container_name: gitlab
-    restart: always
     hostname: ${GITLAB_DOMAIN}
-    environment:
-      GITLAB_OMNIBUS_CONFIG: |
-        from_file('/omnibus_config.rb')
+    restart: always
+
+    # Expose HTTP/HTTPS and SSH-for-clone
     ports:
       - "80:80"
       - "443:443"
       - "2222:22"
+
+    # Bind mounts
     volumes:
+      # Omnibus dirs
       - /srv/gitlab/config:/etc/gitlab
       - /srv/gitlab/logs:/var/log/gitlab
       - /srv/gitlab/data:/var/opt/gitlab
-      - ./compose/gitlab.rb:/omnibus_config.rb:ro
-    shm_size: '256m'
-    networks:
-      - gitlab-network
+      - ./compose/gitlab.rb:/etc/gitlab/gitlab.rb:ro
+
+    # Note to future me:
+    # IMPORTANT: do NOT set GITLAB_OMNIBUS_CONFIG here.
+    # The Omnibus entrypoint writes its content into /omnibus_config.rb,
+    # which must be a file. Leaving it unset avoids the EISDIR trap.
+
+    shm_size: "256m"
+    security_opt:
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
+      - SYS_RESOURCE
+
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/-/health"]
+      test: ["CMD", "curl", "-fsS", "http://localhost/-/health"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 10
       start_period: 180s
+
+    networks:
+      - gitlab-network
 
   gitlab-runner:
     image: gitlab/gitlab-runner:latest
     container_name: gitlab-runner
     restart: always
+    depends_on:
+      - gitlab
     volumes:
       - /srv/gitlab-runner/config:/etc/gitlab-runner
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - gitlab-network
-    depends_on:
-      - gitlab
 
   registry:
     image: registry:2
@@ -44,15 +59,14 @@ services:
     restart: always
     ports:
       - "5050:5000"
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
     volumes:
       - /srv/registry:/var/lib/registry
     networks:
       - gitlab-network
-    environment:
-      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
-      REGISTRY_STORAGE_DELETE_ENABLED: "true"
 
 networks:
   gitlab-network:
     driver: bridge
-
