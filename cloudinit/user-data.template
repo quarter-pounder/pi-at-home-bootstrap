@@ -1,17 +1,17 @@
 #cloud-config
 
-hostname: ${HOSTNAME}
+hostname: ${CFG_HOSTNAME}
 manage_etc_hosts: true
-timezone: ${TIMEZONE:-UTC}
-locale: ${LOCALE:-en_US.UTF-8}
+timezone: ${CFG_TIMEZONE}
+locale: ${CFG_LOCALE}
 
 users:
-  - name: ${USERNAME:-pi}
+  - name: ${CFG_USERNAME}
     groups: [adm, sudo]
     shell: /bin/bash
     sudo: ALL=(ALL) NOPASSWD:ALL
     ssh_authorized_keys:
-      - ${SSH_PUBLIC_KEY}
+      - ${CFG_SSH_KEY}
 
 ssh_pwauth: false
 disable_root: true

@@ -163,14 +163,27 @@ sudo mkdir -p "${BOOT_MNT}"
 sudo mount "${NVME_DEVICE}p1" "${BOOT_MNT}"
 
 # --------------------------------------------------
-# Cloud-init Injection
+# Cloud-init Injection (explicit CFG_ substitution)
 # --------------------------------------------------
 echo "[i] Injecting cloud-init configuration..."
-envsubst < cloudinit/user-data.template | sudo tee "${BOOT_MNT}/user-data" >/dev/null
-envsubst < cloudinit/network-config.template | sudo tee "${BOOT_MNT}/network-config" >/dev/null
-envsubst < cloudinit/meta-data.template | sudo tee "${BOOT_MNT}/meta-data" >/dev/null
 
-# Keep a snapshot of environment
+set -a
+source .env
+set +a
+
+# Set CFG_ variables with fallbacks
+export CFG_HOSTNAME="${HOSTNAME:-pi-at-home}"
+export CFG_USERNAME="${USERNAME:-pi}"
+export CFG_SSH_KEY="${SSH_PUBLIC_KEY:-}"
+export CFG_TIMEZONE="${TIMEZONE:-UTC}"
+export CFG_LOCALE="${LOCALE:-en_US.UTF-8}"
+
+# Perform substitutions with explicit variable list
+envsubst '$CFG_HOSTNAME $CFG_USERNAME $CFG_SSH_KEY $CFG_TIMEZONE $CFG_LOCALE' < cloudinit/user-data.template | sudo tee "${BOOT_MNT}/user-data" >/dev/null
+envsubst '$CFG_HOSTNAME $CFG_USERNAME $CFG_SSH_KEY $CFG_TIMEZONE $CFG_LOCALE' < cloudinit/network-config.template | sudo tee "${BOOT_MNT}/network-config" >/dev/null
+envsubst '$CFG_HOSTNAME $CFG_USERNAME $CFG_SSH_KEY $CFG_TIMEZONE $CFG_LOCALE' < cloudinit/meta-data.template | sudo tee "${BOOT_MNT}/meta-data" >/dev/null
+
+# Keep .env snapshot
 sudo cp .env "${BOOT_MNT}/.env.generated" 2>/dev/null || true
 
 # --------------------------------------------------
