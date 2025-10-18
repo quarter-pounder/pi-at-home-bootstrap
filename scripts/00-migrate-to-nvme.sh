@@ -184,44 +184,6 @@ envsubst < cloudinit/user-data.template | sudo tee /mnt/boot/user-data >/dev/nul
 envsubst < cloudinit/network-config.template | sudo tee /mnt/boot/network-config >/dev/null
 envsubst < cloudinit/meta-data.template | sudo tee /mnt/boot/meta-data >/dev/null
 
-# Preserve essential files for post-boot setup
-echo "[i] Preserving essential files for post-boot setup..."
-sudo mkdir -p /mnt/boot/bootstrap
-sudo cp -r scripts /mnt/boot/bootstrap/
-sudo cp -r config /mnt/boot/bootstrap/
-sudo cp -r compose /mnt/boot/bootstrap/
-sudo cp -r cloudinit /mnt/boot/bootstrap/
-sudo cp .env /mnt/boot/bootstrap/ 2>/dev/null || true
-sudo cp env.example /mnt/boot/bootstrap/
-
-# Create a script to restore bootstrap directory and run setup after boot
-cat << 'EOF' | sudo tee /mnt/boot/restore-bootstrap.sh >/dev/null
-#!/bin/bash
-# Restore bootstrap directory and run setup after boot
-if [[ -d /boot/bootstrap ]]; then
-  # Create bootstrap directory
-  mkdir -p /home/$(logname)/pi-at-home-bootstrap
-  cd /home/$(logname)/pi-at-home-bootstrap
-
-  # Copy essential files
-  cp -r /boot/bootstrap/* .
-  chown -R $(logname):$(logname) .
-  chmod +x scripts/*.sh
-
-  # Run the setup scripts
-  ./scripts/01-post-boot-setup.sh
-  ./scripts/02-security-hardening.sh
-  ./scripts/03-install-docker.sh
-  ./scripts/04-setup-gitlab.sh
-  ./scripts/05-register-runner.sh
-  ./scripts/06-setup-monitoring.sh
-
-  # Clean up
-  rm -rf /boot/bootstrap
-  rm -f /boot/restore-bootstrap.sh
-fi
-EOF
-sudo chmod +x /mnt/boot/restore-bootstrap.sh
 
 # Ensure cmdline.txt exists
 if [[ ! -f "/mnt/boot/cmdline.txt" ]]; then
