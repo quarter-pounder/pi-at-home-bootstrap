@@ -1,12 +1,12 @@
 #cloud-config
 
-hostname: ${HOSTNAME}
+hostname: ${HOSTNAME:-pi-at-home}
 manage_etc_hosts: true
-timezone: ${TIMEZONE}
-locale: ${LOCALE}
+timezone: ${TIMEZONE:-UTC}
+locale: ${LOCALE:-en_US.UTF-8}
 
 users:
-  - name: ${USERNAME}
+  - name: ${USERNAME:-pi}
     groups: [adm, sudo]
     shell: /bin/bash
     sudo: ALL=(ALL) NOPASSWD:ALL
@@ -53,7 +53,7 @@ runcmd:
   - mkdir -p /srv/gitlab/{data,logs,config}
   - mkdir -p /srv/prometheus
   - mkdir -p /srv/grafana
-  - mkdir -p ${BACKUP_DIR}
+  - mkdir -p /srv/backup
   - chown -R ${USERNAME}:${USERNAME} /srv
 
 power_state:
