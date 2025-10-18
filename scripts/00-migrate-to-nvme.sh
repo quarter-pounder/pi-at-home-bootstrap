@@ -127,6 +127,27 @@ fi
 # Unmount any existing partitions
 sudo umount "${NVME_DEVICE}"* 2>/dev/null || true
 
+# Reset NVMe drive if corrupted
+echo "[i] Checking NVMe drive state..."
+if [[ $(lsblk -no SIZE "${NVME_DEVICE}") == "0B" ]]; then
+  echo "[!] NVMe drive appears corrupted (0B size), attempting reset..."
+
+  # Try to reset the drive
+  echo "[i] Resetting NVMe drive..."
+  sudo nvme reset "${NVME_DEVICE}" 2>/dev/null || true
+  sleep 2
+
+  # Check if reset worked
+  if [[ $(lsblk -no SIZE "${NVME_DEVICE}") == "0B" ]]; then
+    echo "[!] NVMe reset failed, trying power cycle..."
+    echo "[i] Please power cycle the Pi or reconnect the NVMe adapter"
+    echo "[i] Then run this script again"
+    exit 1
+  else
+    echo "[OK] NVMe drive reset successful"
+  fi
+fi
+
 # Discard existing data
 echo "[i] Discarding existing data..."
 sudo blkdiscard "${NVME_DEVICE}" || true
@@ -134,9 +155,15 @@ sudo blkdiscard "${NVME_DEVICE}" || true
 # Write the image (use pv if available)
 echo "[i] Writing image (this may take several minutes)..."
 if command -v pv >/dev/null; then
-  pv "${IMG}" | sudo dd of="${NVME_DEVICE}" bs=4M conv=fsync
+  if ! pv "${IMG}" | sudo dd of="${NVME_DEVICE}" bs=4M conv=fsync; then
+    echo "[!] Image write failed with I/O error"
+    exit 1
+  fi
 else
-  sudo dd if="${IMG}" of="${NVME_DEVICE}" bs=4M status=progress conv=fsync
+  if ! sudo dd if="${IMG}" of="${NVME_DEVICE}" bs=4M status=progress conv=fsync; then
+    echo "[!] Image write failed with I/O error"
+    exit 1
+  fi
 fi
 
 echo "[i] Verifying write..."
