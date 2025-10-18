@@ -218,37 +218,23 @@ if [[ -n "${OS_PREFIX}" ]]; then
   else
     echo "[!] Missing kernel/initrd - checking if they exist elsewhere..."
 
-    # List all files in boot partition for debugging
-    echo "[i] Files in boot partition:"
-    ls -la "${BOOT_SRC}/" | head -20
-
-    # Check what's in the current directory
-    if [[ -d "${BOOT_SRC}/current" ]]; then
-      echo "[i] Files in current directory:"
-      ls -la "${BOOT_SRC}/current/" | head -10
+    # Look for kernel/initrd in current directory and copy to both locations
+    if [[ -f "${BOOT_SRC}/current/vmlinuz" ]]; then
+      echo "[i] Found kernel in current/, copying to both locations..."
+      sudo cp "${BOOT_SRC}/current/vmlinuz" "${BOOT_SRC}/${OS_PREFIX}vmlinuz" 2>/dev/null || true
+      sudo cp "${BOOT_SRC}/current/vmlinuz" "${BOOT_SRC}/vmlinuz" 2>/dev/null || true
     fi
 
-    # Look for kernel/initrd in other locations
-    for kernel_path in "${BOOT_SRC}/vmlinuz" "${BOOT_SRC}/vmlinuz-*" "${BOOT_SRC}/current/vmlinuz" "${BOOT_SRC}/current/vmlinuz-*"; do
-      if [[ -f "${kernel_path}" ]]; then
-        echo "[i] Found kernel at ${kernel_path}, copying to ${OS_PREFIX} location..."
-        sudo cp "${kernel_path}" "${BOOT_SRC}/${OS_PREFIX}vmlinuz" 2>/dev/null || true
-        break
-      fi
-    done
+    if [[ -f "${BOOT_SRC}/current/initrd.img" ]]; then
+      echo "[i] Found initrd in current/, copying to both locations..."
+      sudo cp "${BOOT_SRC}/current/initrd.img" "${BOOT_SRC}/${OS_PREFIX}initrd.img" 2>/dev/null || true
+      sudo cp "${BOOT_SRC}/current/initrd.img" "${BOOT_SRC}/initrd.img" 2>/dev/null || true
+    fi
 
-    for initrd_path in "${BOOT_SRC}/initrd.img" "${BOOT_SRC}/initrd.img-*" "${BOOT_SRC}/current/initrd.img" "${BOOT_SRC}/current/initrd.img-*"; do
-      if [[ -f "${initrd_path}" ]]; then
-        echo "[i] Found initrd at ${initrd_path}, copying to ${OS_PREFIX} location..."
-        sudo cp "${initrd_path}" "${BOOT_SRC}/${OS_PREFIX}initrd.img" 2>/dev/null || true
-        break
-      fi
-    done
-
-    # Check if we found anything
-    if [[ ! -f "${BOOT_SRC}/${OS_PREFIX}vmlinuz" || ! -f "${BOOT_SRC}/${OS_PREFIX}initrd.img" ]]; then
-      echo "[!] No kernel/initrd found in image - this may cause boot failure"
-      echo "[i] The system may still boot using the existing boot files"
+    # Also copy DTB files
+    if [[ -f "${BOOT_SRC}/current/bcm2712-rpi-5-b.dtb" ]]; then
+      echo "[i] Copying Pi 5 DTB to root..."
+      sudo cp "${BOOT_SRC}/current/bcm2712-rpi-5-b.dtb" "${BOOT_SRC}/bcm2712-rpi-5-b.dtb" 2>/dev/null || true
     fi
   fi
 
@@ -277,6 +263,13 @@ if [[ -n "${OS_PREFIX}" ]]; then
   done
 else
   echo "[i] Legacy (pre-25.10) layout detected, verifying minimal boot files..."
+
+  # Copy files from current/ directory if they exist
+  if [[ -f "${BOOT_SRC}/current/bcm2712-rpi-5-b.dtb" ]]; then
+    echo "[i] Copying Pi 5 DTB from current/ directory..."
+    sudo cp "${BOOT_SRC}/current/bcm2712-rpi-5-b.dtb" "${BOOT_SRC}/bcm2712-rpi-5-b.dtb" 2>/dev/null || true
+  fi
+
   for f in start4.elf fixup4.dat bcm2712-rpi-5-b.dtb; do
     if [[ ! -f "${BOOT_SRC}/${f}" ]]; then
       download_file "${FIRMWARE_BASE_URL}/${f}" \
