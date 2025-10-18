@@ -113,7 +113,12 @@ echo "${YELLOW}Generating compose file with variables...${RESET}"
 envsubst < compose/gitlab.yml > compose/gitlab-resolved.yml
 
 echo "${YELLOW}Restarting GitLab...${RESET}"
+<<<<<<< HEAD:scripts/13-scale-resources.sh
 docker compose -f compose/gitlab-resolved.yml restart gitlab
+=======
+cd compose
+docker compose -f gitlab-resolved.yml restart gitlab
+>>>>>>> b1ca99c (Update directory and variable reference):scripts/12-scale-resources.sh
 
 echo ""
 echo "${GREEN}Configuration updated!${RESET}"
