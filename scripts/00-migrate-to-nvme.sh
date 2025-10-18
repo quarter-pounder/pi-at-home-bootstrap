@@ -331,23 +331,19 @@ EOF
 # --- EEPROM Configuration ---
 echo "[i] Configuring EEPROM boot order for Pi 5..."
 if command -v rpi-eeprom-config >/dev/null 2>&1; then
-  echo "[i] Setting boot order to 0xf416 (NVMe first, then SD card)..."
-  if ! sudo rpi-eeprom-config --edit <<EOF
-BOOT_ORDER=0xf416
-EOF
-  then
-    echo "[!] Warning: Failed to set EEPROM boot order"
-    echo "[i] You may need to set this manually:"
-    echo "    sudo rpi-eeprom-config --edit"
-    echo "    Add: BOOT_ORDER=0xf416"
+  echo "[i] Setting EEPROM boot order to 0xf416 (NVMe first, then SD card)..."
+  TMP=$(mktemp)
+  sudo rpi-eeprom-config >"$TMP"
+  if ! grep -q '^BOOT_ORDER=' "$TMP"; then
+    echo "BOOT_ORDER=0xf416" | sudo tee -a "$TMP" >/dev/null
   else
-    echo "[i] EEPROM boot order configured successfully"
+    sudo sed -i 's/^BOOT_ORDER=.*/BOOT_ORDER=0xf416/' "$TMP"
   fi
+  sudo rpi-eeprom-config --apply "$TMP"
+  rm "$TMP"
+  echo "[i] EEPROM boot order configured successfully"
 else
-  echo "[!] Warning: rpi-eeprom-config not found"
-  echo "[i] Install it with: sudo apt install rpi-eeprom"
-  echo "[i] Then run: sudo rpi-eeprom-config --edit"
-  echo "[i] Add: BOOT_ORDER=0xf416"
+  echo "[!] rpi-eeprom-config not found; install with: sudo apt install rpi-eeprom"
 fi
 
 # --- Verify critical files ---
