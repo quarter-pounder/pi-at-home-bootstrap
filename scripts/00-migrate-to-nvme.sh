@@ -175,15 +175,25 @@ if [[ -n "${OS_PREFIX}" ]]; then
   echo "[i] os_prefix detected: ${OS_PREFIX}"
   for f in vmlinuz initrd.img; do
     if [[ ! -f "${BOOT_MNT}/${OS_PREFIX}${f}" ]]; then
-      echo "[!] Missing ${f}, attempting fetch..."
-      download_file "${FIRMWARE_BASE_URL}/${f}" "${BOOT_MNT}/${OS_PREFIX}${f}" "${f}" || true
+      if [[ -f "${BOOT_MNT}/current/${f}" ]]; then
+        echo "[i] Copying ${f} from current/ directory..."
+        sudo cp "${BOOT_MNT}/current/${f}" "${BOOT_MNT}/${OS_PREFIX}${f}"
+      else
+        echo "[!] Missing ${f}, attempting fetch..."
+        download_file "${FIRMWARE_BASE_URL}/${f}" "${BOOT_MNT}/${OS_PREFIX}${f}" "${f}" || true
+      fi
     fi
   done
 else
   echo "[i] Legacy layout detected — ensuring minimal boot blobs"
   for f in start4.elf fixup4.dat bcm2712-rpi-5-b.dtb; do
     if [[ ! -f "${BOOT_MNT}/${f}" ]]; then
-      download_file "${FIRMWARE_BASE_URL}/${f}" "${BOOT_MNT}/${f}" "firmware ${f}" || true
+      if [[ -f "${BOOT_MNT}/current/${f}" ]]; then
+        echo "[i] Copying ${f} from current/ directory..."
+        sudo cp "${BOOT_MNT}/current/${f}" "${BOOT_MNT}/${f}"
+      else
+        download_file "${FIRMWARE_BASE_URL}/${f}" "${BOOT_MNT}/${f}" "firmware ${f}" || true
+      fi
     fi
   done
 fi

@@ -92,7 +92,7 @@ check_env_and_templates() {
     source .env; set +a
 
     # required variables for first boot
-    local required=(HOSTNAME USERNAME SSH_PUBLIC_KEY TIMEZONE LOCALE UBUNTU_VERSION NVME_DEVICE)
+    local required=(HOSTNAME USERNAME SSH_PUBLIC_KEY TIMEZONE LOCALE UBUNTU_VERSION NVME_DEVICE GITLAB_ROOT_PASSWORD GRAFANA_ADMIN_PASSWORD)
     local missing=()
     for v in "${required[@]}"; do
       [[ -n "${!v:-}" ]] || missing+=("$v")
@@ -100,7 +100,7 @@ check_env_and_templates() {
     if (( ${#missing[@]} )); then bad "Missing required .env variables: ${missing[*]}"; else ok "Core .env variables present"; fi
 
     # basic key sanity
-    if [[ "${SSH_PUBLIC_KEY:-}" =~ ^(ssh-ed25519|ssh-rsa)\s+[A-Za-z0-9+/=]+(\s+.+)?$ ]]; then
+    if [[ "${SSH_PUBLIC_KEY:-}" =~ ^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521)\s+[A-Za-z0-9+/=]+(\s+.+)?$ ]]; then
       ok "SSH public key format"
     else
       bad "SSH_PUBLIC_KEY looks invalid"
