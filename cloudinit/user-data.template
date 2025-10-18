@@ -1,6 +1,6 @@
 #cloud-config
 
-hostname: ${HOSTNAME:-pi-at-home}
+hostname: ${HOSTNAME}
 manage_etc_hosts: true
 timezone: ${TIMEZONE:-UTC}
 locale: ${LOCALE:-en_US.UTF-8}
