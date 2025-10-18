@@ -47,8 +47,7 @@ if [[ ! $REPLY =~ ^yes$ ]]; then
 fi
 
 echo "[i] Stopping GitLab services..."
-cd compose
-docker compose -f gitlab.yml stop
+docker compose -f compose/gitlab-resolved.yml stop
 docker compose -f monitoring.yml stop
 
 echo "[i] Restoring GitLab configuration..."
@@ -58,7 +57,7 @@ echo "[i] Copying backup to container..."
 docker cp "${LOCAL_BACKUP_DIR}/${BACKUP_NAME}_gitlab_backup.tar" gitlab:/var/opt/gitlab/backups/
 
 echo "[i] Starting GitLab for restore..."
-docker compose -f gitlab.yml start gitlab
+docker compose -f compose/gitlab-resolved.yml start gitlab
 
 echo "[i] Waiting for GitLab to start..."
 sleep 30
@@ -83,7 +82,7 @@ if [[ -f "${LOCAL_BACKUP_DIR}/${BACKUP_NAME}_grafana.tar.gz" ]]; then
 fi
 
 echo "[i] Restarting all services..."
-docker compose -f gitlab.yml restart
+docker compose -f compose/gitlab-resolved.yml restart
 docker compose -f monitoring.yml restart
 
 echo "[i] Restore complete!"

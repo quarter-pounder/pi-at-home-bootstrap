@@ -34,7 +34,6 @@ postgresql['shared_buffers'] = "256MB"
 postgresql['max_worker_processes'] = 4
 
 prometheus_monitoring['enable'] = true
-grafana['enable'] = false
 
 gitlab_rails['env'] = {
   'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000'

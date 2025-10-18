@@ -12,11 +12,31 @@ sudo chown -R "${USERNAME}:${USERNAME}" /srv/gitlab*
 sudo chown -R "${USERNAME}:${USERNAME}" /srv/registry
 
 echo "[i] Generating GitLab configuration..."
+# Ensure all required variables are set
+export DOMAIN="${DOMAIN:-REDACTED.run}"
+export GITLAB_DOMAIN="${GITLAB_DOMAIN:-gitlab.${DOMAIN}}"
+export GITLAB_EXTERNAL_URL="${GITLAB_EXTERNAL_URL:-https://gitlab.${DOMAIN}}"
+export TIMEZONE="${TIMEZONE:-UTC}"
+export GITLAB_ROOT_PASSWORD="${GITLAB_ROOT_PASSWORD:-REDACTED}"
+export GITLAB_IMAGE="${GITLAB_IMAGE:-gitlab/gitlab-ce:latest}"
+
+# Generate configuration with proper variable substitution
 envsubst < config/gitlab.rb.template > compose/gitlab.rb
+
+# Verify no grafana references
+if grep -i grafana compose/gitlab.rb; then
+  echo "[!] WARNING: Grafana references found in generated config!"
+  exit 1
+fi
+
+echo "[i] GitLab configuration generated successfully"
+
+echo "[i] Generating compose file with variables..."
+envsubst < compose/gitlab.yml > compose/gitlab-resolved.yml
 
 echo "[i] Starting GitLab services..."
 cd compose
-docker compose -f gitlab.yml up -d
+docker compose -f gitlab-resolved.yml up -d
 
 echo "[i] Waiting for GitLab to become healthy (this may take 5-10 minutes)..."
 for i in {1..60}; do

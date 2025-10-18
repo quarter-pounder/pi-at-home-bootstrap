@@ -102,7 +102,6 @@ postgresql['shared_buffers'] = "${PG_SHARED_BUFFERS}"
 postgresql['max_worker_processes'] = 4
 
 prometheus_monitoring['enable'] = true
-grafana['enable'] = false
 
 gitlab_rails['env'] = {
   'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000'
@@ -110,9 +109,12 @@ gitlab_rails['env'] = {
 EOF
 
 echo ""
+echo "${YELLOW}Generating compose file with variables...${RESET}"
+envsubst < compose/gitlab.yml > compose/gitlab-resolved.yml
+
 echo "${YELLOW}Restarting GitLab...${RESET}"
 cd compose
-docker compose -f gitlab.yml restart gitlab
+docker compose -f gitlab-resolved.yml restart gitlab
 
 echo ""
 echo "${GREEN}Configuration updated!${RESET}"

@@ -22,8 +22,7 @@ fi
 
 echo ""
 echo "[i] Stopping services..."
-cd compose
-docker compose -f gitlab.yml down -v 2>/dev/null || true
+docker compose -f compose/gitlab-resolved.yml down -v 2>/dev/null || true
 docker compose -f monitoring.yml down -v 2>/dev/null || true
 docker compose -f adblocker.yml down -v 2>/dev/null || true
 cd ..

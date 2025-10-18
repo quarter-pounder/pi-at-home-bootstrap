@@ -15,10 +15,8 @@ backup_first() {
 
 update_gitlab() {
   echo "${YELLOW}Updating GitLab...${RESET}"
-  cd compose
-
-  docker compose -f gitlab.yml pull
-  docker compose -f gitlab.yml up -d
+  docker compose -f compose/gitlab-resolved.yml pull
+  docker compose -f compose/gitlab-resolved.yml up -d
 
   echo "Waiting for GitLab to restart..."
   sleep 30

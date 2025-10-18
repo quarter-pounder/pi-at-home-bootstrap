@@ -1,6 +1,6 @@
 services:
   gitlab:
-    image: ${GITLAB_IMAGE:-gitlab/gitlab-ce:latest}
+    image: ${GITLAB_IMAGE}
     container_name: gitlab
     restart: always
     hostname: ${GITLAB_DOMAIN}
@@ -15,7 +15,7 @@ services:
       - /srv/gitlab/config:/etc/gitlab
       - /srv/gitlab/logs:/var/log/gitlab
       - /srv/gitlab/data:/var/opt/gitlab
-      - ./gitlab.rb:/omnibus_config.rb:ro
+      - ./compose/gitlab.rb:/omnibus_config.rb:ro
     shm_size: '256m'
     networks:
       - gitlab-network

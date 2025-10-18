@@ -38,8 +38,7 @@ sudo chown -R $(id -u):$(id -g) /srv/gitlab/data/git-data/lfs-objects
 
 echo ""
 echo "${YELLOW}Restarting GitLab...${RESET}"
-cd compose
-docker compose -f gitlab.yml restart gitlab
+docker compose -f compose/gitlab-resolved.yml restart gitlab
 
 echo ""
 echo "${GREEN}LFS configuration complete!${RESET}"
