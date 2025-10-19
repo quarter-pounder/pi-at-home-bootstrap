@@ -17,7 +17,7 @@ services:
       - /srv/gitlab/config:/etc/gitlab
       - /srv/gitlab/logs:/var/log/gitlab
       - /srv/gitlab/data:/var/opt/gitlab
-      - ./compose/gitlab.rb:/etc/gitlab/gitlab.rb:ro
+      - ./gitlab.rb:/etc/gitlab/gitlab.rb:ro
 
     # Note to future me:
     # IMPORTANT: do NOT set GITLAB_OMNIBUS_CONFIG here.
