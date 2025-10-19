@@ -20,6 +20,15 @@ export TIMEZONE="${TIMEZONE:-UTC}"
 export GITLAB_ROOT_PASSWORD="${GITLAB_ROOT_PASSWORD:-REDACTED}"
 export GITLAB_IMAGE="${GITLAB_IMAGE:-gitlab/gitlab-ce:latest}"
 
+# Generate SSL certificates for GitLab
+echo "[i] Generating SSL certificates..."
+sudo mkdir -p /srv/gitlab/ssl
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /srv/gitlab/ssl/${DOMAIN}.key \
+  -out /srv/gitlab/ssl/${DOMAIN}.crt \
+  -subj "/C=US/ST=State/L=City/O=Organization/CN=${DOMAIN}"
+sudo chown -R "${USERNAME}:${USERNAME}" /srv/gitlab/ssl
+
 # Generate configuration with proper variable substitution
 envsubst < config/gitlab.rb.template > compose/gitlab.rb
 
