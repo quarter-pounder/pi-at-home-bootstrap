@@ -48,7 +48,7 @@ fi
 echo ""
 echo "[i] Service Endpoints:"
 for endpoint in \
-  "GitLab:http://localhost:80/-/health" \
+  "GitLab:https://localhost:443/-/health" \
   "Registry:http://localhost:5050/" \
   "Prometheus:http://localhost:${PROM_PORT}/-/healthy" \
   "Alertmanager:http://localhost:9093/-/healthy" \
@@ -58,7 +58,7 @@ for endpoint in \
   "Pi-hole:http://localhost:8080/admin/api.php?summary"; do
   name=$(echo "$endpoint" | cut -d: -f1)
   url=$(echo "$endpoint" | cut -d: -f2-)
-  if timeout 5 curl -sf "$url" >/dev/null 2>&1; then
+  if timeout 5 curl -sf -k "$url" >/dev/null 2>&1; then
     echo "${GREEN}$name is responding${RESET}"
   else
     echo "${RED}$name is not responding${RESET}"
