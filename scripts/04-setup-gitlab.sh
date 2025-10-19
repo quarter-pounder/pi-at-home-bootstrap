@@ -36,7 +36,7 @@ envsubst < compose/gitlab.yml > compose/gitlab-resolved.yml
 
 echo "[i] Starting GitLab services..."
 cd compose
-docker compose -f gitlab-resolved.yml up -d
+docker compose -f compose/gitlab-resolved.yml up -d
 
 echo "[i] Waiting for GitLab to become healthy (this may take 5-10 minutes)..."
 for i in {1..60}; do

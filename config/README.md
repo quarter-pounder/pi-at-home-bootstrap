@@ -63,7 +63,7 @@ All configs use environment variables from `.env` for easy customization.
 Edit templates, then restart services:
 ```bash
 cd compose
-docker compose -f gitlab.yml restart
+docker compose -f compose/gitlab.yml restart
 docker compose -f monitoring.yml restart
 ```
 

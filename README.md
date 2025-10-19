@@ -401,7 +401,7 @@ docker compose -f compose/adblocker.yml logs -f pihole
 
 # Restart services
 cd compose
-docker compose -f gitlab.yml restart
+docker compose -f compose/gitlab.yml restart
 docker compose -f monitoring.yml restart
 docker compose -f adblocker.yml restart
 
