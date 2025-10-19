@@ -43,7 +43,7 @@ ingress:
 EOF
 
 echo "[i] Installing tunnel as systemd service..."
-sudo cloudflared service install --token "${CLOUDFLARE_TUNNEL_TOKEN}"
+sudo cloudflared service install "${CLOUDFLARE_TUNNEL_TOKEN}"
 
 echo "[i] Starting Cloudflare Tunnel..."
 sudo systemctl enable cloudflared
