@@ -140,8 +140,8 @@ chmod +x /srv/pihole/monitor.sh
 
 # Add Pi-hole to health check
 echo "[i] Adding Pi-hole to health check..."
-if ! grep -q "Pi-hole" scripts/08-health-check.sh; then
-  sed -i '/echo "\[i\] Service Endpoints:"/a\\n  "Pi-hole:http://localhost:8080/admin/api.php?summary" \\' scripts/08-health-check.sh
+if ! grep -q "Pi-hole" scripts/21-health-check.sh; then
+  sed -i '/echo "\[i\] Service Endpoints:"/a\\n  "Pi-hole:http://localhost:8080/admin/api.php?summary" \\' scripts/21-health-check.sh
 fi
 
 echo ""
@@ -158,7 +158,7 @@ echo "  Run: /srv/pihole/configure-network.sh"
 echo ""
 echo "Monitoring:"
 echo "  Check status: /srv/pihole/monitor.sh"
-echo "  Health check: ./scripts/08-health-check.sh"
+echo "  Health check: ./scripts/21-health-check.sh"
 echo ""
 echo "To configure your network:"
 echo "  1. Set router DNS to: $PI_IP"

@@ -16,20 +16,22 @@ CORE SCRIPTS:
 ├── 05-register-runner.sh     - Register CI/CD runner
 ├── 06-setup-monitoring.sh    - Deploy Prometheus + Grafana + Loki
 ├── 07-setup-cloudflare-tunnel.sh - Remote access via Cloudflare
-├── 08-health-check.sh        - System and service health
-├── 09-update-services.sh     - Update GitLab/monitoring/system
-├── 10-benchmark.sh           - Performance testing
-├── 11-network-diag.sh        - Network diagnostics
-├── 12-scale-resources.sh     - Adjust GitLab workers/memory
-├── 13-setup-lfs.sh           - Enable Git Large File Storage
-├── 14-add-runner.sh          - Add additional CI/CD runners
-├── 15-import-dashboards.sh   - Import Grafana dashboards
-├── 16-setup-terraform.sh     - Deploy AWS cloud infrastructure
-├── 16-setup-terraform-gcp.sh - Deploy GCP cloud infrastructure (recommended)
-├── 17-setup-gitlab-mirror.sh - Setup GitLab Cloud mirroring
-├── 18-setup-dr-webhook.sh     - Setup webhook-based DR automation
-├── 19-setup-complete-dr.sh   - Complete DR system setup
-├── 20-setup-adblocker.sh     - Setup Pi-hole ad blocker
+├── 08-fix-gitlab-permissions.sh - Fix GitLab container permissions
+├── 10-update-services.sh     - Update GitLab/monitoring/system
+├── 11-benchmark.sh           - Performance testing
+├── 12-network-diag.sh        - Network diagnostics
+├── 13-scale-resources.sh     - Adjust GitLab workers/memory
+├── 14-setup-lfs.sh           - Enable Git Large File Storage
+├── 15-add-runner.sh          - Add additional CI/CD runners
+├── 16-import-dashboards.sh   - Import Grafana dashboards
+├── 17-setup-terraform.sh     - Deploy AWS cloud infrastructure
+├── 18-setup-terraform-gcp.sh - Deploy GCP cloud infrastructure (recommended)
+├── 19-setup-gitlab-mirror.sh - Setup GitLab Cloud mirroring
+├── 21-health-check.sh        - System and service health
+├── 22-setup-dr-automation.sh - Setup DR automation system
+├── 23-setup-dr-webhook.sh    - Setup webhook-based DR automation
+├── 24-setup-complete-dr.sh   - Complete DR setup
+├── 25-setup-adblocker.sh     - Deploy Pi-hole ad blocker
 └── 99-cleanup.sh             - Remove all services and data
 
 AUTOMATION:

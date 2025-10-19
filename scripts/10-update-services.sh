@@ -100,5 +100,5 @@ esac
 
 echo ""
 echo "${GREEN}✓ Update complete!${RESET}"
-echo "Run health check: ./scripts/08-health-check.sh"
+echo "Run health check: ./scripts/21-health-check.sh"
 

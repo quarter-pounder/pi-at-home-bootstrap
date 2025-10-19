@@ -83,7 +83,7 @@ Create tunnel in Cloudflare dashboard, get token, add to `.env`
 ### 7. Verify Everything
 
 ```bash
-./scripts/08-health-check.sh
+./scripts/21-health-check.sh
 ```
 
 Done. Access GitLab at `https://gitlab.yourdomain.com`

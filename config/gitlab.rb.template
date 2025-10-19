@@ -43,7 +43,29 @@ logging['logrotate_compress'] = "compress"
 gitlab_rails['backup_archive_permissions'] = 0640
 gitlab_rails['backup_keep_time'] = 604800
 
+# PostgreSQL configuration for ARM64 stability
 postgresql['shared_buffers'] = "256MB"
-postgresql['max_connections'] = 100
+postgresql['max_connections'] = 200
+postgresql['effective_cache_size'] = "1GB"
+postgresql['maintenance_work_mem'] = "64MB"
+postgresql['checkpoint_completion_target'] = 0.9
+postgresql['checkpoint_segments'] = 32
+postgresql['checkpoint_timeout'] = '5min'
+postgresql['checkpoint_warning'] = '30s'
+postgresql['wal_buffers'] = "16MB"
+postgresql['default_statistics_target'] = 100
+
+# Disable logging features that can cause startup delays
+postgresql['log_line_prefix'] = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+postgresql['log_checkpoints'] = 'off'
+postgresql['log_connections'] = 'off'
+postgresql['log_disconnections'] = 'off'
+postgresql['log_lock_waits'] = 'off'
+
+# File permissions fix for container issues
+gitlab_rails['manage_backup_path'] = true
+gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
+gitlab_rails['backup_archive_permissions'] = 0640
+
 redis['maxmemory'] = "256mb"
 redis['maxmemory_policy'] = "allkeys-lru"

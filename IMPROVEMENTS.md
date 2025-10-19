@@ -44,7 +44,7 @@
 - Run before setup to catch issues early
 
 ### Update Management
-**Script**: `scripts/09-update-services.sh`
+**Script**: `scripts/10-update-services.sh`
 - Interactive update menu
 - Update GitLab, monitoring, or system packages
 - Automatic backup before GitLab updates
@@ -89,10 +89,10 @@
 ### Regular Maintenance
 ```bash
 # Update everything (with backup)
-./scripts/09-update-services.sh
+./scripts/10-update-services.sh
 
 # Just check system health
-./scripts/08-health-check.sh
+./scripts/21-health-check.sh
 ```
 
 ### Starting a New Project
@@ -146,7 +146,7 @@ vim ~/my-project/.gitlab-ci.yml
 - Download speed test
 
 ### Resource Scaler
-**Script**: `scripts/12-scale-resources.sh`
+**Script**: `scripts/13-scale-resources.sh`
 - Interactive resource profile selection
 - Light/Medium/Heavy/Custom profiles
 - Adjusts Puma workers, Sidekiq concurrency
@@ -154,7 +154,7 @@ vim ~/my-project/.gitlab-ci.yml
 - Automatic GitLab restart
 
 ### Git LFS Setup
-**Script**: `scripts/13-setup-lfs.sh`
+**Script**: `scripts/14-setup-lfs.sh`
 - Enable Git Large File Storage in GitLab
 - Configure storage paths
 - Setup instructions for client use

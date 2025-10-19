@@ -51,19 +51,22 @@ pi-at-home-bootstrap/
 │   ├── 05-register-runner.sh
 │   ├── 06-setup-monitoring.sh
 │   ├── 07-setup-cloudflare-tunnel.sh
-│   ├── 08-health-check.sh
-│   ├── 09-update-services.sh
-│   ├── 10-benchmark.sh
-│   ├── 11-network-diag.sh
-│   ├── 12-scale-resources.sh
-│   ├── 13-setup-lfs.sh
-│   ├── 14-add-runner.sh
-│   ├── 15-import-dashboards.sh
-│   ├── 16-setup-terraform.sh
-│   ├── 17-setup-gitlab-mirror.sh
-│   ├── 18-setup-dr-webhook.sh
-│   ├── 19-setup-complete-dr.sh
-│   ├── 20-setup-adblocker.sh
+│   ├── 08-fix-gitlab-permissions.sh
+│   ├── 10-update-services.sh
+│   ├── 11-benchmark.sh
+│   ├── 12-network-diag.sh
+│   ├── 13-scale-resources.sh
+│   ├── 14-setup-lfs.sh
+│   ├── 15-add-runner.sh
+│   ├── 16-import-dashboards.sh
+│   ├── 17-setup-terraform.sh
+│   ├── 18-setup-terraform-gcp.sh
+│   ├── 19-setup-gitlab-mirror.sh
+│   ├── 21-health-check.sh
+│   ├── 22-setup-dr-automation.sh
+│   ├── 23-setup-dr-webhook.sh
+│   ├── 24-setup-complete-dr.sh
+│   ├── 25-setup-adblocker.sh
 │   ├── 99-cleanup.sh
 │   └── utils.sh
 ├── terraform/                 # Infrastructure as Code
@@ -174,7 +177,7 @@ cd pi-at-home-bootstrap
 ./scripts/19-setup-complete-dr.sh
 
 # 8. Verify
-./scripts/08-health-check.sh
+./scripts/21-health-check.sh
 ```
 
 See [SETUP-PATH-A.md](SETUP-PATH-A.md) for detailed steps.
@@ -213,7 +216,7 @@ cd pi-at-home-bootstrap
 ./scripts/19-setup-complete-dr.sh
 
 # 8. Verify
-./scripts/08-health-check.sh
+./scripts/21-health-check.sh
 ```
 
 See [SETUP-PATH-B.md](SETUP-PATH-B.md) for detailed steps.
@@ -365,10 +368,10 @@ DR_WEBHOOK_URL=https://your-webhook-url.com
 ./scripts/00-preflight-check.sh
 
 # Health check
-./scripts/08-health-check.sh
+./scripts/21-health-check.sh
 
 # Update services
-./scripts/09-update-services.sh
+./scripts/10-update-services.sh
 
 # Performance benchmark
 ./scripts/10-benchmark.sh
@@ -377,10 +380,10 @@ DR_WEBHOOK_URL=https://your-webhook-url.com
 ./scripts/11-network-diag.sh
 
 # Scale resources (adjust workers/memory)
-./scripts/12-scale-resources.sh
+./scripts/13-scale-resources.sh
 
 # Setup Git LFS
-./scripts/13-setup-lfs.sh
+./scripts/14-setup-lfs.sh
 
 # Add additional runner
 ./scripts/14-add-runner.sh
@@ -434,7 +437,7 @@ sudo apt update && sudo apt full-upgrade -y
 docker compose -f compose/gitlab.yml pull
 docker compose -f compose/monitoring.yml pull
 docker compose -f compose/adblocker.yml pull
-./scripts/09-update-services.sh
+./scripts/10-update-services.sh
 ```
 
 ---
@@ -448,7 +451,7 @@ GitLab is configured for Pi 5 with conservative settings in `config/gitlab.rb.te
 
 **Quick scaling:**
 ```bash
-./scripts/12-scale-resources.sh
+./scripts/13-scale-resources.sh
 ```
 
 Profiles: Light (4GB), Medium (8GB), Heavy (8GB+), or Custom.

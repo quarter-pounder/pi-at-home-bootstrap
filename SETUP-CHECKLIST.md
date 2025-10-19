@@ -105,7 +105,7 @@
 - [ ] If using cloud storage, verify files in bucket
 
 ## Final Verification
-- [ ] Run `./scripts/08-health-check.sh`
+- [ ] Run `./scripts/21-health-check.sh`
 - [ ] All services show as healthy (GitLab, Prometheus, Grafana, Loki, Alloy, Pi-hole)
 - [ ] Create test project in GitLab
 - [ ] Add `.gitlab-ci.yml` and verify runner picks up job

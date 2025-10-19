@@ -72,7 +72,7 @@ echo "╚═══════════════════════�
 echo ""
 echo "Next steps:"
 echo "  1. Setup Cloudflare Tunnel: ${YELLOW}./scripts/07-setup-cloudflare-tunnel.sh${RESET}"
-echo "  2. Run health check:        ${YELLOW}./scripts/08-health-check.sh${RESET}"
+echo "  2. Run health check:        ${YELLOW}./scripts/21-health-check.sh${RESET}"
 echo "  3. Test backup:             ${YELLOW}./backup/backup.sh${RESET}"
 echo ""
 echo "Access your services:"
