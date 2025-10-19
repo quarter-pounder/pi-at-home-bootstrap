@@ -1,6 +1,10 @@
 external_url "${GITLAB_EXTERNAL_URL}"
 
 # Nginx configuration for HTTPS
+<<<<<<< HEAD
+=======
+nginx['listen_port'] = 80
+>>>>>>> 14801cc (Handle HTTPS configuration)
 nginx['listen_https'] = true
 nginx['ssl_certificate'] = "/etc/gitlab/ssl/${DOMAIN}.crt"
 nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/${DOMAIN}.key"
