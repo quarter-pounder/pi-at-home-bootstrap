@@ -113,7 +113,6 @@ echo "${YELLOW}Generating compose file with variables...${RESET}"
 envsubst < compose/gitlab.yml > compose/gitlab-resolved.yml
 
 echo "${YELLOW}Restarting GitLab...${RESET}"
-cd compose
 docker compose -f compose/gitlab-resolved.yml restart gitlab
 
 echo ""
