@@ -13,7 +13,7 @@ fi
 echo "[i] Registering GitLab Runner..."
 docker exec -it gitlab-runner gitlab-runner register \
   --non-interactive \
-  --url "http://gitlab" \
+  --url "https://gitlab:443" \
   --token "${GITLAB_RUNNER_TOKEN}" \
   --executor "docker" \
   --docker-image "alpine:latest" \
