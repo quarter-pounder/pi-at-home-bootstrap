@@ -13,6 +13,7 @@ sudo chown -R "${USERNAME}:${USERNAME}" /srv/registry
 
 echo "[i] Generating GitLab configuration..."
 # Ensure all required variables are set
+<<<<<<< HEAD
 export DOMAIN="${DOMAIN:-REDACTED.run}"
 export GITLAB_DOMAIN="${GITLAB_DOMAIN:-gitlab.${DOMAIN}}"
 export GITLAB_EXTERNAL_URL="${GITLAB_EXTERNAL_URL:-https://gitlab.${DOMAIN}}"
@@ -29,6 +30,27 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -subj "/C=US/ST=State/L=City/O=Organization/CN=${DOMAIN}"
 sudo chown -R "${USERNAME}:${USERNAME}" /srv/gitlab/ssl
 
+=======
+export DOMAIN="${DOMAIN:-4orge.run}"
+export GITLAB_DOMAIN="${GITLAB_DOMAIN:-gitlab.${DOMAIN}}"
+export GITLAB_EXTERNAL_URL="${GITLAB_EXTERNAL_URL:-https://gitlab.${DOMAIN}}"
+export TIMEZONE="${TIMEZONE:-UTC}"
+export GITLAB_ROOT_PASSWORD="${GITLAB_ROOT_PASSWORD:-dummy}"
+export GITLAB_IMAGE="${GITLAB_IMAGE:-gitlab/gitlab-ce:latest}"
+
+<<<<<<< HEAD
+>>>>>>> b1ca99c (Update directory and variable reference)
+=======
+# Generate SSL certificates for GitLab
+echo "[i] Generating SSL certificates..."
+sudo mkdir -p /srv/gitlab/ssl
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /srv/gitlab/ssl/${DOMAIN}.key \
+  -out /srv/gitlab/ssl/${DOMAIN}.crt \
+  -subj "/C=US/ST=State/L=City/O=Organization/CN=${DOMAIN}"
+sudo chown -R "${USERNAME}:${USERNAME}" /srv/gitlab/ssl
+
+>>>>>>> 14801cc (Handle HTTPS configuration)
 # Generate configuration with proper variable substitution
 envsubst < config/gitlab.rb.template > compose/gitlab.rb
 
@@ -44,7 +66,12 @@ echo "[i] Generating compose file with variables..."
 envsubst < compose/gitlab.yml > compose/gitlab-resolved.yml
 
 echo "[i] Starting GitLab services..."
+<<<<<<< HEAD
 docker compose -f compose/gitlab-resolved.yml up -d
+=======
+cd compose
+docker compose -f gitlab-resolved.yml up -d
+>>>>>>> b1ca99c (Update directory and variable reference)
 
 echo "[i] Waiting for GitLab to become healthy (this may take 5-10 minutes)..."
 for i in {1..60}; do

@@ -1,6 +1,10 @@
 external_url "${GITLAB_EXTERNAL_URL}"
 
 # Nginx configuration for HTTPS
+<<<<<<< HEAD
+=======
+nginx['listen_port'] = 80
+>>>>>>> 14801cc (Handle HTTPS configuration)
 nginx['listen_https'] = true
 nginx['ssl_certificate'] = "/etc/gitlab/ssl/${DOMAIN}.crt"
 nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/${DOMAIN}.key"
@@ -60,12 +64,16 @@ postgresql['checkpoint_warning'] = '30s'
 postgresql['wal_buffers'] = "16MB"
 postgresql['default_statistics_target'] = 100
 
+<<<<<<< HEAD
 # Disable logging features that can cause startup delays
 postgresql['log_line_prefix'] = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
 postgresql['log_checkpoints'] = 'off'
 postgresql['log_connections'] = 'off'
 postgresql['log_disconnections'] = 'off'
 postgresql['log_lock_waits'] = 'off'
+=======
+prometheus_monitoring['enable'] = true
+>>>>>>> b1ca99c (Update directory and variable reference)
 
 # File permissions fix for container issues
 gitlab_rails['manage_backup_path'] = true
