@@ -54,7 +54,12 @@ echo "6. System Info"
 echo "   CPU: $(nproc) cores"
 echo "   RAM: $(free -h | awk '/^Mem:/ {print $2}') total, $(free -h | awk '/^Mem:/ {print $3}') used"
 echo "   Disk: $(df -h / | awk 'NR==2 {print $2}') total, $(df -h / | awk 'NR==2 {print $3}') used"
-echo "   Temp: $(vcgencmd measure_temp | cut -d= -f2)"
+temp_c="$(awk '{printf "%.1f", $1/1000}' /sys/class/thermal/thermal_zone0/temp 2>/dev/null || true)"
+if [ -n "$temp_c" ]; then
+  echo "   Temp: ${temp_c}°C"
+else
+  echo "   Temp: n/a"
+fi
 
 echo ""
 echo "7. GitLab Response Time Test"

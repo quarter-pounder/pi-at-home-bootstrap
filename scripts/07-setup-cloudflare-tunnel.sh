@@ -20,7 +20,7 @@ if [[ -z "${CLOUDFLARE_TUNNEL_TOKEN:-}" ]]; then
   echo "5. Add to .env: CLOUDFLARE_TUNNEL_TOKEN=your_token_here"
   echo ""
   echo "Configure tunnel routes:"
-  echo "  gitlab.${DOMAIN} -> http://localhost:80"
+  echo "  gitlab.${DOMAIN} -> https://localhost:443 (allow self-signed)"
   echo "  registry.${DOMAIN} -> http://localhost:5050"
   echo "  grafana.${DOMAIN} -> http://localhost:${GRAFANA_PORT}"
   exit 1
@@ -39,7 +39,7 @@ credentials-file: /etc/cloudflared/cert.json
 
 ingress:
   - hostname: gitlab.${DOMAIN}
-    service: http://localhost:80
+    service: https://localhost:443
   - hostname: registry.${DOMAIN}
     service: http://localhost:5050
   - hostname: grafana.${DOMAIN}
