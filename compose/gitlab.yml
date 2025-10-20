@@ -32,6 +32,20 @@ services:
       - SYS_ADMIN
       - SYS_RESOURCE
 
+    environment:
+      SMTP_ADDRESS: ${SMTP_ADDRESS}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_DOMAIN: ${SMTP_DOMAIN}
+      SMTP_FROM: ${SMTP_FROM}
+      SMTP_DISPLAY_NAME: ${SMTP_DISPLAY_NAME}
+      SMTP_REPLY_TO: ${SMTP_REPLY_TO}
+      SMTP_AUTH: ${SMTP_AUTH}
+      SMTP_STARTTLS: ${SMTP_STARTTLS}
+      SMTP_TLS: ${SMTP_TLS}
+      SMTP_SSL_VERIFY_MODE: ${SMTP_SSL_VERIFY_MODE}
+
     healthcheck:
       test: ["CMD-SHELL", "curl -fsSk https://localhost/-/health || exit 1"]
       interval: 30s
