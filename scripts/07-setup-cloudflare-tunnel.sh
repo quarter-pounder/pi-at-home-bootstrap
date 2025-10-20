@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# Note to self:
+# Once migrating configs on tf dashboard, there is no going back
+# Changes in local config.yml would not affect the actual congfigs
+
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/utils.sh

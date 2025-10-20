@@ -182,6 +182,8 @@ cd pi-at-home-bootstrap
 
 See [SETUP-PATH-A.md](SETUP-PATH-A.md) for detailed steps.
 
+Note that there's a catch, Ubuntu migration is much more delicate than Pi OS due to the directory differences. Expect troubles.
+
 ### Path B: Fresh Flash from laptop
 
 **NVMe enclosure is required.**
