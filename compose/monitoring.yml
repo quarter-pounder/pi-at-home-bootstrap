@@ -123,4 +123,5 @@ networks:
     driver: bridge
   gitlab-network:
     external: true
+    name: compose_gitlab-network
 
