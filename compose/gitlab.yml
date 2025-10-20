@@ -17,6 +17,10 @@ services:
       - /srv/gitlab/config:/etc/gitlab
       - /srv/gitlab/logs:/var/log/gitlab
       - /srv/gitlab/data:/var/opt/gitlab
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 14801cc (Handle HTTPS configuration)
       - /srv/gitlab/ssl:/etc/gitlab/ssl:ro
       - ./gitlab.rb:/etc/gitlab/gitlab.rb:ro
 
@@ -32,6 +36,12 @@ services:
       - SYS_ADMIN
       - SYS_RESOURCE
 
+=======
+      - ./compose/gitlab.rb:/omnibus_config.rb:ro
+    shm_size: '256m'
+    networks:
+      - gitlab-network
+>>>>>>> b1ca99c (Update directory and variable reference)
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost/-/health"]
       interval: 30s
