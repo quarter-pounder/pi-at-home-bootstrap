@@ -39,7 +39,7 @@
 ## GitLab Setup
 - [ ] Run `./scripts/04-setup-gitlab.sh`
 - [ ] Wait 5-10 minutes for GitLab to start
-- [ ] Access GitLab UI at `http://<pi-ip>`
+- [ ] Access GitLab UI at `https://<pi-ip>` (accept self-signed)
 - [ ] Login as `root` with password from `.env`
 - [ ] Create new admin password if desired
 - [ ] Create personal access token for API access
@@ -65,7 +65,7 @@
 - [ ] Create new tunnel with name from `.env`
 - [ ] Copy tunnel token to `.env`
 - [ ] Configure routes:
-  - [ ] `gitlab.domain.com` → `http://localhost:80`
+  - [ ] `gitlab.domain.com` → `https://localhost:443` (disable origin TLS verify in Cloudflare if using self-signed)
   - [ ] `registry.domain.com` → `http://localhost:5050`
   - [ ] `grafana.domain.com` → `http://localhost:3000`
   - [ ] `pihole.domain.com` → `http://localhost:8080`

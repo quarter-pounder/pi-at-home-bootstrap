@@ -6,7 +6,7 @@ check_interval = 0
 
 [[runners]]
   name = "gitlab-pi-runner"
-  url = "http://gitlab"
+  url = "${GITLAB_EXTERNAL_URL}"
   token = "${GITLAB_RUNNER_TOKEN}"
   executor = "docker"
   [runners.custom_build_dir]

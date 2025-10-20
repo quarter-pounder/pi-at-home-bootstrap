@@ -32,7 +32,7 @@ echo "${YELLOW}Registering new runner: ${RUNNER_NAME}${RESET}"
 if [[ "$EXECUTOR" == "docker" ]]; then
   docker exec -it gitlab-runner gitlab-runner register \
     --non-interactive \
-    --url "http://gitlab" \
+    --url "${GITLAB_EXTERNAL_URL}" \
     --token "${GITLAB_RUNNER_TOKEN}" \
     --executor "docker" \
     --docker-image "alpine:latest" \
@@ -43,7 +43,7 @@ if [[ "$EXECUTOR" == "docker" ]]; then
 else
   docker exec -it gitlab-runner gitlab-runner register \
     --non-interactive \
-    --url "http://gitlab" \
+    --url "${GITLAB_EXTERNAL_URL}" \
     --token "${GITLAB_RUNNER_TOKEN}" \
     --executor "shell" \
     --description "${RUNNER_NAME}"

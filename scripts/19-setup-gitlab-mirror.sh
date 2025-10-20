@@ -27,7 +27,7 @@ fi
 # Wait for GitLab to be ready
 echo "[i] Waiting for GitLab to be ready..."
 for i in {1..30}; do
-  if curl -sf http://localhost/-/health >/dev/null 2>&1; then
+  if curl -sfk https://localhost/-/health >/dev/null 2>&1; then
     echo "[i] GitLab is ready"
     break
   fi

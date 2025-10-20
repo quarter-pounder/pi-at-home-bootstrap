@@ -35,7 +35,7 @@ check "curl -s --max-time 5 https://gitlab.com" "Can reach GitLab.com (HTTPS)"
 
 echo ""
 echo "5. Local GitLab Services"
-check "curl -sf http://localhost:80/-/health" "GitLab web (port 80)"
+check "curl -sfk https://localhost:443/-/health" "GitLab web (HTTPS)"
 check "curl -sf http://localhost:9090/-/healthy" "Prometheus (port 9090)"
 check "curl -sf http://localhost:3000/api/health" "Grafana (port 3000)"
 

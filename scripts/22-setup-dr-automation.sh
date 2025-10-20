@@ -53,7 +53,7 @@ check_pi_health() {
     fi
   done
 
-  if ! curl -sf http://localhost/-/health >/dev/null 2>&1; then
+if ! curl -sfk https://localhost/-/health >/dev/null 2>&1; then
     log "GitLab health check failed"
     healthy=false
   fi

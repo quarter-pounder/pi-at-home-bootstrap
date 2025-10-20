@@ -1,16 +1,14 @@
 external_url "${GITLAB_EXTERNAL_URL}"
 
 # Nginx configuration for HTTPS
-<<<<<<< HEAD
-=======
-nginx['listen_port'] = 80
->>>>>>> 14801cc (Handle HTTPS configuration)
 nginx['listen_https'] = true
 nginx['ssl_certificate'] = "/etc/gitlab/ssl/${DOMAIN}.crt"
 nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/${DOMAIN}.key"
 
-gitlab_rails['gitlab_email_from'] = "${EMAIL}"
-gitlab_rails['gitlab_email_display_name'] = "GitLab Pi"
+# Email identities
+gitlab_rails['gitlab_email_from'] = ENV['SMTP_FROM'] || "${EMAIL}"
+gitlab_rails['gitlab_email_display_name'] = ENV['SMTP_DISPLAY_NAME'] || "GitLab Pi"
+gitlab_rails['gitlab_email_reply_to'] = ENV['SMTP_REPLY_TO'] || "noreply@${DOMAIN}"
 gitlab_rails['gitlab_default_can_create_group'] = true
 gitlab_rails['time_zone'] = "${TIMEZONE}"
 
@@ -22,10 +20,15 @@ gitlab_rails['log_level'] = "info"
 gitlab_rails['manage_backup_path'] = true
 gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
 gitlab_rails['backup_keep_time'] = 604800  # 7 days
+gitlab_rails['backup_archive_permissions'] = 0640
 
-unicorn['worker_processes'] = 2
+# Puma/Sidekiq tuning for Pi 5
+puma['worker_processes'] = 2
+puma['min_threads'] = 2
+puma['max_threads'] = 4
 sidekiq['max_concurrency'] = 10
 
+# Disable internal Prometheus stack (external monitoring stack is used)
 prometheus_monitoring['enable'] = false
 alertmanager['enable'] = false
 node_exporter['enable'] = false
@@ -33,24 +36,32 @@ redis_exporter['enable'] = false
 postgres_exporter['enable'] = false
 gitlab_exporter['enable'] = false
 
+# Container Registry (served by separate container on 5050)
 registry_external_url "http://${DOMAIN}:5050"
 registry['enable'] = true
 registry['log_level'] = "info"
 registry['env_directory'] = "/var/opt/gitlab/registry"
 registry_nginx['enable'] = false
 
-# SMTP placeholder (edit as needed)
-gitlab_rails['smtp_enable'] = false
+# SMTP configuration
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = ENV['SMTP_ADDRESS']
+gitlab_rails['smtp_port'] = (ENV['SMTP_PORT'] || '587').to_i
+gitlab_rails['smtp_user_name'] = ENV['SMTP_USERNAME']
+gitlab_rails['smtp_password'] = ENV['SMTP_PASSWORD']
+gitlab_rails['smtp_domain'] = ENV['SMTP_DOMAIN'] || '${DOMAIN}'
+gitlab_rails['smtp_authentication'] = ENV['SMTP_AUTH'] || 'login'
+gitlab_rails['smtp_enable_starttls_auto'] = (ENV['SMTP_STARTTLS'] || 'true') == 'true'
+gitlab_rails['smtp_tls'] = (ENV['SMTP_TLS'] || 'false') == 'true'
+gitlab_rails['smtp_openssl_verify_mode'] = ENV['SMTP_SSL_VERIFY_MODE'] || 'peer'
 
 # Let's Encrypt disabled (Cloudflare tunnel handles TLS)
 letsencrypt['enable'] = false
 
+# Logrotate
 logging['logrotate_frequency'] = "daily"
 logging['logrotate_rotate'] = 7
 logging['logrotate_compress'] = "compress"
-
-gitlab_rails['backup_archive_permissions'] = 0640
-gitlab_rails['backup_keep_time'] = 604800
 
 # PostgreSQL configuration for ARM64 stability
 postgresql['shared_buffers'] = "256MB"
@@ -58,27 +69,16 @@ postgresql['max_connections'] = 200
 postgresql['effective_cache_size'] = "1GB"
 postgresql['maintenance_work_mem'] = "64MB"
 postgresql['checkpoint_completion_target'] = 0.9
-postgresql['checkpoint_segments'] = 32
-postgresql['checkpoint_timeout'] = '5min'
-postgresql['checkpoint_warning'] = '30s'
 postgresql['wal_buffers'] = "16MB"
 postgresql['default_statistics_target'] = 100
 
-<<<<<<< HEAD
-# Disable logging features that can cause startup delays
+# Optional: reduce noisy logging at startup
 postgresql['log_line_prefix'] = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
 postgresql['log_checkpoints'] = 'off'
 postgresql['log_connections'] = 'off'
 postgresql['log_disconnections'] = 'off'
 postgresql['log_lock_waits'] = 'off'
-=======
-prometheus_monitoring['enable'] = true
->>>>>>> b1ca99c (Update directory and variable reference)
 
-# File permissions fix for container issues
-gitlab_rails['manage_backup_path'] = true
-gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
-gitlab_rails['backup_archive_permissions'] = 0640
-
+# Redis limits
 redis['maxmemory'] = "256mb"
 redis['maxmemory_policy'] = "allkeys-lru"
