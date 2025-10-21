@@ -16,8 +16,8 @@ echo "[i] System Information:"
 uptime || true
 # Try multiple temperature sources for Pi 5 compatibility
 if command -v vcgencmd >/dev/null 2>&1; then
-  temp_result=$(vcgencmd measure_temp 2>/dev/null || echo "")
-  if [[ -n "$temp_result" ]]; then
+  temp_result=$(vcgencmd measure_temp 2>/dev/null 2>&1 || echo "")
+  if [[ -n "$temp_result" ]] && [[ "$temp_result" =~ temp= ]]; then
     echo "Temperature: $temp_result"
   elif [[ -f /sys/class/thermal/thermal_zone0/temp ]]; then
     temp_raw=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "0")
@@ -49,11 +49,15 @@ fi
 echo ""
 echo "[i] GitLab Health:"
 if docker ps --format '{{.Names}}' | grep -q '^gitlab$'; then
-  if docker exec gitlab gitlab-rake gitlab:check SANITIZE=true >/dev/null 2>&1; then
+  if timeout 30 docker exec gitlab gitlab-rake gitlab:check SANITIZE=true >/dev/null 2>&1; then
     echo "${GREEN}GitLab is healthy${RESET}"
   else
-   echo "${RED}GitLab health check failed. Checking logs..."
-   docker logs gitlab --tail 50
+   echo "${YELLOW}GitLab health check timeout or failed. Checking basic status..."
+   if docker exec gitlab curl -sf -k https://localhost:443/ >/dev/null 2>&1; then
+     echo "${GREEN}GitLab main page is responding${RESET}"
+   else
+     echo "${RED}GitLab is not responding${RESET}"
+   fi
   fi
 else
   echo "${YELLOW}GitLab container not running${RESET}"
