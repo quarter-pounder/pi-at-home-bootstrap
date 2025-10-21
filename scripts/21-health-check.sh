@@ -48,8 +48,9 @@ fi
 
 echo ""
 echo "[i] GitLab Health:"
+echo "[i] This could take up to one minute"
 if docker ps --format '{{.Names}}' | grep -q '^gitlab$'; then
-  if timeout 30 docker exec gitlab gitlab-rake gitlab:check SANITIZE=true >/dev/null 2>&1; then
+  if timeout 60 docker exec gitlab gitlab-rake gitlab:check SANITIZE=true >/dev/null 2>&1; then
     echo "${GREEN}GitLab is healthy${RESET}"
   else
    echo "${YELLOW}GitLab health check timeout or failed. Checking basic status..."
