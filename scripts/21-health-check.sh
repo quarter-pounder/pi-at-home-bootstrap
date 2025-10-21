@@ -43,10 +43,11 @@ fi
 echo ""
 echo "[i] GitLab Health:"
 if docker ps --format '{{.Names}}' | grep -q '^gitlab$'; then
-  if timeout 3 curl -sf -k https://localhost:443/ >/dev/null 2>&1; then
+  if docker exec gitlab gitlab-rake gitlab:check SANITIZE=true >/dev/null 2>&1; then
     echo "${GREEN}GitLab is healthy${RESET}"
   else
-    echo "${YELLOW}GitLab main page timeout (but container is running)${RESET}"
+   echo "${RED}GitLab health check failed. Checking logs..."
+   docker logs gitlab --tail 50
   fi
 else
   echo "${YELLOW}GitLab container not running${RESET}"
@@ -54,22 +55,18 @@ fi
 
 echo ""
 echo "[i] Service Endpoints:"
-# Test each service individually with proper error handling
-services=(
-  "GitLab:https://localhost:443/"
-  "Registry:http://localhost:5050/"
-  "Prometheus:http://localhost:9090/-/healthy"
-  "Alertmanager:http://localhost:9093/-/healthy"
-  "Grafana:http://localhost:3000/api/health"
-  "Loki:http://localhost:3100/ready"
-  "Alloy:http://localhost:12345/-/healthy"
-  "Pi-hole:http://localhost:8080/admin/api.php?summary"
-)
-
-for endpoint in "${services[@]}"; do
+for endpoint in \
+  "GitLab:https://localhost:443/" \
+  "Registry:http://localhost:5050/" \
+  "Prometheus:http://localhost:${PROM_PORT:-9090}/-/healthy" \
+  "Alertmanager:http://localhost:9093/-/healthy" \
+  "Grafana:http://localhost:${GRAFANA_PORT:-3000}/api/health" \
+  "Loki:http://localhost:3100/ready" \
+  "Alloy:http://localhost:12345/-/healthy" \
+  "Pi-hole:http://localhost:8080/admin/api.php?summary"; do
   name=$(echo "$endpoint" | cut -d: -f1)
   url=$(echo "$endpoint" | cut -d: -f2-)
-  if timeout 1 curl -sf -k "$url" >/dev/null 2>&1; then
+  if timeout 5 curl -sf -k "$url" >/dev/null 2>&1; then
     echo "${GREEN}$name is responding${RESET}"
   else
     echo "${RED}$name is not responding${RESET}"
@@ -125,21 +122,6 @@ if command -v ufw >/dev/null 2>&1; then
   sudo ufw status | head -10
 else
   echo "(ufw not installed)"
-fi
-
-echo ""
-echo "[i] Recent Backup:"
-if [[ -d "${BACKUP_DIR:-}" ]]; then
-  latest=$(ls -t "${BACKUP_DIR}/gitlab"/*_gitlab_backup.tar 2>/dev/null | head -1 || true)
-  if [[ -n "${latest:-}" ]]; then
-    echo "Latest backup: $(basename "$latest")"
-    echo "Size: $(du -h "$latest" | cut -f1)"
-    echo "Age: $(stat -c %y "$latest" | cut -d' ' -f1)"
-  else
-    echo "No backups found in ${BACKUP_DIR}/gitlab"
-  fi
-else
-  echo "(Backup directory not found)"
 fi
 
 echo ""
