@@ -43,10 +43,10 @@ docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\
 
 echo ""
 echo "5. GitLab Metrics"
-if curl -sf -k https://localhost/-/health >/dev/null; then
+if timeout 3 curl -sf -k https://localhost:443/-/health >/dev/null; then
   echo "   ${GREEN}✓${RESET} GitLab health check: OK"
 else
-  echo "   ${YELLOW}WARNING${RESET} GitLab health check: FAILED"
+  echo "   ${YELLOW}WARNING${RESET} GitLab health check: FAILED or timeout"
 fi
 
 echo ""
@@ -54,18 +54,25 @@ echo "6. System Info"
 echo "   CPU: $(nproc) cores"
 echo "   RAM: $(free -h | awk '/^Mem:/ {print $2}') total, $(free -h | awk '/^Mem:/ {print $3}') used"
 echo "   Disk: $(df -h / | awk 'NR==2 {print $2}') total, $(df -h / | awk 'NR==2 {print $3}') used"
-temp_c="$(awk '{printf "%.1f", $1/1000}' /sys/class/thermal/thermal_zone0/temp 2>/dev/null || true)"
-if [ -n "$temp_c" ]; then
+# Try multiple temperature sources for Pi 5 compatibility
+temp_c=""
+if command -v vcgencmd >/dev/null 2>&1; then
+  temp_c="$(vcgencmd measure_temp 2>/dev/null | sed 's/temp=//' | sed 's/'"'"'C//')"
+fi
+if [[ -z "$temp_c" ]] && [[ -f /sys/class/thermal/thermal_zone0/temp ]]; then
+  temp_c="$(awk '{printf "%.1f", $1/1000}' /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo 'n/a')"
+fi
+if [[ -n "$temp_c" ]]; then
   echo "   Temp: ${temp_c}°C"
 else
-  echo "   Temp: n/a"
+  echo "   Temp: Unable to read"
 fi
 
 echo ""
 echo "7. GitLab Response Time Test"
 echo "   Testing 10 requests to GitLab..."
 for i in {1..10}; do
-  curl -o /dev/null -s -w "%{time_total}s " -k https://localhost/-/health
+  timeout 2 curl -o /dev/null -s -w "%{time_total}s " -k https://localhost:443/-/health 2>/dev/null || echo "timeout "
 done
 echo ""
 
