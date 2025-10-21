@@ -16,7 +16,16 @@ echo "[i] System Information:"
 uptime || true
 # Try multiple temperature sources for Pi 5 compatibility
 if command -v vcgencmd >/dev/null 2>&1; then
-  echo "Temperature: $(vcgencmd measure_temp 2>/dev/null || echo 'vcgencmd failed')"
+  temp_result=$(vcgencmd measure_temp 2>/dev/null || echo "")
+  if [[ -n "$temp_result" ]]; then
+    echo "Temperature: $temp_result"
+  elif [[ -f /sys/class/thermal/thermal_zone0/temp ]]; then
+    temp_raw=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "0")
+    temp_c=$(echo "scale=1; $temp_raw/1000" | bc 2>/dev/null || echo "n/a")
+    echo "Temperature: ${temp_c}°C"
+  else
+    echo "Temperature: Unable to read"
+  fi
 elif [[ -f /sys/class/thermal/thermal_zone0/temp ]]; then
   temp_raw=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "0")
   temp_c=$(echo "scale=1; $temp_raw/1000" | bc 2>/dev/null || echo "n/a")
