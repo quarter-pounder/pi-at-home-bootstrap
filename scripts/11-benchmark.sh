@@ -43,10 +43,10 @@ docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\
 
 echo ""
 echo "5. GitLab Metrics"
-if timeout 3 curl -sf -k https://localhost:443/-/health >/dev/null; then
-  echo "   ${GREEN}✓${RESET} GitLab health check: OK"
+if timeout 3 curl -sf -k https://localhost:443/ >/dev/null; then
+  echo "   ${GREEN}✓${RESET} GitLab main page: OK"
 else
-  echo "   ${YELLOW}WARNING${RESET} GitLab health check: FAILED or timeout"
+  echo "   ${YELLOW}WARNING${RESET} GitLab main page: FAILED or timeout"
 fi
 
 echo ""
@@ -72,7 +72,7 @@ echo ""
 echo "7. GitLab Response Time Test"
 echo "   Testing 10 requests to GitLab..."
 for i in {1..10}; do
-  timeout 2 curl -o /dev/null -s -w "%{time_total}s " -k https://localhost:443/-/health 2>/dev/null || echo "timeout "
+  timeout 2 curl -o /dev/null -s -w "%{time_total}s " -k https://localhost:443/ 2>/dev/null || echo "timeout "
 done
 echo ""
 
