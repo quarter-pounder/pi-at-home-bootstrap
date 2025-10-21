@@ -43,7 +43,6 @@ query_range: {}
 
 chunk_store_config: {}
 
-# Simplified compactor without retention to avoid schema requirements
+# Minimal compactor config - no retention at all
 compactor:
   working_directory: /loki/compactor
-  retention_enabled: false
