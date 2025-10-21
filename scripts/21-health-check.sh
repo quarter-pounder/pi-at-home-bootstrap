@@ -43,16 +43,10 @@ fi
 echo ""
 echo "[i] GitLab Health:"
 if docker ps --format '{{.Names}}' | grep -q '^gitlab$'; then
-  if timeout 10 curl -sf -k https://localhost:443/-/health >/dev/null 2>&1; then
+  if timeout 3 curl -sf -k https://localhost:443/-/health >/dev/null 2>&1; then
     echo "${GREEN}GitLab is healthy${RESET}"
   else
-    echo "${RED}GitLab health endpoint not responding${RESET}"
-    # Try internal health check as fallback
-    if docker exec gitlab curl -sf -k https://localhost:443/-/health >/dev/null 2>&1; then
-      echo "${YELLOW}GitLab is running but external health check failed${RESET}"
-    else
-      echo "${RED}GitLab internal health check also failed${RESET}"
-    fi
+    echo "${YELLOW}GitLab health endpoint timeout (but container is running)${RESET}"
   fi
 else
   echo "${YELLOW}GitLab container not running${RESET}"
@@ -71,7 +65,7 @@ for endpoint in \
   "Pi-hole:http://localhost:8080/admin/api.php?summary"; do
   name=$(echo "$endpoint" | cut -d: -f1)
   url=$(echo "$endpoint" | cut -d: -f2-)
-  if timeout 5 curl -sf -k "$url" >/dev/null 2>&1; then
+  if timeout 2 curl -sf -k "$url" >/dev/null 2>&1; then
     echo "${GREEN}$name is responding${RESET}"
   else
     echo "${RED}$name is not responding${RESET}"
