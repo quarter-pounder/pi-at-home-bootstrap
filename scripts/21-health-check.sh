@@ -15,14 +15,11 @@ echo ""
 echo "[i] System Information:"
 uptime || true
 # Try multiple temperature sources for Pi 5 compatibility
-temp_c=""
 if command -v vcgencmd >/dev/null 2>&1; then
-  temp_c="$(vcgencmd measure_temp 2>/dev/null | sed 's/temp=//' | sed 's/'"'"'C//')"
-fi
-if [[ -z "$temp_c" ]] && [[ -f /sys/class/thermal/thermal_zone0/temp ]]; then
-  temp_c="$(awk '{printf "%.1f", $1/1000}' /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo 'n/a')"
-fi
-if [[ -n "$temp_c" ]]; then
+  echo "Temperature: $(vcgencmd measure_temp 2>/dev/null || echo 'vcgencmd failed')"
+elif [[ -f /sys/class/thermal/thermal_zone0/temp ]]; then
+  temp_raw=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "0")
+  temp_c=$(echo "scale=1; $temp_raw/1000" | bc 2>/dev/null || echo "n/a")
   echo "Temperature: ${temp_c}°C"
 else
   echo "Temperature: Unable to read"
