@@ -50,7 +50,7 @@ echo ""
 echo "[i] GitLab Health:"
 echo "[i] It could take one minute or two"
 if docker ps --format '{{.Names}}' | grep -q '^gitlab$'; then
-  if timeout 150 docker exec gitlab gitlab-rake gitlab:check SANITIZE=true >/dev/null 2>&1; then
+  if timeout 180 docker exec gitlab gitlab-rake gitlab:check SANITIZE=true >/dev/null 2>&1; then
     echo "${GREEN}GitLab is healthy${RESET}"
   else
    echo "${YELLOW}GitLab health check timeout or failed. Checking basic status..."
@@ -92,6 +92,10 @@ if systemctl list-unit-files | grep -q '^cloudflared.service'; then
   else
     echo "${RED}Cloudflare Tunnel is not running${RESET}"
   fi
+elif pgrep cloudflared >/dev/null 2>&1; then
+  echo "${GREEN}Cloudflare Tunnel is running (process)${RESET}"
+elif command -v cloudflared >/dev/null 2>&1; then
+  echo "${YELLOW}Cloudflared installed but not running${RESET}"
 else
   echo "${YELLOW}Cloudflared not installed${RESET}"
 fi
