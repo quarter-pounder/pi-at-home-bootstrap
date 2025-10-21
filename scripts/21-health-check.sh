@@ -14,10 +14,18 @@ echo "==================== SYSTEM HEALTH CHECK ===================="
 echo ""
 echo "[i] System Information:"
 uptime || true
+# Try multiple temperature sources for Pi 5 compatibility
+temp_c=""
 if command -v vcgencmd >/dev/null 2>&1; then
-  echo "Temperature: $(vcgencmd measure_temp)"
+  temp_c="$(vcgencmd measure_temp 2>/dev/null | sed 's/temp=//' | sed 's/'"'"'C//')"
+fi
+if [[ -z "$temp_c" ]] && [[ -f /sys/class/thermal/thermal_zone0/temp ]]; then
+  temp_c="$(awk '{printf "%.1f", $1/1000}' /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo 'n/a')"
+fi
+if [[ -n "$temp_c" ]]; then
+  echo "Temperature: ${temp_c}°C"
 else
-  echo "Temperature: (vcgencmd not available)"
+  echo "Temperature: Unable to read"
 fi
 echo "Memory:"
 free -h || true
@@ -35,11 +43,16 @@ fi
 echo ""
 echo "[i] GitLab Health:"
 if docker ps --format '{{.Names}}' | grep -q '^gitlab$'; then
-  if docker exec gitlab gitlab-rake gitlab:check SANITIZE=true >/dev/null 2>&1; then
+  if timeout 10 curl -sf -k https://localhost:443/-/health >/dev/null 2>&1; then
     echo "${GREEN}GitLab is healthy${RESET}"
   else
-   echo "${RED}GitLab health check failed. Checking logs..."
-   docker logs gitlab --tail 50
+    echo "${RED}GitLab health endpoint not responding${RESET}"
+    # Try internal health check as fallback
+    if docker exec gitlab curl -sf -k https://localhost:443/-/health >/dev/null 2>&1; then
+      echo "${YELLOW}GitLab is running but external health check failed${RESET}"
+    else
+      echo "${RED}GitLab internal health check also failed${RESET}"
+    fi
   fi
 else
   echo "${YELLOW}GitLab container not running${RESET}"
