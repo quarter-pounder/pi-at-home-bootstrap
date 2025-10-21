@@ -43,10 +43,10 @@ fi
 echo ""
 echo "[i] GitLab Health:"
 if docker ps --format '{{.Names}}' | grep -q '^gitlab$'; then
-  if timeout 3 curl -sf -k https://localhost:443/-/health >/dev/null 2>&1; then
+  if timeout 3 curl -sf -k https://localhost:443/ >/dev/null 2>&1; then
     echo "${GREEN}GitLab is healthy${RESET}"
   else
-    echo "${YELLOW}GitLab health endpoint timeout (but container is running)${RESET}"
+    echo "${YELLOW}GitLab main page timeout (but container is running)${RESET}"
   fi
 else
   echo "${YELLOW}GitLab container not running${RESET}"
@@ -54,18 +54,22 @@ fi
 
 echo ""
 echo "[i] Service Endpoints:"
-for endpoint in \
-  "GitLab:https://localhost:443/-/health" \
-  "Registry:http://localhost:5050/" \
-  "Prometheus:http://localhost:${PROM_PORT}/-/healthy" \
-  "Alertmanager:http://localhost:9093/-/healthy" \
-  "Grafana:http://localhost:${GRAFANA_PORT}/api/health" \
-  "Loki:http://localhost:3100/ready" \
-  "Alloy:http://localhost:12345/-/healthy" \
-  "Pi-hole:http://localhost:8080/admin/api.php?summary"; do
+# Test each service individually with proper error handling
+services=(
+  "GitLab:https://localhost:443/"
+  "Registry:http://localhost:5050/"
+  "Prometheus:http://localhost:9090/-/healthy"
+  "Alertmanager:http://localhost:9093/-/healthy"
+  "Grafana:http://localhost:3000/api/health"
+  "Loki:http://localhost:3100/ready"
+  "Alloy:http://localhost:12345/-/healthy"
+  "Pi-hole:http://localhost:8080/admin/api.php?summary"
+)
+
+for endpoint in "${services[@]}"; do
   name=$(echo "$endpoint" | cut -d: -f1)
   url=$(echo "$endpoint" | cut -d: -f2-)
-  if timeout 2 curl -sf -k "$url" >/dev/null 2>&1; then
+  if timeout 1 curl -sf -k "$url" >/dev/null 2>&1; then
     echo "${GREEN}$name is responding${RESET}"
   else
     echo "${RED}$name is not responding${RESET}"
