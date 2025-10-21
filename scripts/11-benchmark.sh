@@ -56,7 +56,16 @@ echo "   RAM: $(free -h | awk '/^Mem:/ {print $2}') total, $(free -h | awk '/^Me
 echo "   Disk: $(df -h / | awk 'NR==2 {print $2}') total, $(df -h / | awk 'NR==2 {print $3}') used"
 # Try multiple temperature sources for Pi 5 compatibility
 if command -v vcgencmd >/dev/null 2>&1; then
-  echo "   Temp: $(vcgencmd measure_temp 2>/dev/null || echo 'vcgencmd failed')"
+  temp_result=$(vcgencmd measure_temp 2>/dev/null || echo "")
+  if [[ -n "$temp_result" ]]; then
+    echo "   Temp: $temp_result"
+  elif [[ -f /sys/class/thermal/thermal_zone0/temp ]]; then
+    temp_raw=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "0")
+    temp_c=$(echo "scale=1; $temp_raw/1000" | bc 2>/dev/null || echo "n/a")
+    echo "   Temp: ${temp_c}°C"
+  else
+    echo "   Temp: Unable to read"
+  fi
 elif [[ -f /sys/class/thermal/thermal_zone0/temp ]]; then
   temp_raw=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "0")
   temp_c=$(echo "scale=1; $temp_raw/1000" | bc 2>/dev/null || echo "n/a")
