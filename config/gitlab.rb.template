@@ -42,6 +42,10 @@ gitlab_rails['metrics_host'] = '0.0.0.0'
 gitlab_rails['metrics_port'] = 8080
 gitlab_rails['metrics_path'] = '/-/metrics'
 
+# Enable GitLab metrics service
+gitlab_monitoring['enable'] = true
+gitlab_monitoring['port'] = 8080
+
 # Container Registry (served by separate container on 5050)
 registry_external_url "http://${DOMAIN}:5050"
 registry['enable'] = true
