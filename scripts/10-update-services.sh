@@ -22,7 +22,7 @@ update_gitlab() {
   sleep 30
 
   if docker exec gitlab gitlab-rake gitlab:check SANITIZE=true >/dev/null 2>&1; then
-    echo "${GREEN}✓ GitLab updated successfully${RESET}"
+    echo "${GREEN}[OK] GitLab updated successfully${RESET}"
   else
     echo "${YELLOW}WARNING: GitLab may need more time to start. Check: docker logs gitlab${RESET}"
   fi
@@ -37,7 +37,7 @@ update_monitoring() {
   docker compose -f monitoring.yml pull
   docker compose -f monitoring.yml up -d
 
-  echo "${GREEN}✓ Monitoring stack updated${RESET}"
+  echo "${GREEN}[OK] Monitoring stack updated${RESET}"
   cd ..
 }
 
@@ -49,7 +49,7 @@ update_adblocker() {
   docker compose -f adblocker.yml pull
   docker compose -f adblocker.yml up -d
 
-  echo "${GREEN}✓ Ad blocker updated${RESET}"
+  echo "${GREEN}[OK] Ad blocker updated${RESET}"
   cd ..
 }
 
@@ -59,7 +59,7 @@ update_system() {
   sudo apt update
   sudo apt upgrade -y
   sudo apt autoremove -y
-  echo "${GREEN}✓ System packages updated${RESET}"
+  echo "${GREEN}[OK] System packages updated${RESET}"
 }
 
 echo "Update options:"
@@ -99,6 +99,6 @@ case $choice in
 esac
 
 echo ""
-echo "${GREEN}✓ Update complete!${RESET}"
+echo "${GREEN}[OK] Update complete!${RESET}"
 echo "Run health check: ./scripts/21-health-check.sh"
 

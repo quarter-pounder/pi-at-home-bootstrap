@@ -170,7 +170,7 @@ cd pi-at-home-bootstrap
 
 # 6. Setup ad blocker (optional)
 # Add Pi-hole password to .env
-./scripts/20-setup-adblocker.sh
+./scripts/25-setup-adblocker.sh
 
 # 7. Setup disaster recovery (optional)
 # Get GitLab Cloud token, add to .env
@@ -212,7 +212,7 @@ cd pi-at-home-bootstrap
 ./scripts/07-setup-cloudflare-tunnel.sh
 
 # 6. Setup ad blocker (optional)
-./scripts/20-setup-adblocker.sh
+./scripts/25-setup-adblocker.sh
 
 # 7. Setup disaster recovery (optional)
 ./scripts/19-setup-complete-dr.sh
@@ -301,7 +301,7 @@ BACKUP_BUCKET=  # Format: gs://bucket-name (GCP) or s3://bucket-name (AWS)
 ### Configuration
 ```bash
 # Setup ad blocker
-./scripts/20-setup-adblocker.sh
+./scripts/25-setup-adblocker.sh
 
 # Configure network
 /srv/pihole/configure-network.sh

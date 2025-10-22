@@ -83,8 +83,12 @@ for i in {1..60}; do
   sleep 10
 done
 
+echo "[i] Enabling GitLab metrics for Prometheus..."
+docker exec gitlab gitlab-ctl reconfigure
+
 echo "[i] GitLab root password: ${GITLAB_ROOT_PASSWORD}"
 echo "[i] Please log in to GitLab and create a runner registration token."
 echo "[i] Then add it to .env as GITLAB_RUNNER_TOKEN and run: scripts/05-register-runner.sh"
 echo "[i] GitLab is accessible at: ${GITLAB_EXTERNAL_URL}"
+echo "[i] GitLab metrics available at: http://localhost:8080/-/metrics"
 

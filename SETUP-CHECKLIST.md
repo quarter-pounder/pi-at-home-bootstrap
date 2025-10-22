@@ -74,7 +74,7 @@
 - [ ] Test access to `https://gitlab.domain.com`
 
 ## Ad Blocker (Optional)
-- [ ] Run `./scripts/20-setup-adblocker.sh`
+- [ ] Run `./scripts/25-setup-adblocker.sh`
 - [ ] Access Pi-hole at `http://<pi-ip>:8080/admin`
 - [ ] Login with password from `.env`
 - [ ] Configure network DNS to use Pi IP

@@ -218,7 +218,7 @@ fi
 
 # Update health check script
 if ! grep -q "DR Status" scripts/21-health-check.sh; then
-  sed -i '/echo "\[i\] Recent Backup:"/a\\necho ""\necho "\[i\] DR Status:"\nif curl -s http://localhost:8081/status >/dev/null 2>&1; then\n  echo "${GREEN}✓ DR system is responding${RESET}"\nelse\n  echo "${YELLOW}WARNING${RESET} DR system is not responding"\nfi' scripts/21-health-check.sh
+  sed -i '/echo "\[i\] Recent Backup:"/a\\necho ""\necho "\[i\] DR Status:"\nif curl -s http://localhost:8081/status >/dev/null 2>&1; then\n  echo "${GREEN}[OK] DR system is responding${RESET}"\nelse\n  echo "${YELLOW}WARNING${RESET} DR system is not responding"\nfi' scripts/21-health-check.sh
 fi
 
 echo ""

@@ -53,7 +53,7 @@ step 7 "Setting up backups..."
 
 step 8 "Setting up ad blocker (optional)..."
 if [[ -n "${PIHOLE_WEB_PASSWORD:-}" ]]; then
-  ./scripts/20-setup-adblocker.sh
+  ./scripts/25-setup-adblocker.sh
 else
   echo "Skipping Pi-hole setup (PIHOLE_WEB_PASSWORD not set)"
 fi

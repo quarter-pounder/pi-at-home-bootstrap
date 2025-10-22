@@ -37,10 +37,17 @@ echo "[i] Verifying Alertmanager..."
 curl -s http://localhost:9093/-/healthy || echo "[!] Alertmanager is not responding"
 
 echo "[i] Monitoring stack deployed!"
+echo "[i] Restarting Prometheus to pick up GitLab metrics..."
+docker restart prometheus
+
+echo "[i] Waiting for services to be ready..."
+sleep 10
+
 echo "[i] Prometheus: http://localhost:${PROM_PORT}"
 echo "[i] Grafana: http://localhost:${GRAFANA_PORT}"
 echo "[i] Loki: http://localhost:3100"
 echo "[i] Alloy: http://localhost:12345"
 echo "[i] Alertmanager: http://localhost:9093"
+echo "[i] GitLab metrics: http://localhost:8080/-/metrics"
 echo "[i] Grafana admin password: ${GRAFANA_ADMIN_PASSWORD}"
 

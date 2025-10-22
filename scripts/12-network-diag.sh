@@ -9,9 +9,9 @@ echo ""
 
 check() {
   if $1 >/dev/null 2>&1; then
-    echo "${GREEN}✓${RESET} $2"
+    echo "${GREEN}[OK]${RESET} $2"
   else
-    echo "${RED}✗${RESET} $2"
+    echo "${RED}[FAIL]${RESET} $2"
   fi
 }
 
@@ -48,14 +48,14 @@ echo "7. Container Connectivity"
 if docker ps --format '{{.Names}}' | grep -q gitlab; then
   echo "Testing inter-container communication..."
   docker exec gitlab ping -c 1 prometheus >/dev/null 2>&1 && \
-    echo "${GREEN}✓${RESET} GitLab can reach Prometheus" || \
-    echo "${RED}✗${RESET} GitLab cannot reach Prometheus"
+    echo "${GREEN}[OK]${RESET} GitLab can reach Prometheus" || \
+    echo "${RED}[FAIL]${RESET} GitLab cannot reach Prometheus"
 fi
 
 echo ""
 echo "8. Cloudflare Tunnel Status"
 if systemctl is-active cloudflared >/dev/null 2>&1; then
-  echo "${GREEN}✓${RESET} Cloudflare Tunnel is running"
+  echo "${GREEN}[OK]${RESET} Cloudflare Tunnel is running"
   sudo journalctl -u cloudflared -n 5 --no-pager | grep -i "connection\|registered"
 else
   echo "${YELLOW}WARNING${RESET} Cloudflare Tunnel is not running"

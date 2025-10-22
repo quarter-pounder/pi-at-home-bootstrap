@@ -36,6 +36,12 @@ redis_exporter['enable'] = false
 postgres_exporter['enable'] = false
 gitlab_exporter['enable'] = false
 
+# Enable GitLab application metrics for external Prometheus
+gitlab_rails['metrics_enabled'] = true
+gitlab_rails['metrics_host'] = '0.0.0.0'
+gitlab_rails['metrics_port'] = 8080
+gitlab_rails['metrics_path'] = '/-/metrics'
+
 # Container Registry (served by separate container on 5050)
 registry_external_url "http://${DOMAIN}:5050"
 registry['enable'] = true

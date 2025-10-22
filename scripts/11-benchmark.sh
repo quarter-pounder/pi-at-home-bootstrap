@@ -44,7 +44,7 @@ docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\
 echo ""
 echo "5. GitLab Metrics"
 if timeout 3 curl -sf -k https://localhost:443/ >/dev/null; then
-  echo "   ${GREEN}✓${RESET} GitLab main page: OK"
+  echo "   ${GREEN}[OK]${RESET} GitLab main page: OK"
 else
   echo "   ${YELLOW}WARNING${RESET} GitLab main page: FAILED or timeout"
 fi
