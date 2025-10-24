@@ -42,9 +42,7 @@ gitlab_rails['monitoring_whitelist'] = ['172.80.0.0/16', '172.81.0.0/16']
 
 # Container Registry (served by separate container on 5050)
 registry_external_url "http://${DOMAIN}:5050"
-registry['enable'] = true
-registry['log_level'] = "info"
-registry['env_directory'] = "/var/opt/gitlab/registry"
+registry['enable'] = false
 registry_nginx['enable'] = false
 
 # SMTP configuration
