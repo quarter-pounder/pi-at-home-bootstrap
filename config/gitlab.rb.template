@@ -35,8 +35,8 @@ redis_exporter['enable'] = false
 postgres_exporter['enable'] = false
 gitlab_exporter['enable'] = false
 
-# Expose application metrics internally only
-gitlab_rails['prometheus_listen_address'] = '0.0.0.0:8080'
+# Expose metrics endpoint for external Prometheus
+gitlab_workhorse['prometheus_listen_addr'] = "0.0.0.0:8080"
 gitlab_rails['monitoring_whitelist'] = ['172.80.0.0/16', '172.81.0.0/16']
 
 # Container Registry (disabled — handled externally)
