@@ -20,10 +20,11 @@ services:
       - /srv/gitlab/ssl:/etc/gitlab/ssl:ro
       - ./gitlab.rb:/etc/gitlab/gitlab.rb:ro
 
-    # Note to future me:
-    # IMPORTANT: do NOT set GITLAB_OMNIBUS_CONFIG here.
-    # The Omnibus entrypoint writes its content into /omnibus_config.rb,
-    # which must be a file. Leaving it unset avoids the EISDIR trap.
+    # Force metrics configuration via environment
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        gitlab_rails['prometheus_listen_address'] = '0.0.0.0:8080'
+        gitlab_rails['monitoring_whitelist'] = ['172.80.0.0/16', '172.81.0.0/16']
 
     shm_size: "256m"
     security_opt:
