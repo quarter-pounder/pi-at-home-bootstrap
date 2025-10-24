@@ -5,34 +5,21 @@ services:
     hostname: ${GITLAB_DOMAIN}
     restart: always
 
-    # Expose HTTP/HTTPS and SSH-for-clone
     ports:
       - "80:80"
       - "443:443"
-      - "2222:22"
+      - "2222:22"   # SSH clone
 
-    # Bind mounts
     volumes:
-      # Omnibus dirs
       - /srv/gitlab/config:/etc/gitlab
       - /srv/gitlab/logs:/var/log/gitlab
       - /srv/gitlab/data:/var/opt/gitlab
       - /srv/gitlab/ssl:/etc/gitlab/ssl:ro
-      - ./gitlab.rb:/etc/gitlab/gitlab.rb:ro
 
     shm_size: "256m"
-    security_opt:
-      - seccomp:unconfined
-    cap_add:
-      - SYS_ADMIN
-      - SYS_RESOURCE
+    stop_grace_period: 1m
 
     environment:
-      # Force metrics configuration
-      GITLAB_OMNIBUS_CONFIG: |
-        gitlab_rails['prometheus_listen_address'] = '0.0.0.0:8080'
-        gitlab_rails['monitoring_whitelist'] = ['172.80.0.0/16', '172.81.0.0/16']
-      # SMTP configuration
       SMTP_ADDRESS: ${SMTP_ADDRESS}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USERNAME: ${SMTP_USERNAME}
@@ -53,24 +40,19 @@ services:
       retries: 10
       start_period: 180s
 
-    networks:
-      - gitlab-network
+    networks: [gitlab-network]
 
   gitlab-runner:
     image: gitlab/gitlab-runner:latest
-    container_name: gitlab-runner
     restart: always
-    depends_on:
-      - gitlab
+    depends_on: [gitlab]
     volumes:
       - /srv/gitlab-runner/config:/etc/gitlab-runner
       - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - gitlab-network
+    networks: [gitlab-network]
 
   registry:
     image: registry:2
-    container_name: registry
     restart: always
     ports:
       - "5050:5000"
@@ -79,9 +61,9 @@ services:
       REGISTRY_STORAGE_DELETE_ENABLED: "true"
     volumes:
       - /srv/registry:/var/lib/registry
-    networks:
-      - gitlab-network
+    networks: [gitlab-network]
 
 networks:
   gitlab-network:
     driver: bridge
+    internal: true
