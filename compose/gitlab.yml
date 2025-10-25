@@ -15,7 +15,7 @@ services:
       - /srv/gitlab/logs:/var/log/gitlab
       - /srv/gitlab/data:/var/opt/gitlab
       - /srv/gitlab/ssl:/etc/gitlab/ssl:ro
-      - ./gitlab.rb:/etc/gitlab/gitlab.rb:ro
+      - ./compose/gitlab.rb:/etc/gitlab/gitlab.rb:ro
 
     shm_size: "256m"
     stop_grace_period: 1m
