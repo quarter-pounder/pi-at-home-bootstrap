@@ -32,6 +32,8 @@ services:
       SMTP_STARTTLS: ${SMTP_STARTTLS}
       SMTP_TLS: ${SMTP_TLS}
       SMTP_SSL_VERIFY_MODE: ${SMTP_SSL_VERIFY_MODE}
+      GITLAB_OMNIBUS_CONFIG: |
+        gitlab_workhorse['prometheus_listen_addr'] = "0.0.0.0:8080"
 
     healthcheck:
       test: ["CMD-SHELL", "curl -fsSk https://localhost/-/health || exit 1"]
