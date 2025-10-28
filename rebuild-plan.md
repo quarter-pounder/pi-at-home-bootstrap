@@ -1,3 +1,4 @@
+```
 pi-at-home/
 ├── bootstrap/                      # Tier 0 — minimal setup, pure bash
 │   ├── install.sh
@@ -117,7 +118,7 @@ pi-at-home/
 │   └── OPERATIONS.md
 │
 └── MANIFEST.md                     # Generated: image digests, config hashes, git state
-
+```
 ---
 
 ## Key Design Principles
