@@ -9,6 +9,7 @@
 *.log
 
 compose/gitlab.rb
+gitlab.rb
 
 .DS_Store
 .idea/
