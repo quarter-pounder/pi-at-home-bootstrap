@@ -21,6 +21,8 @@ gitlab.rb
 backups/
 *.backup
 
+legacy/CF_TUNNEL_SETTINGS.md
+
 # Terraform
 terraform/.terraform/
 terraform/.terraform.lock.hcl

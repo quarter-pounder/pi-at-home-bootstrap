@@ -1,5 +1,5 @@
 ```
-pi-at-home/
+pi-forge/
 ├── bootstrap/                      # Tier 0 — minimal setup, pure bash
 │   ├── install.sh
 │   ├── 00-preflight.sh
