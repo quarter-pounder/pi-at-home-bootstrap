@@ -100,24 +100,13 @@ pi-at-home/
 │       ├── restore.sh
 │       └── verify.sh
 │
-├── generated/                      # Rendered configs (git-ignored, not versioned)
-│   ├── gitlab/
-│   ├── monitoring/
-│   └── tunnel/
-│
 ├── examples/
 │   ├── gitlab-ci-docker.yml
 │   ├── gitlab-ci-nodejs.yml
 │   ├── gitlab-ci-python.yml
 │   └── README.md
 │
-├── docs/
-│   ├── README.md
-│   ├── ARCHITECTURE.md
-│   ├── SETUP.md
-│   └── OPERATIONS.md
-│
-└── MANIFEST.md                     # Generated: image digests, config hashes, git state
+└── MANIFEST.md
 ```
 ---
 
