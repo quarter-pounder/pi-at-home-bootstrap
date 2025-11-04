@@ -10,18 +10,20 @@ fi
 
 timestamp() { date +"%Y-%m-%d %H:%M:%S"; }
 
+log_debug()   { [[ "${DEBUG:-0}" == "1" ]] && echo "${BLUE}[$(timestamp)] [DEBUG]${RESET} $*" >&2 || true; }
 log_info()    { echo "${BLUE}[$(timestamp)] [INFO]${RESET} $*"; }
 log_warn()    { echo "${YELLOW}[$(timestamp)] [WARN]${RESET} $*"; }
 log_error()   { echo "${RED}[$(timestamp)] [ERROR]${RESET} $*" >&2; }
 log_success() { echo "${GREEN}[$(timestamp)] [OK]${RESET} $*"; }
 
-# Environment loader
+# Environment loader (optional, for post-bootstrap use)
 load_env() {
   if [[ -f config-registry/env/base.env ]]; then
     source config-registry/env/base.env
   else
-    log_error "Base environment file not found. Copy base.env.example and configure it."
-    exit 1
+    log_warn "Base environment file not found at config-registry/env/base.env"
+    log_info "This is normal during bootstrap phase. Config registry will be set up later."
+    return 0
   fi
 }
 
