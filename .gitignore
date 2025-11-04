@@ -30,3 +30,12 @@ terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 terraform/terraform.tfvars
 terraform/*.tfplan
+
+/generated/
+/srv/
+/tmp/
+/*.tar.gz
+config-registry/env/secrets.env
+config-registry/env/secrets.env.vault
+.vault_pass
+terraform.tfstate*
