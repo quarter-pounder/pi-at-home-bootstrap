@@ -19,7 +19,9 @@ log_success() { echo "${GREEN}[$(timestamp)] [OK]${RESET} $*"; }
 # Environment loader (optional, for post-bootstrap use)
 load_env() {
   if [[ -f config-registry/env/base.env ]]; then
+    set -a
     source config-registry/env/base.env
+    set +a
   else
     log_warn "Base environment file not found at config-registry/env/base.env"
     log_info "This is normal during bootstrap phase. Config registry will be set up later."
