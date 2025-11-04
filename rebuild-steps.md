@@ -2,6 +2,7 @@
 
 Roadmap for reconstructing the repo into the new domain-driven structure.
 Each phase builds safely on the previous one; all steps are idempotent and reversible.
+Each should be self-contained.
 
 ---
 
@@ -34,20 +35,44 @@ Each phase builds safely on the previous one; all steps are idempotent and rever
 
 ## Phase 1 – Bootstrap (Tier 0)
 
-**Goal:** Minimal host setup with Docker ready.
+**Goal:** Minimal host setup with Docker ready and optimized for Pi.
 
 - [x] Move install scripts into `bootstrap/`:
   - [x] `install.sh`
-  - [x] `00-preflight.sh`
-  - [x] `01-install-core.sh`
-  - [x] `02-install-docker.sh`
-  - [x] `03-verify.sh`
+  - [x] `00-migrate-to-nvme.sh` (optional, for SD to NVMe migration)
+  - [x] `01-preflight.sh`
+  - [x] `02-install-core.sh`
+  - [x] `03-install-docker.sh`
+  - [x] `04-optimize-docker.sh`
+  - [x] `05-verify.sh`
 - [x] Strip GitLab-specific logic; only system + Docker setup.
-- [ ] Test standalone:
+- [x] Create `04-optimize-docker.sh`:
+  - [x] Configure Docker daemon with Pi-optimized settings
+  - [x] Set overlay2 storage driver
+  - [x] Configure log rotation and IP pools
+  - [x] Enable live-restore and disable userland-proxy
+  - [x] Set appropriate ulimits
+  - [x] Restart Docker daemon to apply changes
+- [x] Enhance `05-verify.sh` with Pi-specific checks:
+  - [x] Verify `/srv` mount point and NVMe device detection
+  - [x] Check Docker daemon status via systemctl
+  - [x] Validate memory and swap availability
+  - [x] Check disk space on `/srv` partition
+  - [x] Verify Docker storage driver (overlay2)
+  - [x] Validate network interfaces
+  - [x] Optional disk throughput test (skip with `SKIP_THROUGHPUT_TEST=1`)
+- [x] Test standalone:
   ```bash
-  sudo bash bootstrap/install.sh
+  # Optional: Migrate to NVMe first (if needed)
+  # sudo bash bootstrap/00-migrate-to-nvme.sh
+
+  sudo bash bootstrap/01-preflight.sh
+  sudo bash bootstrap/02-install-core.sh
+  sudo bash bootstrap/03-install-docker.sh
+  sudo bash bootstrap/04-optimize-docker.sh
+  bash bootstrap/05-verify.sh
   ```
-- [ ] Confirm Docker works and `/srv` is mounted.
+- [x] Confirm Docker works and `/srv` is mounted on NVMe.
 
 ---
 
