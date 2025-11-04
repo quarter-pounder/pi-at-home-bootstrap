@@ -8,8 +8,8 @@
 *.rpm
 *.log
 
-compose/gitlab.rb
-gitlab.rb
+legacy/compose/gitlab.rb
+legacy/gitlab.rb
 
 .DS_Store
 .idea/
@@ -31,11 +31,11 @@ terraform/terraform.tfstate.backup
 terraform/terraform.tfvars
 terraform/*.tfplan
 
-/generated/
-/srv/
-/tmp/
-/*.tar.gz
-config-registry/env/secrets.env
-config-registry/env/secrets.env.vault
-.vault_pass
-terraform.tfstate*
+pi-forge/generated
+pi-forge/srv/
+pi-forge/tmp/
+pi-forge/*.tar.gz
+pi-forge/config-registry/env/secrets.env
+pi-forge/config-registry/env/secrets.env.vault
+pi-forge/.vault_pass
+pi-forge/terraform.tfstate*
