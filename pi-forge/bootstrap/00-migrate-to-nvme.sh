@@ -59,8 +59,8 @@ ensure_dependencies() {
 
   if (( ${#required_packages[@]} > 0 )); then
     log_info "Installing required packages: ${required_packages[*]}"
-    apt update -qq
-    apt install -y "${required_packages[@]}" || {
+    apt-get update -qq
+    apt-get install -y "${required_packages[@]}" || {
       log_error "Failed to install required packages"
       exit 1
     }
@@ -71,7 +71,7 @@ ensure_dependencies() {
 
   if (( ${#optional_packages[@]} > 0 )); then
     log_info "Attempting to install optional packages: ${optional_packages[*]}"
-    if apt install -y "${optional_packages[@]}" 2>/dev/null; then
+    if apt-get install -y "${optional_packages[@]}" 2>/dev/null; then
       log_success "Optional packages installed"
     else
       log_warn "Some optional packages could not be installed (will continue anyway)"
