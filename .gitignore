@@ -37,5 +37,6 @@ pi-forge/tmp/
 pi-forge/*.tar.gz
 pi-forge/config-registry/env/secrets.env
 pi-forge/config-registry/env/secrets.env.vault
+pi-forge/config-registry/state/
 pi-forge/.vault_pass
 pi-forge/terraform.tfstate*

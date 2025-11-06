@@ -78,38 +78,161 @@ Each should be self-contained.
 
 ## Phase 2 – Configuration Registry
 
-**Goal:** Establish single source of truth with encrypted secrets.
+**Goal:** Establish single source of truth with encrypted secrets, metadata generation, and validation.
 
-- [ ] Create `config-registry/env/base.env` (from legacy `.env`).
+### 2.1 – Directory Structure
+
+- [ ] Create `config-registry/` directory structure:
+  ```bash
+  mkdir -p config-registry/{env/overrides,schema,templates,state/{metadata-cache,env-resolved}}
+  ```
+
+### 2.2 – Environment Configuration
+
+- [ ] Create `config-registry/env/base.env` (from legacy `.env`):
+  - Universal settings (DOMAIN, TIMEZONE, etc.)
+  - Non-sensitive configuration
 - [ ] Create `config-registry/env/secrets.env.vault` with ansible-vault:
   ```bash
   ansible-vault create config-registry/env/secrets.env.vault
   # Add: GITLAB_ROOT_PASSWORD, GRAFANA_ADMIN_PASSWORD, SMTP_PASSWORD, etc.
   ```
-- [ ] Create `config-registry/env/ports.yml` with all known ports.
+- [ ] Create `config-registry/env/overrides/` directory:
+  - [ ] `dev.env` - Development environment overrides
+  - [ ] `staging.env` - Staging environment overrides
+  - [ ] `prod.env` - Production environment overrides
+
+### 2.3 – Declarative Configuration
+
+- [ ] Create `config-registry/env/ports.yml` with port assignments:
+  ```yaml
+  gitlab:
+    http: 8080
+    https: 443
+    ssh: 2222
+  monitoring:
+    prometheus: 9090
+    grafana: 3000
+    loki: 3100
+  # ... (all domains)
+  ```
+  **Note:** Naming convention: `{domain: {port_name: number}}` → `PORT_{DOMAIN}_{PORT_NAME}`
+
 - [ ] Create `config-registry/env/domains.yml`:
   ```yaml
-  active:
-    - gitlab
-    - monitoring
-    - adblocker
-    - tunnel
+  domains:
+    - name: gitlab
+      dependencies: [monitoring]
+    - name: monitoring
+      dependencies: []
+    - name: adblocker
+      dependencies: []
+    - name: tunnel
+      dependencies: []
   ```
-- [ ] Implement `config-registry/render-config.sh` with vault integration:
+
+### 2.4 – Schema Validation
+
+- [ ] Create `config-registry/schema/env.schema.yml`:
+  - Required fields, defaults, types
+  - Validation rules for environment variables
+- [ ] Create `config-registry/schema/domains.schema.yml`:
+  - Domain structure validation
+  - Dependencies validation
+- [ ] Create `config-registry/schema/ports.schema.yml`:
+  - Enforces naming convention: `{domain: {port_name: number}}`
+  - Port conflict detection rules
+
+### 2.5 – Metadata Generation
+
+- [ ] Implement `config-registry/generate-metadata.sh`:
+  - Reads `domains.yml` and `ports.yml`
+  - Merges port assignments into domain definitions
+  - Generates `_meta` field with `generated_at`, `source_hash`, `domain`
+  - Outputs to `config-registry/state/metadata-cache/*.yml`
+  - Uses atomic file writes (temp file + cmp + mv)
+
+### 2.6 – Validation Scripts
+
+- [ ] Implement `common/validate.sh` (runtime - fast, minimal):
+  - Fast YAML syntax checks with `yq`
+  - Port conflict detection
+  - Basic structural validation
+  - No external dependencies (bash/yq only)
+
+- [ ] Add `validate-schema` target to `common/Makefile`:
+  - Full JSON Schema validation with `ajv` (CI enforcement)
+  - Validates `domains.yml` and `ports.yml` against schemas
+  - Requires Node.js/ajv (CI environment)
+
+### 2.7 – Makefile Targets
+
+- [ ] Create `common/Makefile` with targets:
+  - `make generate-metadata` - Creates `state/metadata-cache/*.yml`
+  - `make diff-metadata` - Checks for drift (exits 1 if drift found)
+  - `make commit-metadata` - Reviews diffs and copies to `domains/*/metadata.yml`
+  - `make validate` - Runtime validation (fast, minimal)
+  - `make validate-schema` - Schema validation (CI enforcement)
+  - `make render DOMAIN=<name> ENV=<env>` - Renders templates
+  - `make deploy DOMAIN=<name>` - Deploys domain
+  - `make env ENV=<env>` - Loads environment variables
+
+### 2.8 – Configuration Rendering
+
+- [ ] Implement `common/render-config.sh`:
+  - Layered environment loading: `base.env` → `overrides/<env>.env` → `secrets.env`
+  - Decrypts `secrets.env.vault` only during render (temporary `/tmp/secrets.env`)
+  - Loads `ports.yml` as `PORT_*` variables (converts naming convention)
+  - Renders templates from `domains/<domain>/templates/` to `generated/<domain>/`
+  - Uses `envsubst` for template substitution
+
+### 2.9 – Git Configuration
+
+- [ ] Update `.gitignore`:
+  - `pi-forge/generated/`
+  - `pi-forge/config-registry/state/`
+  - `pi-forge/.vault_pass`
+  - `pi-forge/config-registry/env/secrets.env` (decrypted)
+
+### 2.10 – Testing & Verification
+
+- [ ] Test metadata generation:
   ```bash
-  # Decrypt secrets, render templates, re-encrypt
-  ansible-vault decrypt --vault-password-file .vault_pass secrets.env.vault
-  source secrets.env
-  envsubst < template > output
-  ansible-vault encrypt --vault-password-file .vault_pass secrets.env.vault
+  make generate-metadata
+  ls config-registry/state/metadata-cache/
   ```
-- [ ] Add `/generated/`, `.vault_pass`, and `secrets.env` to `.gitignore`.
-- [ ] Validate all required variables before render.
-- [ ] Smoke-test render:
+
+- [ ] Test drift detection:
   ```bash
-  make render DOMAIN=gitlab
+  make diff-metadata
+  # Should show no drift initially
+  ```
+
+- [ ] Test metadata commit workflow:
+  ```bash
+  make commit-metadata
+  # Review diffs, then commit domains/*/metadata.yml
+  ```
+
+- [ ] Test validation:
+  ```bash
+  make validate
+  make validate-schema  # Requires Node.js/ajv
+  ```
+
+- [ ] Smoke-test render (after Phase 3 domain templates exist):
+  ```bash
+  make render DOMAIN=gitlab ENV=dev
   ls generated/gitlab/
   ```
+
+### 2.11 – Documentation
+
+- [ ] Document workflow in `rebuild-plan.md`:
+  - Declarative flow: `domains.yml` + `ports.yml` → `generate-metadata.sh` → `metadata.yml`
+  - State directory purpose (ephemeral vs versioned)
+  - Port naming convention and conversion
+  - Two-tier validation approach
 
 ---
 

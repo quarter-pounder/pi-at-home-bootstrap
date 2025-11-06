@@ -9,7 +9,7 @@ pi-forge/
 │   └── utils.sh
 │
 ├── config-registry/                # Centralized configuration (source of truth)
-│   ├── env/                        # Declarative inputs (human-maintained)
+│   ├── env/                        # Human-authored, declarative inputs
 │   │   ├── base.env               # Universal settings
 │   │   ├── secrets.env.vault      # Encrypted secrets
 │   │   ├── domains.yml            # Active domains + dependencies (declarative needs)
@@ -18,21 +18,30 @@ pi-forge/
 │   │       ├── dev.env
 │   │       ├── staging.env
 │   │       └── prod.env
-│   ├── schema/                     # Validation and defaults (machine rules)
+│   ├── schema/                     # Validation rules (machine rules)
 │   │   ├── env.schema.yml         # Required fields, defaults, types
 │   │   ├── domains.schema.yml
 │   │   └── ports.schema.yml       # Enforces naming: {domain: {port_name: number}}
-│   ├── templates/                  # Global templates (pure render outputs)
+│   ├── templates/                  # Machine templates (pure render outputs)
 │   │   ├── compose.yml.tmpl
 │   │   ├── network.yml.tmpl
 │   │   ├── terraform.tfvars.tmpl
 │   │   ├── ansible-vars.yml.tmpl
 │   │   └── cloud-init.tmpl
-│   └── generate-metadata.sh        # Generates domains/*/metadata.yml
+│   ├── state/                      # Ephemeral, auto-generated (git-ignored)
+│   │   ├── metadata-cache/        # Intermediate (pre-commit) generation output
+│   │   │   ├── gitlab.yml
+│   │   │   ├── monitoring.yml
+│   │   │   └── ...
+│   │   └── env-resolved/          # Cached merged env (for debugging/performance)
+│   │       ├── dev.env
+│   │       ├── staging.env
+│   │       └── prod.env
+│   └── generate-metadata.sh        # Generates state/metadata-cache/*.yml
 │
 ├── domains/                        # Tier 2 — composable service domains
 │   ├── gitlab/
-│   │   ├── metadata.yml           # Generated (from domains.yml + ports.yml)
+│   │   ├── metadata.yml           # Final reconciled, version-controlled output
 │   │   ├── templates/              # Static (uses $PORT_* vars)
 │   │   │   ├── compose.yml.tmpl
 │   │   │   ├── gitlab.rb.tmpl
@@ -45,7 +54,7 @@ pi-forge/
 │   │   └── README.md
 │   │
 │   ├── monitoring/
-│   │   ├── metadata.yml           # Generated
+│   │   ├── metadata.yml           # Final reconciled, version-controlled output
 │   │   ├── templates/              # Static (uses $PORT_* vars)
 │   │   │   ├── compose.yml.tmpl
 │   │   │   ├── prometheus.yml.tmpl
@@ -59,14 +68,14 @@ pi-forge/
 │   │   └── README.md
 │   │
 │   ├── adblocker/
-│   │   ├── metadata.yml           # Generated
+│   │   ├── metadata.yml           # Final reconciled, version-controlled output
 │   │   ├── templates/              # Static
 │   │   │   ├── compose.yml.tmpl
 │   │   │   └── unbound.conf.tmpl
 │   │   └── README.md
 │   │
 │   └── tunnel/
-│       ├── metadata.yml           # Generated
+│       ├── metadata.yml           # Final reconciled, version-controlled output
 │       ├── templates/              # Static
 │       │   ├── compose.yml.tmpl
 │       │   └── config.yml.tmpl
@@ -133,19 +142,31 @@ pi-forge/
 
 **Declarative Flow:**
 ```
-config-registry/env/domains.yml  ← declarative needs
-config-registry/env/ports.yml    ← assigned bindings
+Declarative (human intent)
+  config-registry/env/domains.yml  ← declarative needs
+  config-registry/env/ports.yml    ← assigned bindings
           │
           ▼
-generate-metadata.sh            → outputs domains/*/metadata.yml (generated)
+Machine generation (cached)
+  generate-metadata.sh            → outputs config-registry/state/metadata-cache/*.yml
           │
           ▼
-validate.sh                     → reconciles domains vs ports vs metadata
+Validated truth (versioned metadata)
+  diff state/metadata-cache/ vs domains/*/metadata.yml
+  cp state/metadata-cache/*.yml → domains/*/metadata.yml (commit)
           │
           ▼
-render-config.sh                → injects $PORT_* vars into templates
-domains/*/templates/*.tmpl      → → generated/*/*.yml
+Rendered runtime (ephemeral)
+  validate.sh                     → reconciles domains vs ports vs metadata
+  render-config.sh                → injects $PORT_* vars into templates
+  domains/*/templates/*.tmpl      → → generated/*/*.yml
 ```
+
+**State Directory:**
+- `config-registry/state/` = transient machine output (git-ignored)
+  - For diagnostics, caching, CI diffing
+- `domains/<name>/metadata.yml` = canonical generated artifact (version-controlled)
+  - Treated as versioned truth for each domain
 
 **Environment Loading:**
 ```
@@ -157,8 +178,16 @@ base.env → overrides/<env>.env → decrypted secrets.env
 ```
 
 **Workflow Examples:**
-- **Add new domain**: Declare in `domains.yml` → Assign ports in `ports.yml` → Run `generate-metadata.sh` → Done
-- **Change a port**: Update `ports.yml` → Run `generate-metadata.sh` → Downstream render reflects change
+- **Add new domain**:
+  1. Declare in `domains.yml` → Assign ports in `ports.yml`
+  2. Run `make generate-metadata` → Creates `state/metadata-cache/<domain>.yml`
+  3. Review diff: `diff -u state/metadata-cache/<domain>.yml domains/<domain>/metadata.yml`
+  4. Commit: `cp state/metadata-cache/<domain>.yml domains/<domain>/metadata.yml`
+- **Change a port**:
+  1. Update `ports.yml`
+  2. Run `make generate-metadata` → Updates `state/metadata-cache/*.yml`
+  3. Review and commit changes to `domains/*/metadata.yml`
+  4. Downstream render reflects change
 
 ### 2. Immutable vs Mutable
 - **Immutable** (version controlled): configs, IaC, Dockerfile, compose templates
@@ -189,18 +218,26 @@ make deploy DOMAIN=monitoring
 ```
 
 ### 5. Loose Coupling via metadata.yml
+- **metadata.yml generation flow:**
+  1. `generate-metadata.sh` creates `config-registry/state/metadata-cache/*.yml` (ephemeral)
+  2. Review diff: `diff -u state/metadata-cache/<domain>.yml domains/<domain>/metadata.yml`
+  3. Commit canonical version: `cp state/metadata-cache/<domain>.yml domains/<domain>/metadata.yml`
 - **metadata.yml is generated** from `domains.yml` + `ports.yml`
 - Provides machine-readable summary per domain (for validation and introspection)
 - Each domain declares its own dependencies in `domains.yml`
 - Optional vs required dependencies clearly marked
 - Port conflict detection via `validate.sh` (reconciles metadata vs registry)
 - Services work standalone or together (e.g., Prometheus without Grafana)
+- CI can validate that `state/metadata-cache/` matches `domains/*/metadata.yml` (no drift) via `make diff-metadata`
+- Metadata includes `_meta` field with `generated_at`, `source_hash`, and `domain` for tracking and drift detection
 
 ### 6. Version Locking & Drift Detection
 - Lock Docker image tags in compose.yml
 - Pin Terraform provider versions
 - Auto-generate MANIFEST.md: image digests, config hashes, git commit IDs
 - Validate configs before deploy to detect drift
+- Metadata drift detection: `make diff-metadata` compares `state/metadata-cache/` vs `domains/*/metadata.yml`
+- Metadata includes `_meta.source_hash` to track source file changes
 
 ### 7. Secrets Management
 - Ansible-vault
@@ -235,7 +272,7 @@ Note: remember to check port conflicts
 
 ### common/Makefile
 ```makefile
-.PHONY: env generate-metadata render deploy destroy validate validate-schema manifest
+.PHONY: env generate-metadata commit-metadata diff-metadata render deploy destroy validate validate-schema manifest
 
 ENV ?= dev
 DOMAIN ?= gitlab
@@ -245,8 +282,48 @@ env:
 	@set -a; source config-registry/env/base.env; set +a
 
 generate-metadata:
-	@echo "[Generate] Creating metadata.yml files"
+	@echo "[Generate] Creating metadata cache files"
 	@bash config-registry/generate-metadata.sh
+
+commit-metadata: generate-metadata
+	@echo "[Commit] Reviewing metadata diffs..."
+	@for domain in $$(yq '.domains[].name' config-registry/env/domains.yml); do \
+		if [ -f "config-registry/state/metadata-cache/$$domain.yml" ]; then \
+			if [ -f "domains/$$domain/metadata.yml" ]; then \
+				if ! diff -q "config-registry/state/metadata-cache/$$domain.yml" "domains/$$domain/metadata.yml" >/dev/null 2>&1; then \
+					echo "  Changes detected for $$domain:"; \
+					diff -u "domains/$$domain/metadata.yml" "config-registry/state/metadata-cache/$$domain.yml" || true; \
+					echo "  Copying: cp config-registry/state/metadata-cache/$$domain.yml domains/$$domain/metadata.yml"; \
+					cp "config-registry/state/metadata-cache/$$domain.yml" "domains/$$domain/metadata.yml"; \
+				else \
+					echo "  No changes for $$domain"; \
+				fi; \
+			else \
+				echo "  New domain $$domain, copying metadata"; \
+				cp "config-registry/state/metadata-cache/$$domain.yml" "domains/$$domain/metadata.yml"; \
+			fi; \
+		fi; \
+	done
+
+diff-metadata: generate-metadata
+	@echo "[Diff] Checking metadata drift..."
+	@set -e; diff_found=0; \
+	for domain in $$(yq '.domains[].name' config-registry/env/domains.yml); do \
+		if [ -f "config-registry/state/metadata-cache/$$domain.yml" ] && [ -f "domains/$$domain/metadata.yml" ]; then \
+			if ! diff -q "config-registry/state/metadata-cache/$$domain.yml" "domains/$$domain/metadata.yml" >/dev/null 2>&1; then \
+				echo "  Drift detected in $$domain:"; \
+				diff -u "domains/$$domain/metadata.yml" "config-registry/state/metadata-cache/$$domain.yml" || true; \
+				diff_found=1; \
+			fi; \
+		elif [ -f "config-registry/state/metadata-cache/$$domain.yml" ] && [ ! -f "domains/$$domain/metadata.yml" ]; then \
+			echo "  Missing metadata for $$domain (new domain?)"; \
+			diff_found=1; \
+		fi; \
+	done; \
+	if [ $$diff_found -eq 0 ]; then \
+		echo "  No drift detected"; \
+	fi; \
+	exit $$diff_found
 
 validate: generate-metadata
 	@echo "[Validate] Runtime validation (fast, minimal)"
@@ -279,30 +356,46 @@ manifest:
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "[Generate] Creating metadata.yml files from domains.yml + ports.yml"
+echo "[Generate] Creating metadata files from domains.yml + ports.yml"
 
 # Read domains.yml and ports.yml
 # Merge port assignments into domain definitions
-# Output per-domain metadata.yml files to domains/<name>/metadata.yml
+# Output per-domain metadata.yml files to config-registry/state/metadata-cache/
+
+mkdir -p config-registry/state/metadata-cache
+
+# Calculate source hash for drift detection
+SOURCE_HASH=$(sha256sum config-registry/env/domains.yml config-registry/env/ports.yml 2>/dev/null | sha256sum | cut -d' ' -f1)
+GENERATED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 for domain in $(yq '.domains[].name' config-registry/env/domains.yml); do
   tmp=$(mktemp)
+  cache_file="config-registry/state/metadata-cache/${domain}.yml"
 
   # Generate metadata.yml by combining domain definition + port assignments
-  # Write to temp file
-  # ... (generate logic here) ... > "$tmp"
+  # Include generation metadata at top level (_meta field)
+  {
+    echo "_meta:"
+    echo "  generated_at: ${GENERATED_AT}"
+    echo "  source_hash: ${SOURCE_HASH}"
+    echo "  domain: ${domain}"
+    echo ""
+    # ... (generate domain-specific metadata here) ...
+  } > "$tmp"
 
   # Only update if content changed (preserves file mtime if unchanged)
-  if ! cmp -s "$tmp" "domains/$domain/metadata.yml" 2>/dev/null; then
-    mv "$tmp" "domains/$domain/metadata.yml"
-    echo "  Updated domains/$domain/metadata.yml"
+  if ! cmp -s "$tmp" "$cache_file" 2>/dev/null; then
+    mv "$tmp" "$cache_file"
+    echo "  Updated $cache_file"
   else
     rm "$tmp"
-    echo "  No changes to domains/$domain/metadata.yml"
+    echo "  No changes to $cache_file"
   fi
 done
 
-echo "[Generate] Metadata files generated"
+echo "[Generate] Metadata cache generated in config-registry/state/metadata-cache/"
+echo "[Generate] Review diffs: make diff-metadata"
+echo "[Generate] Commit: make commit-metadata"
 ```
 
 ### common/render-config.sh
@@ -391,6 +484,27 @@ yq -o=json config-registry/env/domains.yml | ajv validate \
 yq -o=json config-registry/env/ports.yml | ajv validate \
   -s config-registry/schema/ports.schema.yml
 ```
+
+### Example: domains/gitlab/metadata.yml
+```yaml
+_meta:
+  generated_at: "2024-01-15T10:30:00Z"
+  source_hash: "abc123def456..."
+  domain: gitlab
+
+name: gitlab
+ports:
+  http: 8080
+  https: 443
+  ssh: 2222
+networks:
+  - gitlab-network
+dependencies:
+  - monitoring
+# ... (domain-specific metadata) ...
+```
+
+**Note:** The `_meta` field is generated automatically and used for drift detection. It should not be manually edited.
 
 ### common/link-domain.sh
 ```bash
