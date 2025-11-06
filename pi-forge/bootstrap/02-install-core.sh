@@ -3,7 +3,7 @@ set -Eeuo pipefail
 trap 'log_error "Installation interrupted"; exit 1' INT TERM
 cd "$(dirname "$0")/.."
 
-source bootstrap/utils.sh
+source "$(dirname "$0")/utils.sh"
 
 # Verify sudo access
 if ! sudo -n true 2>/dev/null && ! sudo -v 2>/dev/null; then

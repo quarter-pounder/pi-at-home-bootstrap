@@ -1,53 +1,33 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# Minimal utilities for bootstrap scripts (self-contained, no external dependencies)
 
-# Color helpers (TTY-safe)
-if [[ -t 1 ]]; then
-  RED=$(tput setaf 1); GREEN=$(tput setaf 2); YELLOW=$(tput setaf 3); BLUE=$(tput setaf 4); RESET=$(tput sgr0)
+if [[ ! -t 1 ]]; then
+  RED=""; GREEN=""; YELLOW=""; RESET=""
 else
-  RED=""; GREEN=""; YELLOW=""; BLUE=""; RESET=""
+  RED=$'\033[31m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; RESET=$'\033[0m'
 fi
 
-timestamp() { date +"%Y-%m-%d %H:%M:%S"; }
+log()   { printf '%s [INFO] %s\n' "$(date '+%F %T')" "$*"; }
+warn()  { printf '%s%s [WARN] %s%s\n' "$YELLOW" "$(date '+%F %T')" "$*" "$RESET"; }
+error() { printf '%s%s [ERROR] %s%s\n' "$RED" "$(date '+%F %T')" "$*" "$RESET" >&2; }
+ok()    { printf '%s%s [OK] %s%s\n' "$GREEN" "$(date '+%F %T')" "$*" "$RESET"; }
 
-log_debug()   { [[ "${DEBUG:-0}" == "1" ]] && echo "${BLUE}[$(timestamp)] [DEBUG]${RESET} $*" >&2 || true; }
-log_info()    { echo "${BLUE}[$(timestamp)] [INFO]${RESET} $*"; }
-log_warn()    { echo "${YELLOW}[$(timestamp)] [WARN]${RESET} $*"; }
-log_error()   { echo "${RED}[$(timestamp)] [ERROR]${RESET} $*" >&2; }
-log_success() { echo "${GREEN}[$(timestamp)] [OK]${RESET} $*"; }
-
-# Environment loader (optional, for post-bootstrap use)
-load_env() {
-  if [[ -f config-registry/env/base.env ]]; then
-    set -a
-    source config-registry/env/base.env
-    set +a
-  else
-    log_warn "Base environment file not found at config-registry/env/base.env"
-    log_info "This is normal during bootstrap phase. Config registry will be set up later."
-    return 0
-  fi
-}
+# Alias for compatibility with common/utils.sh naming
+log_info()    { log "$@"; }
+log_warn()    { warn "$@"; }
+log_error()   { error "$@"; }
+log_success() { ok "$@"; }
 
 # Safety helpers
 require_root() {
   if [[ $EUID -ne 0 ]]; then
-    log_error "This action requires root privileges. Try sudo."
+    error "This action requires root privileges. Try sudo."
     exit 1
   fi
 }
 
 confirm_continue() {
-  read -p "Continue? (yes/no): " -r
-  if [[ ! $REPLY =~ ^yes$ ]]; then
-    log_warn "User cancelled."
-    exit 0
-  fi
+  local prompt="${1:-Continue? (yes/no): }"
+  read -p "$prompt" -r
+  [[ $REPLY =~ ^yes$ ]] || { warn "User cancelled."; exit 0; }
 }
-
-trap_cleanup() {
-  log_warn "Script interrupted. Cleaning up..."
-  exit 1
-}
-
-trap trap_cleanup INT TERM

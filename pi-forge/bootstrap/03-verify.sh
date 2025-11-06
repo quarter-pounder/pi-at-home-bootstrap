@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-source bootstrap/utils.sh
+source "$(dirname "$0")/utils.sh"
 
 echo "[i] Verifying installation..."
 

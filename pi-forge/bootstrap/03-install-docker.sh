@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 cd "$(dirname "$0")/.."
-source bootstrap/utils.sh
+source "$(dirname "$0")/utils.sh"
 trap 'log_error "Docker installation interrupted"; exit 1' INT TERM
 
 log_info "Installing Docker Engine and Compose..."

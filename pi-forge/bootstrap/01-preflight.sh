@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 cd "$(dirname "$0")/.."
 
-source bootstrap/utils.sh
+source "$(dirname "$0")/utils.sh"
 
 log_info "Running pre-flight checks..."
 echo ""

@@ -9,7 +9,7 @@ if ! mkdir -p /var/log 2>/dev/null || ! touch "$LOG_FILE" 2>/dev/null; then
 fi
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-source bootstrap/utils.sh
+source "$(dirname "$0")/utils.sh"
 
 # Log fallback
 if [[ "$LOG_FILE" != "/var/log/nvme-migrate.log" ]]; then
@@ -140,11 +140,7 @@ confirm_device() {
   log_info "NVMe device: $NVME_DEVICE ($size)"
   log_debug "NVMe device confirmed: $NVME_DEVICE, size=$size"
 
-  read -p "Proceed with migration to $NVME_DEVICE? (yes/no): " -r
-  if [[ ! $REPLY =~ ^yes$ ]]; then
-    log_warn "Migration cancelled"
-    exit 0
-  fi
+  confirm_continue "Proceed with migration to $NVME_DEVICE? (yes/no): "
 }
 
 # Download helper
@@ -325,6 +321,7 @@ blkdiscard -f "${NVME_DEVICE}" 2>/dev/null || log_warn "blkdiscard failed, conti
 log_info "Writing image to ${NVME_DEVICE}..."
 log_warn "This will destroy all data on ${NVME_DEVICE}"
 log_warn "DO NOT interrupt this process!"
+confirm_continue "Proceed with writing image to ${NVME_DEVICE}? This is DESTRUCTIVE! (yes/no): "
 
 if command -v pv >/dev/null 2>&1; then
   pv "${IMG}" | dd of="${NVME_DEVICE}" bs=4M conv=fsync
