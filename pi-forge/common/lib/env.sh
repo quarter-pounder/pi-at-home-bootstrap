@@ -6,7 +6,11 @@ ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 export_ports() {
   local yaml="${ROOT_DIR}/config-registry/env/ports.yml"
   if [[ ! -f "$yaml" ]]; then
-    printf '[ERROR] ports.yml not found at %s\n' "$yaml" >&2
+    if command -v log_error >/dev/null 2>&1; then
+      log_error "ports.yml not found at $yaml"
+    else
+      printf '[ERROR] ports.yml not found at %s\n' "$yaml" >&2
+    fi
     return 1
   fi
   eval "$(
@@ -20,7 +24,11 @@ export_ports() {
 
 safe_envsubst() {
   if ! command -v envsubst >/dev/null 2>&1; then
-    printf '[ERROR] envsubst not found. Install gettext-base.\n' >&2
+    if command -v log_error >/dev/null 2>&1; then
+      log_error "envsubst not found. Install gettext-base."
+    else
+      printf '[ERROR] envsubst not found. Install gettext-base.\n' >&2
+    fi
     exit 1
   fi
   envsubst "$@"
