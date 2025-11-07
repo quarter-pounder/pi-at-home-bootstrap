@@ -1,19 +1,58 @@
-# Active domains and their dependencies
-# This is the declarative source of truth for domain configuration
+# Active domains and their deployment characteristics
+# This is the declarative source of truth for domain modelling
 
 domains:
   - name: gitlab
-    dependencies: []
-  - name: monitoring
-    dependencies:
-      - gitlab
-  - name: adblocker
-    dependencies: []
-  - name: tunnel
-    dependencies:
-      - gitlab
+    description: Core GitLab CE instance
+    placement: tunnel
+    standalone: false
+    requires: []
+    exposes_to:
+      - tunnel
       - monitoring
+      - registry
+    consumes: []
+
+  - name: monitoring
+    description: Prometheus, Grafana, Loki
+    placement: local
+    standalone: true
+    requires: []
+    exposes_to:
+      - tunnel
+    consumes:
+      - gitlab
+
+  - name: adblocker
+    description: Pi-hole + Unbound DNS filtering
+    placement: tunnel
+    standalone: false
+    requires:
+      - tunnel
+    exposes_to:
+      - tunnel
+    consumes: []
+
+  - name: tunnel
+    description: Cloudflare connector providing external ingress
+    placement: external
+    standalone: true
+    requires: []
+    exposes_to:
+      - gitlab
+      - registry
+      - adblocker
+    consumes: []
+    managed_externally: true
+
   - name: registry
-    dependencies:
+    description: GitLab container registry
+    placement: tunnel
+    standalone: false
+    requires:
+      - gitlab
+    exposes_to:
+      - tunnel
+    consumes:
       - gitlab
 
