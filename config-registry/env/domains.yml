@@ -1,0 +1,14 @@
+# Active domains and their dependencies
+# This is the declarative source of truth for domain configuration
+
+domains:
+  - name: gitlab
+    dependencies:
+      - monitoring
+  - name: monitoring
+    dependencies: []
+  - name: adblocker
+    dependencies: []
+  - name: tunnel
+    dependencies: []
+

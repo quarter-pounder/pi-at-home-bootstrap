@@ -8,8 +8,8 @@
 *.rpm
 *.log
 
-legacy/compose/gitlab.rb
-legacy/gitlab.rb
+pi-forge/legacy/compose/gitlab.rb
+pi-forge/legacy/gitlab.rb
 
 .DS_Store
 .idea/
@@ -21,7 +21,7 @@ legacy/gitlab.rb
 backups/
 *.backup
 
-legacy/CF_TUNNEL_SETTINGS.md
+pi-forge/legacy/CF_TUNNEL_SETTINGS.md
 
 # Terraform
 terraform/.terraform/

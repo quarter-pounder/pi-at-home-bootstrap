@@ -29,7 +29,7 @@ A lightweight controller monitors `config-registry/state/metadata-cache/*.yml` a
 - Integrate with desktop notifications or Slack webhook.
 - Persist last-notified state to avoid repeated alerts on unchanged diffs.
 
-Until implemented, developers can run `python3 tools/metadata_watchdog.py` in a tmux pane while editing metadata.
+Until implemented, run `python3 pi-forge/tools/metadata_watchdog.py` in a tmux pane while editing metadata.
 
 ## Systemd Unit Example
 ```
@@ -37,7 +37,7 @@ Until implemented, developers can run `python3 tools/metadata_watchdog.py` in a 
 Description=Pi Forge Metadata Drift Watchdog
 
 [Service]
-ExecStart=/usr/bin/python3 /home/pi/pi-forge/tools/metadata_watchdog.py --auto-diff
+ExecStart=/usr/bin/python3 /home/pi/pi-forge/pi-forge/tools/metadata_watchdog.py --auto-diff
 WorkingDirectory=/home/pi/pi-forge
 Restart=always
 Environment=ENABLE_COMMON_TRAP=0

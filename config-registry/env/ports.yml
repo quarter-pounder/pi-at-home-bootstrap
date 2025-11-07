@@ -1,0 +1,28 @@
+# Port assignments for all domains
+# Naming convention: {domain: {port_name: number}}
+# Converted to: PORT_{DOMAIN}_{PORT_NAME} (uppercase)
+
+gitlab:
+  http: 80
+  https: 443
+  ssh: 2222
+  metrics: 8080
+
+registry:
+  http: 5050
+
+monitoring:
+  prometheus: 9090
+  grafana: 3000
+  alertmanager: 9093
+  loki: 3100
+  alloy: 12345
+
+adblocker:
+  dns: 53
+  web: 8081
+  unbound: 5053
+
+tunnel:
+  # Cloudflare Tunnel uses no exposed ports (runs in userland)
+

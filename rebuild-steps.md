@@ -13,11 +13,11 @@ Each should be self-contained.
   git checkout -b legacy-snapshot
   git tag v1.0.0-legacy
   ```
-- [x] Move existing structure to `legacy/`:
+- [x] Move existing structure to `pi-forge/legacy/`:
   ```bash
   mkdir -p legacy
-  mv compose/ config/ scripts/ terraform/ backup/ examples/ legacy/
-  mv *.md *.sh *.txt *.yml legacy/ 2>/dev/null || true
+  mv compose/ config/ scripts/ terraform/ backup/ examples/ pi-forge/legacy/
+  mv *.md *.sh *.txt *.yml pi-forge/legacy/ 2>/dev/null || true
   ```
 - [x] Initialize new folder structure:
   ```bash
@@ -27,7 +27,7 @@ Each should be self-contained.
   ```bash
   sudo tar -czf /tmp/srv-backup-$(date +%Y%m%d).tar.gz /srv/
   ```
-- [x] Document Cloudflare Tunnel dashboard settings in `legacy/CF_TUNNEL_SETTINGS.md`
+- [x] Document Cloudflare Tunnel dashboard settings in `pi-forge/legacy/CF_TUNNEL_SETTINGS.md`
 - [x] Confirm minimal host dependencies:
   `bash`, `docker`, `docker compose`, `jq`, `yq`, `envsubst`, `ansible-vault`.
 
@@ -284,8 +284,8 @@ Migrate one domain at a time. Each must render → validate → deploy → healt
     internal: true
     external: false
   ```
-- [ ] Convert `legacy/compose/gitlab.yml` → `domains/gitlab/templates/compose.yml.tmpl`.
-- [ ] Move tuned `legacy/config/gitlab.rb.template` → `domains/gitlab/templates/gitlab.rb.tmpl`.
+- [ ] Convert `pi-forge/legacy/compose/gitlab.yml` → `domains/gitlab/templates/compose.yml.tmpl`.
+- [ ] Move tuned `pi-forge/legacy/config/gitlab.rb.template` → `domains/gitlab/templates/gitlab.rb.tmpl`.
 - [ ] Add `.required.env` listing required variables.
 - [ ] Render + deploy:
   ```bash
@@ -317,11 +317,11 @@ Migrate one domain at a time. Each must render → validate → deploy → healt
     external: false
   ```
 - [ ] Move/convert from legacy:
-  - `legacy/compose/monitoring.yml` → `domains/monitoring/templates/compose.yml.tmpl`
-  - `legacy/config/prometheus.yml` → `domains/monitoring/templates/prometheus.yml.tmpl`
-  - `legacy/config/alertmanager.yml` → `domains/monitoring/templates/alertmanager.yml.tmpl`
-  - `legacy/config/loki.yml` → `domains/monitoring/templates/loki.yml.tmpl`
-  - `legacy/config/grafana-datasource.yml` → `domains/monitoring/templates/grafana-datasource.yml.tmpl`
+  - `pi-forge/legacy/compose/monitoring.yml` → `domains/monitoring/templates/compose.yml.tmpl`
+  - `pi-forge/legacy/config/prometheus.yml` → `domains/monitoring/templates/prometheus.yml.tmpl`
+  - `pi-forge/legacy/config/alertmanager.yml` → `domains/monitoring/templates/alertmanager.yml.tmpl`
+  - `pi-forge/legacy/config/loki.yml` → `domains/monitoring/templates/loki.yml.tmpl`
+  - `pi-forge/legacy/config/grafana-datasource.yml` → `domains/monitoring/templates/grafana-datasource.yml.tmpl`
 - [ ] Update volume paths to `/srv/monitoring/config` and `/srv/monitoring/data`.
 - [ ] Fresh start (remove existing data):
   ```bash
@@ -356,7 +356,7 @@ Migrate one domain at a time. Each must render → validate → deploy → healt
   - SSL/TLS: Full (strict)
   - Routes: gitlab.{DOMAIN}, registry.{DOMAIN}, grafana.{DOMAIN}
   ```
-- [ ] Create `domains/adblocker/metadata.yml` and move `legacy/config/unbound.conf`.
+- [ ] Create `domains/adblocker/metadata.yml` and move `pi-forge/legacy/config/unbound.conf`.
 - [ ] Render + deploy each:
   ```bash
   make render DOMAIN=tunnel
@@ -401,7 +401,7 @@ Migrate one domain at a time. Each must render → validate → deploy → healt
 
 **Goal:** Separate cloud resources cleanly with fresh state.
 
-- [ ] Move `legacy/terraform/` to `infra/terraform/`.
+- [ ] Move `pi-forge/legacy/terraform/` to `infra/terraform/`.
 - [ ] Split modules: `aws/`, `gcp/`, `cloudflare/`.
 - [ ] Update variable names to match `config-registry/env/base.env`.
 - [ ] Start with clean Terraform state:
@@ -477,7 +477,11 @@ Migrate one domain at a time. Each must render → validate → deploy → healt
   ```
 - [ ] Hook CI scripts into `make validate`.
 - [ ] Extend Prometheus:
-  - [ ] Add build info exporter (`build_info{git_commit="…"} 1`).
+  - [ ] Generate `generated/metrics/build_info.prom` each render:
+    ```bash
+    echo "build_info{git_commit=\"$(git rev-parse --short HEAD)\"} 1" \
+      > generated/metrics/build_info.prom
+    ```
   - [ ] Add dashboard for service health.
 - [ ] Document operational commands in `docs/OPERATIONS.md`.
 
@@ -495,7 +499,7 @@ Migrate one domain at a time. Each must render → validate → deploy → healt
   make manifest
   ```
 - [ ] Confirm all manifests and ports are consistent.
-- [ ] Clean up `legacy/`.
+- [ ] Clean up `pi-forge/legacy/`.
 - [ ] Commit and tag:
   ```bash
   git add .
