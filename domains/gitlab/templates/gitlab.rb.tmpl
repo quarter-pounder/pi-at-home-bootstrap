@@ -10,7 +10,7 @@ gitlab_rails['gitlab_email_reply_to'] = ENV['SMTP_REPLY_TO'] || "noreply@#{ENV['
 gitlab_rails['gitlab_default_can_create_group'] = true
 gitlab_rails['time_zone'] = ENV['TIMEZONE']
 gitlab_rails['initial_root_password'] = ENV['GITLAB_ROOT_PASSWORD']
-gitlab_rails['gitlab_shell_ssh_port'] = ${PORT_GITLAB_SSH}
+gitlab_rails['gitlab_shell_ssh_port'] = {{ PORT_GITLAB_SSH }}
 
 gitlab_rails['log_level'] = "info"
 gitlab_rails['manage_backup_path'] = true
@@ -30,7 +30,7 @@ redis_exporter['enable'] = false
 postgres_exporter['enable'] = false
 gitlab_exporter['enable'] = false
 
-gitlab_workhorse['prometheus_listen_addr'] = "0.0.0.0:${PORT_GITLAB_METRICS}"
+gitlab_workhorse['prometheus_listen_addr'] = "0.0.0.0:{{ PORT_GITLAB_METRICS }}"
 gitlab_rails['monitoring_whitelist'] = ['172.80.0.0/16', '172.81.0.0/16']
 
 registry['enable'] = false
