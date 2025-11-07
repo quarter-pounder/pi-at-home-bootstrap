@@ -2,11 +2,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 # Source logging utilities
 source "$PROJECT_ROOT/common/utils.sh"
+source "$PROJECT_ROOT/common/lib/env.sh"
 
 DOMAIN="$1"
 ENVIRONMENT="${2:-dev}"
@@ -31,8 +32,12 @@ if [ -f config-registry/env/secrets.env.vault ]; then
   TMP_SECRETS=$(mktemp)
   trap 'rm -f "$TMP_SECRETS" 2>/dev/null || true' EXIT
   log_debug "Decrypting secrets.env.vault"
-  ansible-vault decrypt --vault-password-file .vault_pass \
-    config-registry/env/secrets.env.vault --output "$TMP_SECRETS"
+  if ! ansible-vault decrypt --vault-password-file .vault_pass \
+    config-registry/env/secrets.env.vault --output "$TMP_SECRETS"; then
+    rm -f "$TMP_SECRETS"
+    log_error "Vault decryption failed"
+    exit 1
+  fi
   source "$TMP_SECRETS"
 fi
 set +a
@@ -41,12 +46,7 @@ set +a
 # ports.yml structure: {domain: {port_name: number}}
 # Converts to: PORT_{DOMAIN}_{PORT_NAME} (uppercase)
 # Example: gitlab.http: 80 → PORT_GITLAB_HTTP=80
-eval "$(yq -o=shell config-registry/env/ports.yml | \
-  awk -F'=' '{
-    gsub(/^ports_/, "", $1);
-    gsub(/_/, "_", $1);
-    print "PORT_" toupper($1) "=" $2
-  }')"
+export_ports
 
 # Check if templates directory exists
 if [ ! -d "$SRC" ]; then
@@ -59,8 +59,12 @@ fi
 rendered=0
 for f in "$SRC"/*.tmpl; do
   [ -f "$f" ] || continue
+  if [[ "${DRYRUN:-0}" == "1" ]]; then
+    log_info "DRYRUN=1 skipping render for $(basename "$f")"
+    continue
+  fi
   out="$DST/$(basename "${f%.tmpl}")"
-  envsubst < "$f" > "$out"
+  safe_envsubst < "$f" > "$out"
   log_debug "Rendered $out"
   rendered=$((rendered+1))
 done
@@ -69,4 +73,4 @@ if (( rendered == 0 )); then
   log_warn "No templates matched (*.tmpl) in $SRC"
 fi
 
-log_success "Render complete"
+log_success "[Render] Render complete"
