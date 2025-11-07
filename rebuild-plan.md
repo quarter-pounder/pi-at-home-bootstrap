@@ -231,12 +231,31 @@ make deploy DOMAIN=monitoring
 - CI can validate that `state/metadata-cache/` matches `domains/*/metadata.yml` (no drift) via `make diff-metadata`
 - Metadata includes `_meta` field with `generated_at`, `source_hash`, and `domain` for tracking and drift detection
 
+### GitLab Domain Strategy
+- Reduce Makefile inline bash by moving helpers into `common/lib/*.sh` and sourcing them in targets.
+- Validation enforces pinned container image tags and Terraform provider versions (no `:latest`, no unpinned providers).
+- Default metadata workflow: `make generate-metadata && make diff-metadata` fails CI if drift persists.
+
+- Treat GitLab CE as a sealed appliance. Inputs = rendered `gitlab.rb` + environment variables. Outputs = HTTP(S)/SSH endpoints and the exported metrics port defined in `ports.yml`.
+- Runtime state is limited to `/srv/gitlab/{config,data,logs}`. Compose lifecycle (up/down) plus scripted backup/restore are the only control surfaces.
+- Never mutate the container interactively. Regenerate config via templates (`domains/gitlab/templates/gitlab.rb.tmpl`, `compose.yml.tmpl`) and redeploy.
+- Disable Omnibus ancillary stacks (Prometheus, registry) unless explicitly required. Expose only the ports declared in metadata and let downstream services consume them by service name.
+- Keep the rendered `gitlab.rb` under version control. Changes flow: update env/metadata → render → review → deploy.
+- Backups run from outside the container via `gitlab-rake gitlab:backup:create`; artifacts sync to cloud storage. Restores provision a fresh container, mount `/srv/gitlab`, apply backup.
+
 ### 6. Version Locking & Drift Detection
+- Legacy reference material remains in `/legacy` until v2 stabilises; plan to archive or relocate once new domains are fully operational.
+
 - Lock Docker image tags in compose.yml
 - Pin Terraform provider versions
 - Auto-generate MANIFEST.md: image digests, config hashes, git commit IDs
 - Validate configs before deploy to detect drift
 - Metadata drift detection: `make diff-metadata` compares `state/metadata-cache/` vs `domains/*/metadata.yml`
+- Optional watchdog daemon monitors `config-registry/state/metadata-cache/*.yml` and surfaces drift events (see docs/tools/metadata-watchdog.md).
+- `generate-metadata.sh` and the watchdog use a lightweight flock-based lock (`config-registry/state/.lock`) to avoid concurrent runs.
+- Metadata `_meta` includes `generated_at`, `git_commit`, and `source_hash` (templates + metadata) for traceability.
+- Watchdog can run under systemd (see docs/tools/metadata-watchdog.md for unit example).
+
 - Metadata includes `_meta.source_hash` to track source file changes
 
 ### 7. Secrets Management
@@ -533,9 +552,12 @@ echo "Generating manifest..."
   echo ""
   echo "## Docker Images"
   docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | sort
+  docker compose -f generated/${DOMAIN}/compose.yml config | yq '.services[].image' | xargs -n1 docker inspect --format '{{.RepoDigests}}'
   echo ""
   echo "## Config Checksums"
   find generated -type f | xargs sha256sum
+  echo "## Domain Checksums"
+  find domains -name metadata.yml | xargs sha256sum
 } > MANIFEST.md
 
 echo "Manifest generated: MANIFEST.md"

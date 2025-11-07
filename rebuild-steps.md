@@ -82,7 +82,7 @@ Each should be self-contained.
 
 ### 2.1 – Directory Structure
 
-- [ ] Create `config-registry/` directory structure:
+- [x] Create `config-registry/` directory structure:
   ```bash
   mkdir -p config-registry/{env/overrides,schema,templates,state/{metadata-cache,env-resolved}}
   ```
@@ -233,6 +233,29 @@ Each should be self-contained.
   - State directory purpose (ephemeral vs versioned)
   - Port naming convention and conversion
   - Two-tier validation approach
+
+### 2.12 – Makefile & Validation Hardening
+
+- [ ] Move Makefile inline shell into `common/lib/*.sh` helpers
+  - [ ] Implement `metadata_diff`, `metadata_commit`, `load_env` helpers
+  - [ ] Source helpers in Make targets
+- [ ] Introduce composite target `metadata-check` (`make generate-metadata && make diff-metadata`)
+- [ ] Extend `common/validate.sh`
+  - [ ] Fail if Docker images use `:latest` or omit tags in templates/metadata
+  - [ ] Fail if Terraform providers lack explicit version pins / lockfile
+  - [ ] Ensure metadata `_meta` includes `git_commit` / `source_hash`
+
+### 2.13 – Metadata Watchdog
+
+- [ ] Create `tools/metadata_watchdog.py` (Python) to monitor `config-registry/state/metadata-cache/`
+  - [ ] Watch for file changes (watchdog/inotify), debounce events
+  - [ ] Compare cache vs `domains/<name>/metadata.yml`
+  - [ ] Log warning (and optional diff) when drift detected
+  - [ ] Support `--auto-diff` to run `make diff-metadata`
+- [ ] Add requirements entry (e.g., `requirements/watchdog.txt`)
+- [ ] Document usage in `docs/tools/metadata-watchdog.md`
+  - [ ] Describe systemd unit example
+  - [ ] Mention flock-based locking
 
 ---
 
