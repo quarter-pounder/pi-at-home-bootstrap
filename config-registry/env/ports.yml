@@ -23,6 +23,6 @@ adblocker:
   web: 8081
   unbound: 5053
 
-tunnel:
-  # Cloudflare Tunnel uses no exposed ports (runs in userland)
+tunnel: {}
+# Cloudflare Tunnel uses no exposed ports (runs in userland)
 

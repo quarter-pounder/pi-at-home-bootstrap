@@ -89,7 +89,7 @@ Each should be self-contained.
 
 ### 2.2 – Environment Configuration
 
-- [ ] Create `config-registry/env/base.env` (from legacy `.env`):
+- [x] Create `config-registry/env/base.env` (from legacy `.env`):
   - Universal settings (DOMAIN, TIMEZONE, etc.)
   - Non-sensitive configuration
 - [ ] Create `config-registry/env/secrets.env.vault` with ansible-vault:
@@ -122,13 +122,17 @@ Each should be self-contained.
   ```yaml
   domains:
     - name: gitlab
-      dependencies: [monitoring]
+      placement: tunnel
+      standalone: false
+      requires: []
+      exposes_to: [tunnel, monitoring]
+      consumes: []
     - name: monitoring
-      dependencies: []
-    - name: adblocker
-      dependencies: []
-    - name: tunnel
-      dependencies: []
+      placement: local
+      standalone: true
+      requires: []
+      exposes_to: []
+      consumes: [gitlab]
   ```
 
 ### 2.4 – Schema Validation
@@ -138,7 +142,7 @@ Each should be self-contained.
   - Validation rules for environment variables
 - [ ] Create `config-registry/schema/domains.schema.yml`:
   - Domain structure validation
-  - Dependencies validation
+  - Placement / requires / exposes validation
 - [ ] Create `config-registry/schema/ports.schema.yml`:
   - Enforces naming convention: `{domain: {port_name: number}}`
   - Port conflict detection rules
@@ -179,12 +183,12 @@ Each should be self-contained.
 
 ### 2.8 – Configuration Rendering
 
-- [ ] Implement `common/render-config.sh`:
+- [ ] Implement Python-based renderer (`common/render_config.py` + thin `render-config.sh` wrapper):
   - Layered environment loading: `base.env` → `overrides/<env>.env` → `secrets.env`
-  - Decrypts `secrets.env.vault` only during render (temporary `/tmp/secrets.env`)
-  - Loads `ports.yml` as `PORT_*` variables (converts naming convention)
-  - Renders templates from `domains/<domain>/templates/` to `generated/<domain>/`
-  - Uses `envsubst` for template substitution
+  - Decrypts `secrets.env.vault` only during render (temporary in-memory view via `ansible-vault view`)
+  - Loads `ports.yml` as both structured data and `PORT_*` env-style variables
+  - Renders Jinja2 templates from `domains/<domain>/templates/` to `generated/<domain>/`
+  - Declare dependencies in `requirements/render.txt` (install via `pip install -r requirements/render.txt` or apt packages `python3-jinja2`, `python3-yaml`)
 
 ### 2.9 – Git Configuration
 
@@ -267,10 +271,10 @@ Migrate one domain at a time. Each must render → validate → deploy → healt
 
 ### Stage 3.1 – GitLab Domain
 
-- [ ] Create `domains/gitlab/metadata.yml` with ports, dependencies, and network strategy:
+- [ ] Create `domains/gitlab/metadata.yml` with ports, relationships, and network strategy:
   ```yaml
   domain: gitlab
-  dependencies: []
+  requires: []
   exports:
     ports:
       http: 8080
@@ -303,10 +307,10 @@ Migrate one domain at a time. Each must render → validate → deploy → healt
 
 ### Stage 3.2 – Monitoring Domain
 
-- [ ] Create `domains/monitoring/metadata.yml` with dependencies:
+- [ ] Create `domains/monitoring/metadata.yml` with relationships:
   ```yaml
   domain: monitoring
-  dependencies: []
+  requires: []
   exports:
     ports:
       prometheus: 9090
@@ -341,7 +345,7 @@ Migrate one domain at a time. Each must render → validate → deploy → healt
 - [ ] Create `domains/tunnel/metadata.yml`:
   ```yaml
   domain: tunnel
-  dependencies: []
+  requires: []
   exports:
     ports: {}
   networks:

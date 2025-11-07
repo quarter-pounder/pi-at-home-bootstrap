@@ -1,0 +1,26 @@
+_meta:
+  generated_at: 2025-11-07T09:23:05Z
+  git_commit: 8a398f8
+  source_hash: ffbb8f61521fa99e15206f60ba9cc16c1459aebb1308386300afefedd7b53a6e
+  domain: registry
+
+name: registry
+description: GitLab container registry
+
+placement: tunnel
+standalone: false
+
+requires:
+  - gitlab
+
+exposes_to:
+  - tunnel
+
+consumes:
+  - gitlab
+
+ports:
+  http: 5050
+
+networks:
+  - registry-network

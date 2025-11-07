@@ -8,8 +8,8 @@
 *.rpm
 *.log
 
-pi-forge/legacy/compose/gitlab.rb
-pi-forge/legacy/gitlab.rb
+000-legacy(read-only)/gitlab.rb
+000-legacy(read-only)/CF_TUNNEL_SETTINGS.md
 
 .DS_Store
 .idea/
@@ -21,8 +21,6 @@ pi-forge/legacy/gitlab.rb
 backups/
 *.backup
 
-pi-forge/legacy/CF_TUNNEL_SETTINGS.md
-
 # Terraform
 terraform/.terraform/
 terraform/.terraform.lock.hcl
@@ -31,12 +29,12 @@ terraform/terraform.tfstate.backup
 terraform/terraform.tfvars
 terraform/*.tfplan
 
-pi-forge/generated
-pi-forge/srv/
-pi-forge/tmp/
-pi-forge/*.tar.gz
-pi-forge/config-registry/env/secrets.env
-pi-forge/config-registry/env/secrets.env.vault
-pi-forge/config-registry/state/
-pi-forge/.vault_pass
-pi-forge/terraform.tfstate*
+generated
+srv/
+tmp/
+*.tar.gz
+config-registry/env/secrets.env
+config-registry/env/secrets.env.vault
+config-registry/state/
+.vault_pass
+terraform.tfstate*

@@ -12,7 +12,7 @@ pi-forge/
 │   ├── env/                        # Human-authored, declarative inputs
 │   │   ├── base.env               # Universal settings
 │   │   ├── secrets.env.vault      # Encrypted secrets
-│   │   ├── domains.yml            # Active domains + dependencies (declarative needs)
+│   │   ├── domains.yml            # Active domains + placement/relationships
 │   │   ├── ports.yml              # Port assignments (assigned bindings)
 │   │   └── overrides/             # Environment-specific overrides
 │   │       ├── dev.env
@@ -42,7 +42,7 @@ pi-forge/
 ├── domains/                        # Tier 2 — composable service domains
 │   ├── gitlab/
 │   │   ├── metadata.yml           # Final reconciled, version-controlled output
-│   │   ├── templates/              # Static (uses $PORT_* vars)
+│   │   ├── templates/              # Static (uses Jinja2 + env context)
 │   │   │   ├── compose.yml.tmpl
 │   │   │   ├── gitlab.rb.tmpl
 │   │   │   └── runner-config.toml.tmpl
@@ -55,7 +55,7 @@ pi-forge/
 │   │
 │   ├── monitoring/
 │   │   ├── metadata.yml           # Final reconciled, version-controlled output
-│   │   ├── templates/              # Static (uses $PORT_* vars)
+│   │   ├── templates/              # Static (uses Jinja2 + env context)
 │   │   │   ├── compose.yml.tmpl
 │   │   │   ├── prometheus.yml.tmpl
 │   │   │   ├── prometheus-alerts.yml.tmpl
@@ -108,9 +108,14 @@ pi-forge/
 ├── common/                         # Shared utilities
 │   ├── Makefile
 │   ├── utils.sh
-│   ├── validate.sh                # Reconciles domains vs ports vs metadata
-│   ├── render-config.sh           # Injects $PORT_* vars into templates
-│   ├── link-domain.sh
+│   ├── validate.sh                # Reconciles domains vs ports vs metadata (uses helper scripts)
+│   ├── render-config.sh           # Thin wrapper around render_config.py
+│   ├── render_config.py           # Jinja2 renderer for domain templates
+│   ├── lib/
+│   │   ├── check_ports.py
+│   │   ├── check_images.py
+│   │   ├── check_terraform.py
+│   │   └── metadata.sh
 │   └── generate-manifest.sh
 │
 ├── backup/                         # Cross-domain backup logic
@@ -143,7 +148,7 @@ pi-forge/
 **Declarative Flow:**
 ```
 Declarative (human intent)
-  config-registry/env/domains.yml  ← declarative needs
+  config-registry/env/domains.yml  ← declarative needs (placement/relationships)
   config-registry/env/ports.yml    ← assigned bindings
           │
           ▼
@@ -157,8 +162,8 @@ Validated truth (versioned metadata)
           │
           ▼
 Rendered runtime (ephemeral)
-  validate.sh                     → reconciles domains vs ports vs metadata
-  render-config.sh                → injects $PORT_* vars into templates
+  validate.sh                     → reconciles domains vs ports vs metadata (Python helpers)
+  render_config.py                → renders Jinja2 templates into generated/
   domains/*/templates/*.tmpl      → → generated/*/*.yml
 ```
 
@@ -188,6 +193,8 @@ base.env → overrides/<env>.env → decrypted secrets.env
   2. Run `make generate-metadata` → Updates `state/metadata-cache/*.yml`
   3. Review and commit changes to `domains/*/metadata.yml`
   4. Downstream render reflects change
+
+_Reminder: capturing `requires`, `exposes_to`, and `consumes` may feel like extra modelling today, but it preserves the memory of which stacks (monitoring, tunnel, registry, etc.) rely on each domain so future-you doesn’t have to reverse engineer dependencies._
 
 ### 2. Immutable vs Mutable
 - **Immutable** (version controlled): configs, IaC, Dockerfile, compose templates
@@ -224,8 +231,8 @@ make deploy DOMAIN=monitoring
   3. Commit canonical version: `cp state/metadata-cache/<domain>.yml domains/<domain>/metadata.yml`
 - **metadata.yml is generated** from `domains.yml` + `ports.yml`
 - Provides machine-readable summary per domain (for validation and introspection)
-- Each domain declares its own dependencies in `domains.yml`
-- Optional vs required dependencies clearly marked
+- Each domain declares its runtime prerequisites (`requires`) and downstream consumers (`exposes_to`) in `domains.yml`
+- Optional vs required relationships clearly marked
 - Port conflict detection via `validate.sh` (reconciles metadata vs registry)
 - Services work standalone or together (e.g., Prometheus without Grafana)
 - CI can validate that `state/metadata-cache/` matches `domains/*/metadata.yml` (no drift) via `make diff-metadata`
@@ -273,16 +280,17 @@ make deploy DOMAIN=monitoring
 - Cloudflare Tunnel runs in its own domain (tunnel/)
 - Internal networks for true isolation; external networks for service discovery
 
-### 10. Dependency Resolution
+### 10. Relationship Modelling
 ```yaml
 # domains/grafana/metadata.yml
-dependencies:
-  - prometheus  # Hard requirement
-  - loki        # Optional, graceful degradation
-optional_dependencies:
-  - postgres    # For remote storage
+requires:
+  - prometheus        # Hard requirement
+consumes:
+  - loki              # Optional, graceful degradation
+exposes_to:
+  - tunnel            # Dashboards surfaced via tunnel
 ```
-Makefile's `link` target validates and wires dependencies
+Makefile targets can inspect `requires`/`consumes` to build dependency graphs.
 Note: remember to check port conflicts
 
 ---
@@ -420,48 +428,11 @@ echo "[Generate] Commit: make commit-metadata"
 ### common/render-config.sh
 ```bash
 #!/usr/bin/env bash
-set -euo pipefail
-
-DOMAIN="$1"
-ENVIRONMENT="${2:-dev}"
-
-echo "[Render] $DOMAIN for environment $ENVIRONMENT"
-
-SRC="domains/${DOMAIN}/templates"
-DST="generated/${DOMAIN}"
-mkdir -p "$DST"
-
-# Load environment (layered: base → override → secrets)
-set -a
-source config-registry/env/base.env
-[ -f "config-registry/env/overrides/${ENVIRONMENT}.env" ] && source "config-registry/env/overrides/${ENVIRONMENT}.env"
-# Decrypt and source secrets
-if [ -f config-registry/env/secrets.env.vault ]; then
-  ansible-vault decrypt --vault-password-file .vault_pass config-registry/env/secrets.env.vault --output /tmp/secrets.env
-  source /tmp/secrets.env
-  rm /tmp/secrets.env
-fi
-# Load ports.yml as PORT_* variables
-# ports.yml structure: {domain: {port_name: number}}
-# Converts to: PORT_{DOMAIN}_{PORT_NAME} (uppercase)
-# Example: gitlab.http: 8080 → PORT_GITLAB_HTTP=8080
-eval $(yq -o=shell config-registry/env/ports.yml | \
-  awk -F'=' '{
-    gsub(/^ports_/, "", $1);
-    gsub(/_/, "_", $1);
-    print "PORT_" toupper($1) "=" $2
-  }')
-set +a
-
-# Render templates (templates use $PORT_* vars)
-for f in "$SRC"/*.tmpl; do
-  out="$DST/$(basename "${f%.tmpl}")"
-  envsubst < "$f" > "$out"
-  echo "rendered $out"
-done
-
-echo "[Render] Complete"
+python3 common/render_config.py --domain "$1" --env "${2:-dev}"
 ```
+- Thin wrapper retained for Makefile compatibility.
+- `common/render_config.py` loads env layers (base → override → secrets), ports, and domain metadata, then renders `domains/<domain>/templates/*.tmpl` via Jinja2 into `generated/<domain>/`.
+- Dependencies are declared in `requirements/render.txt`; install with `pip install -r requirements/render.txt` or use distro packages (`python3-jinja2`, `python3-yaml`).
 
 ### common/validate.sh (Runtime - Fast, Minimal)
 ```bash

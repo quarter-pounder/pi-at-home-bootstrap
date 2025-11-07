@@ -7,7 +7,7 @@ A lightweight controller monitors `config-registry/state/metadata-cache/*.yml` a
 - Nudge developers to review (`make diff-metadata`) and commit (`make commit-metadata`).
 - Keep the workflow manual-first; no auto-commits.
 
-## Behaviour
+## Behavior
 1. Watch directory `config-registry/state/metadata-cache/` using `watchdog` (Python) or `inotify`.
 2. Debounce rapid write events (multiple notifications per save).
 3. On change:

@@ -57,8 +57,14 @@ for domain in $DOMAINS; do
   tmp=$(mktemp)
   cache_file="config-registry/state/metadata-cache/${domain}.yml"
 
-  # Get dependencies for this domain
-  DEPS=$(yq -o=json ".domains[] | select(.name == \"$domain\") | .dependencies // []" config-registry/env/domains.yml)
+  DESCRIPTION=$(yq -r ".domains[] | select(.name == \"$domain\") | .description // \"\"" config-registry/env/domains.yml)
+  PLACEMENT=$(yq -r ".domains[] | select(.name == \"$domain\") | .placement // \"local\"" config-registry/env/domains.yml)
+  STANDALONE=$(yq -r ".domains[] | select(.name == \"$domain\") | .standalone // false" config-registry/env/domains.yml)
+  REQUIRES=$(yq -o=json ".domains[] | select(.name == \"$domain\") | .requires // []" config-registry/env/domains.yml)
+  EXPOSES=$(yq -o=json ".domains[] | select(.name == \"$domain\") | .exposes_to // []" config-registry/env/domains.yml)
+  CONSUMES=$(yq -o=json ".domains[] | select(.name == \"$domain\") | .consumes // []" config-registry/env/domains.yml)
+  MANAGED_EXTERNALLY=$(yq -o=json ".domains[] | select(.name == \"$domain\") | .managed_externally // false" config-registry/env/domains.yml)
+  MANAGED_EXTERNALLY=${MANAGED_EXTERNALLY//$'\n'/}
 
   # Get ports for this domain from ports.yml
   HAS_PORTS=$(yq -e ".$domain" config-registry/env/ports.yml >/dev/null 2>&1 && echo "yes" || echo "no")
@@ -89,13 +95,42 @@ YAML
       printf '  template_hash: %s\n' "$TEMPLATE_HASH"
     fi
     printf '  domain: %s\n\n' "$domain"
-    printf 'name: %s\n\n' "$domain"
-
-    printf 'dependencies:\n'
-    if [[ "$DEPS" != "[]" && -n "$DEPS" ]]; then
-      echo "$DEPS" | yq -o=yaml '.[]' | sed 's/^/  - /'
+    printf 'name: %s\n' "$domain"
+    if [[ -n "$DESCRIPTION" ]]; then
+      printf 'description: %s\n' "$DESCRIPTION"
     fi
     printf '\n'
+
+    printf 'placement: %s\n' "$PLACEMENT"
+    printf 'standalone: %s\n\n' "$STANDALONE"
+
+    if [[ "$REQUIRES" != "[]" && -n "$REQUIRES" ]]; then
+      printf 'requires:\n'
+      echo "$REQUIRES" | yq -o=yaml '.[]' | sed 's/^/  - /'
+      printf '\n'
+    else
+      printf 'requires: []\n\n'
+    fi
+
+    if [[ "$EXPOSES" != "[]" && -n "$EXPOSES" ]]; then
+      printf 'exposes_to:\n'
+      echo "$EXPOSES" | yq -o=yaml '.[]' | sed 's/^/  - /'
+      printf '\n'
+    else
+      printf 'exposes_to: []\n\n'
+    fi
+
+    if [[ "$CONSUMES" != "[]" && -n "$CONSUMES" ]]; then
+      printf 'consumes:\n'
+      echo "$CONSUMES" | yq -o=yaml '.[]' | sed 's/^/  - /'
+      printf '\n'
+    else
+      printf 'consumes: []\n\n'
+    fi
+
+    if [[ "$MANAGED_EXTERNALLY" == "true" ]]; then
+      printf 'managed_externally: true\n\n'
+    fi
 
     if [[ "$HAS_PORTS" == "yes" ]]; then
       printf 'ports:\n'
