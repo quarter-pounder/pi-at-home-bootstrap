@@ -12,6 +12,11 @@ GitLab CE is operated as a sealed appliance. The new config-registry renders the
   - Metrics endpoint scraped by Prometheus (GitLab workhorse exporter)
 - **State**: `/srv/gitlab/{config,data,logs}`
 - **Lifecycle**: `docker compose up/down`, plus scripted backup/restore
+- **Relationships** (as captured in `domains.yml`):
+  - `placement: tunnel`
+  - `requires: []`
+  - `exposes_to: [tunnel, monitoring, registry]`
+  - `consumes: []`
 
 ## Configuration Flow
 1. Edit declarative inputs (`env/base.env`, `env/ports.yml`, `domains.yml`).
@@ -24,6 +29,7 @@ GitLab CE is operated as a sealed appliance. The new config-registry renders the
   - Publishes only the ports declared in metadata
   - Mounts `/srv/gitlab/{config,data,logs}`
   - Attaches to an internal bridge network plus external ingress (tunnel)
+  - Rendered via Jinja2 with env variables (`GITLAB_*`, `PORT_GITLAB_*`, etc.)
 - `domains/gitlab/templates/gitlab.rb.tmpl`
   - Sets `external_url`, SMTP, backup options
   - Disables embedded Prometheus/Alertmanager exporters
@@ -44,4 +50,11 @@ GitLab CE is operated as a sealed appliance. The new config-registry renders the
 - Health checks use external endpoints (HTTP `/-/health`, SSH smoke test)
 - No direct access to internal Omnibus exporters
 
-Keep the domain metadata concise: expected ports, dependencies (monitoring, backup), and exported metrics. Anything inside the Omnibus stack (Redis, Sidekiq, Gitaly) remains opaque.
+Keep the domain metadata concise: placement, `requires/exposes_to/consumes`, expected ports, and exported metrics. Anything inside the Omnibus stack (Redis, Sidekiq, Gitaly) remains opaque.
+
+Reminder: recording the relationships may feel excessive, but it prevents forgetting which services (monitoring, tunnel, registry) depend on GitLab signals later.
+
+## Failure Modes
+- **Disk full:** backups or logs exceed `/srv/gitlab` capacity → container restarts; mitigation: rotate logs, enforce quotas.
+- **Database corruption:** recover from latest `gitlab:backup:create`.
+- **Tunnel outage:** GitLab remains reachable locally via Docker network.
