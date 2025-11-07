@@ -24,6 +24,8 @@ sudo apt-get install -y \
   yq \
   python3 \
   python3-pip \
+  python3-jinja2 \
+  python3-yaml \
   gettext-base \
   ansible \
   rsync \
