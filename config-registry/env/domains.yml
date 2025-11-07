@@ -3,12 +3,17 @@
 
 domains:
   - name: gitlab
-    dependencies:
-      - monitoring
-  - name: monitoring
     dependencies: []
+  - name: monitoring
+    dependencies:
+      - gitlab
   - name: adblocker
     dependencies: []
   - name: tunnel
-    dependencies: []
+    dependencies:
+      - gitlab
+      - monitoring
+  - name: registry
+    dependencies:
+      - gitlab
 

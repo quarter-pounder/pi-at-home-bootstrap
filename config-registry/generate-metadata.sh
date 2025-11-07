@@ -27,12 +27,22 @@ mkdir -p config-registry/state/metadata-cache
 
 # Acquire lightweight lock to avoid concurrent runs
 LOCK_FILE="config-registry/state/.lock"
-exec 9>"$LOCK_FILE" || exit 1
-if ! flock -n 9; then
-  log_warn "Metadata generation already running"
-  exit 0
+LOCK_DIR="${LOCK_FILE}.dir"
+
+if command -v flock >/dev/null 2>&1; then
+  exec 9>"$LOCK_FILE" || exit 1
+  if ! flock -n 9; then
+    log_warn "Metadata generation already running"
+    exit 0
+  fi
+  trap 'flock -u 9 2>/dev/null || true' EXIT
+else
+  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+    log_warn "Metadata generation already running"
+    exit 0
+  fi
+  trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
 fi
-trap 'flock -u 9 2>/dev/null || true' EXIT
 
 # Calculate source hash for drift detection
 # Hash both files together for composite fingerprint
