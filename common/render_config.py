@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+"""Render domain templates using Jinja2."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+from string import Template
+from typing import Dict, Iterable
+
+try:
+    import yaml
+except ImportError as exc:  # pragma: no cover - dependency hint
+    print("[render] PyYAML not installed. Install with 'pip install -r requirements/render.txt'", file=sys.stderr)
+    raise
+
+try:
+    from jinja2 import Environment, FileSystemLoader, StrictUndefined
+except ImportError as exc:  # pragma: no cover - dependency hint
+    print("[render] Jinja2 not installed. Install with 'pip install -r requirements/render.txt'", file=sys.stderr)
+    raise
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def log_info(message: str) -> None:
+    print(f"[render] {message}")
+
+
+def log_warn(message: str) -> None:
+    print(f"[render][warn] {message}")
+
+
+def parse_env_content(content: str) -> Dict[str, str]:
+    data: Dict[str, str] = {}
+    for raw_line in content.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if value.startswith(('"', "'")) and value.endswith(('"', "'")) and len(value) >= 2:
+            value = value[1:-1]
+        data[key] = value
+    return data
+
+
+def parse_env_file(path: Path) -> Dict[str, str]:
+    if not path.exists():
+        return {}
+    return parse_env_content(path.read_text())
+
+
+def decrypt_secrets(root: Path) -> Dict[str, str]:
+    vault_file = root / "config-registry" / "env" / "secrets.env.vault"
+    if not vault_file.exists():
+        return {}
+    if not shutil.which("ansible-vault"):
+        log_warn("ansible-vault not found; skipping secrets.env.vault")
+        return {}
+    pass_file = root / ".vault_pass"
+    if not pass_file.exists():
+        log_warn(".vault_pass not found; skipping secrets.env.vault")
+        return {}
+    try:
+        result = subprocess.run(
+            [
+                "ansible-vault",
+                "view",
+                str(vault_file),
+                "--vault-password-file",
+                str(pass_file),
+            ],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        log_warn(f"Unable to decrypt secrets.env.vault ({exc})")
+        return {}
+    return parse_env_content(result.stdout)
+
+
+def resolve_variables(env: Dict[str, str]) -> Dict[str, str]:
+    resolved = dict(env)
+    # iteratively resolve ${VAR} placeholders
+    for _ in range(len(resolved) or 1):
+        changed = False
+        for key, value in list(resolved.items()):
+            if not isinstance(value, str):
+                continue
+            new_value = Template(value).safe_substitute(resolved)
+            if new_value != value:
+                resolved[key] = new_value
+                changed = True
+        if not changed:
+            break
+    return resolved
+
+
+def load_env_layers(root: Path, env_name: str) -> Dict[str, str]:
+    base = parse_env_file(root / "config-registry" / "env" / "base.env")
+    overrides = parse_env_file(root / "config-registry" / "env" / "overrides" / f"{env_name}.env")
+    secrets = decrypt_secrets(root)
+    combined: Dict[str, str] = {}
+    combined.update(base)
+    combined.update(overrides)
+    combined.update(secrets)
+    return resolve_variables(combined)
+
+
+def load_ports(root: Path) -> Dict[str, Dict[str, int]]:
+    ports_file = root / "config-registry" / "env" / "ports.yml"
+    if not ports_file.exists():
+        return {}
+    data = yaml.safe_load(ports_file.read_text())
+    return data or {}
+
+
+def load_domains(root: Path) -> Iterable[Dict[str, object]]:
+    domains_file = root / "config-registry" / "env" / "domains.yml"
+    data = yaml.safe_load(domains_file.read_text()) if domains_file.exists() else {}
+    return data.get("domains", []) if isinstance(data, dict) else []
+
+
+def build_port_env_vars(ports: Dict[str, Dict[str, int]]) -> Dict[str, int]:
+    env_vars: Dict[str, int] = {}
+    for domain, mapping in ports.items():
+        if not isinstance(mapping, dict):
+            continue
+        for name, value in mapping.items():
+            if isinstance(value, int):
+                key = f"PORT_{domain.upper()}_{name.upper()}"
+                env_vars[key] = value
+    return env_vars
+
+
+def render(domain: str, env_name: str) -> None:
+    root = ROOT
+    src = root / "domains" / domain / "templates"
+    if not src.exists():
+        log_warn(f"Template directory {src} not found; nothing to render")
+        return
+
+    dst = root / "generated" / domain
+    dst.mkdir(parents=True, exist_ok=True)
+
+    env_vars = load_env_layers(root, env_name)
+    ports = load_ports(root)
+    domains_data = list(load_domains(root))
+    domain_entry = next((d for d in domains_data if d.get("name") == domain), {})
+
+    context: Dict[str, object] = {}
+    context.update(env_vars)
+    context["ENV"] = env_name
+    context["DOMAIN"] = domain
+    context["domain"] = domain_entry
+    context["ports"] = ports
+    context.update(build_port_env_vars(ports))
+
+    jinja_env = Environment(
+        loader=FileSystemLoader(str(src)),
+        autoescape=False,
+        undefined=StrictUndefined,
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+
+    rendered_any = False
+    for template_path in sorted(src.glob("*.tmpl")):
+        template = jinja_env.get_template(template_path.name)
+        output_text = template.render(**context)
+        out_file = dst / template_path.stem
+        out_file.write_text(output_text)
+        log_info(f"wrote {out_file.relative_to(root)}")
+        rendered_any = True
+
+    if not rendered_any:
+        log_warn(f"No templates matched (*.tmpl) in {src}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Render domain templates")
+    parser.add_argument("--domain", required=True, help="Domain name (matches folder under domains/)")
+    parser.add_argument("--env", default="dev", help="Environment override to load")
+    args = parser.parse_args()
+
+    try:
+        render(args.domain, args.env)
+    except FileNotFoundError as exc:
+        log_warn(str(exc))
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
+
