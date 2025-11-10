@@ -132,6 +132,12 @@ If `config-registry/env/base.env` exists before running bootstrap:
 1. Logout and login to activate Docker group membership
 2. Verify: `docker ps` should work without sudo
 
+### Secrets Preparation
+
+- Generate `.vault_pass` at repository root before rendering configuration
+- Manage encrypted variables with `make vault-create`, `make vault-edit`, and `make vault-view`
+- Additional guidance: `docs/operations/secrets.md`
+
 ## Logging
 
 - `00-migrate-to-nvme.sh`: Logs to `/var/log/nvme-migrate.log`
