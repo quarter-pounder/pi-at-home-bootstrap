@@ -47,6 +47,15 @@ GitLab CE is operated as a sealed appliance. The new config-registry renders the
 - External exposure is handled by the ingress/tunnel service.
 - Other domains use service name + internal ports; GitLab never talks directly to the Internet.
 
+## ARM Hosts
+- The Omnibus image is published for `linux/amd64` only. On ARM64 hosts (Raspberry Pi), install QEMU binfmt support before deployment:
+  ```bash
+  sudo apt-get install qemu-user-static
+  sudo docker run --rm --privileged tonistiigi/binfmt --install all
+  ```
+- The compose template pins `platform: linux/amd64` so Docker uses the emulated architecture automatically.
+- Expect reduced performance versus native AMD64 hardware.
+
 ## Backups & Restore
 - Nightly job (outside container): `docker exec gitlab gitlab-rake gitlab:backup:create`
 - Sync artifacts to cloud storage (include `/srv/gitlab/config/gitlab-secrets.json` and `/srv/gitlab/config/ssl` if used)

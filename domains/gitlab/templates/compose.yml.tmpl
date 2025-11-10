@@ -1,6 +1,7 @@
 services:
   gitlab:
     image: {{ GITLAB_IMAGE }}
+    platform: linux/amd64
     container_name: gitlab
     hostname: {{ GITLAB_DOMAIN }}
     restart: always

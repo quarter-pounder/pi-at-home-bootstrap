@@ -35,6 +35,7 @@ sudo apt-get install -y \
   gnupg \
   lsb-release \
   software-properties-common \
+  qemu-user-static \
   fail2ban \
   unattended-upgrades
 
