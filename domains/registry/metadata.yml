@@ -1,9 +1,9 @@
 _meta:
-  generated_at: '2025-11-10T05:32:26Z'
-  git_commit: ae9131b
-  source_hash: 48f50efd05a92c48156655a79da725ce113ffac110f26d33769f7a9ddc1eb411
+  generated_at: '2025-11-10T07:33:28Z'
+  git_commit: a8efb5f
+  source_hash: 2630e38f80e8474c09cdd54ec48ece9e7bfd02a2be0536eb1e7da6c0edaee56b
   domain: registry
-  template_hash: 41bc6b11438a00b08bad72199a36ca4dfcb364ae26ddc4950043952f4404017c
+  template_hash: 65ffd2d9dcac8eda9fcfd9a5f1396b4b5d2f1abf042c1e227b04deaee15995d2
 name: registry
 placement: tunnel
 standalone: false
@@ -11,10 +11,12 @@ requires:
 - gitlab
 exposes_to:
 - tunnel
+- gitlab
 consumes:
 - gitlab
 networks:
 - registry-network
+- gitlab-shared
 description: GitLab container registry
 ports:
   http: 5050

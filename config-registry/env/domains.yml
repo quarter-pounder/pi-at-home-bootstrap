@@ -12,6 +12,9 @@ domains:
       - monitoring
       - registry
     consumes: []
+    networks:
+      - gitlab-network
+      - gitlab-shared
 
   - name: monitoring
     description: Prometheus, Grafana, Loki
@@ -53,6 +56,10 @@ domains:
       - gitlab
     exposes_to:
       - tunnel
+      - gitlab
     consumes:
       - gitlab
+    networks:
+      - registry-network
+      - gitlab-shared
 

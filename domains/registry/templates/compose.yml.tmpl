@@ -10,9 +10,14 @@ services:
       REGISTRY_STORAGE_DELETE_ENABLED: "true"
     volumes:
       - /srv/registry:/var/lib/registry
+      - ./config.yml:/etc/docker/registry/config.yml:ro
     networks:
       - registry-network
+      - gitlab-shared
 
 networks:
   registry-network:
+    driver: bridge
+  gitlab-shared:
+    name: gitlab-shared
     driver: bridge

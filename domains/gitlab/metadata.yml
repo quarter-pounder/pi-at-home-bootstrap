@@ -1,9 +1,9 @@
 _meta:
-  generated_at: '2025-11-10T05:32:26Z'
-  git_commit: ae9131b
-  source_hash: 48f50efd05a92c48156655a79da725ce113ffac110f26d33769f7a9ddc1eb411
+  generated_at: '2025-11-10T07:33:28Z'
+  git_commit: a8efb5f
+  source_hash: 2630e38f80e8474c09cdd54ec48ece9e7bfd02a2be0536eb1e7da6c0edaee56b
   domain: gitlab
-  template_hash: f0288a3391b214be79613b5de7021030fdcb8852e024600734699f5e9de9cd8f
+  template_hash: 81ac66139c7fffef908bb86a9d23a558b82469a2faac31170dcc4ddcf66e8ac2
 name: gitlab
 placement: tunnel
 standalone: false
@@ -15,6 +15,7 @@ exposes_to:
 consumes: []
 networks:
 - gitlab-network
+- gitlab-shared
 description: Core GitLab CE instance
 ports:
   http: 80

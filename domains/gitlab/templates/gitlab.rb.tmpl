@@ -11,6 +11,13 @@ gitlab_rails['gitlab_default_can_create_group'] = true
 gitlab_rails['time_zone'] = ENV['TIMEZONE']
 gitlab_rails['initial_root_password'] = ENV['GITLAB_ROOT_PASSWORD']
 gitlab_rails['gitlab_shell_ssh_port'] = {{ PORT_GITLAB_SSH }}
+gitlab_rails['registry_enabled'] = true
+gitlab_rails['registry_host'] = ENV['REGISTRY_DOMAIN'] || "registry.#{ENV['DOMAIN']}"
+gitlab_rails['registry_port'] = {{ PORT_REGISTRY_HTTP }}
+gitlab_rails['registry_api_url'] = ENV['REGISTRY_API_URL']
+gitlab_rails['registry_path'] = "registry"
+gitlab_rails['registry_issuer'] = ENV['REGISTRY_ISSUER'] || 'gitlab-issuer'
+gitlab_rails['gitlab_default_projects_features_container_registry'] = true
 
 gitlab_rails['log_level'] = "info"
 gitlab_rails['manage_backup_path'] = true
@@ -35,6 +42,7 @@ gitlab_rails['monitoring_whitelist'] = ['172.80.0.0/16', '172.81.0.0/16']
 
 registry['enable'] = false
 registry_nginx['enable'] = false
+registry_external_url ENV['REGISTRY_EXTERNAL_URL']
 
 gitlab_rails['smtp_enable'] = true
 gitlab_rails['smtp_address'] = ENV['SMTP_ADDRESS']

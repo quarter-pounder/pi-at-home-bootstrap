@@ -92,8 +92,10 @@ Each should be self-contained.
 - [x] Create `config-registry/env/base.env` (from legacy `.env`):
   - Universal settings (DOMAIN, TIMEZONE, etc.)
   - Non-sensitive configuration
-- [ ] Create `config-registry/env/secrets.env.vault` with ansible-vault:
+- [ ] Create `config-registry/env/secrets.env.vault` with ansible-vault (`docs/operations/secrets.md`):
   ```bash
+  openssl rand -base64 48 > .vault_pass
+  chmod 600 .vault_pass
   ansible-vault create config-registry/env/secrets.env.vault
   # Add: GITLAB_ROOT_PASSWORD, GRAFANA_ADMIN_PASSWORD, SMTP_PASSWORD, etc.
   ```

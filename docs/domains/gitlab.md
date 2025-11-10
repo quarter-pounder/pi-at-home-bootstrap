@@ -24,6 +24,13 @@ GitLab CE is operated as a sealed appliance. The new config-registry renders the
 3. `make render DOMAIN=gitlab ENV=<env>` → produces `generated/gitlab/{compose.yml,gitlab.rb,...}`.
 4. Deploy with `make deploy DOMAIN=gitlab`.
 
+## Registry Integration
+- External registry container lives in the `registry` domain and shares the `gitlab-shared` Docker network.
+- `REGISTRY_DOMAIN`, `REGISTRY_EXTERNAL_URL`, and `REGISTRY_API_URL` feed `gitlab.rb.tmpl` to point GitLab at the standalone registry (`registry` must be reachable as `gitlab-registry:5000` on the shared network).
+- Set `REGISTRY_HTTP_SECRET` (ideally in `secrets.env.vault`) before rendering; this value seeds the registry token service.
+- `gitlab_rails['registry_enabled']` stays on, while the in-container registry service remains disabled—GitLab proxies to the dedicated registry domain instead.
+- Vault workflow reference: `docs/operations/secrets.md`
+
 ## Templates
 - `domains/gitlab/templates/compose.yml.tmpl`
   - Publishes only the ports declared in metadata

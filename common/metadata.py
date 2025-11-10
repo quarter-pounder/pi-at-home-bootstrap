@@ -32,6 +32,10 @@ def log_warn(message: str) -> None:
     print(f"[metadata][warn] {message}")
 
 
+def log_error(message: str) -> None:
+    print(f"[metadata][err] {message}")
+
+
 def current_git_commit() -> str:
     try:
         return (
@@ -96,6 +100,20 @@ def load_ports() -> Dict[str, Dict[str, Any]]:
     return data if isinstance(data, dict) else {}
 
 
+def validate_domain_references(domains: List[Dict[str, Any]]) -> bool:
+    names = {entry.get("name") for entry in domains if entry.get("name")}
+    ok = True
+    for entry in domains:
+        name = entry.get("name") or "<unnamed>"
+        for field in ("requires", "exposes_to", "consumes"):
+            refs = entry.get(field) or []
+            for ref in refs:
+                if ref not in names:
+                    log_error(f"Domain '{name}' references unknown domain '{ref}' via '{field}'")
+                    ok = False
+    return ok
+
+
 def domain_entry(domains: List[Dict[str, Any]], name: str) -> Dict[str, Any]:
     for entry in domains:
         if entry.get("name") == name:
@@ -127,7 +145,7 @@ def generate_domain_metadata(
         "requires": entry.get("requires", []) or [],
         "exposes_to": entry.get("exposes_to", []) or [],
         "consumes": entry.get("consumes", []) or [],
-        "networks": [f"{name}-network"],
+        "networks": [],
     }
     description = entry.get("description")
     if description:
@@ -139,6 +157,12 @@ def generate_domain_metadata(
     tmpl_hash = template_hash(name)
     if tmpl_hash:
         metadata["_meta"]["template_hash"] = tmpl_hash
+
+    default_network = f"{name}-network"
+    networks = entry.get("networks") or []
+    if default_network not in networks:
+        metadata["networks"].append(default_network)
+    metadata["networks"].extend([net for net in networks if net not in metadata["networks"]])
 
     domain_ports = ports.get(name)
     if isinstance(domain_ports, dict) and domain_ports:
@@ -183,6 +207,8 @@ def locked(func, *args, **kwargs):
 
 def cmd_generate(args: argparse.Namespace) -> None:
     domains = load_domains()
+    if not validate_domain_references(domains):
+        raise SystemExit(1)
     ports = load_ports()
     git_commit = current_git_commit()
     source_hash = compute_source_hash([DOMAINS_FILE, PORTS_FILE])
@@ -238,6 +264,8 @@ def diff_domain(domain: str, canonical: Path, cache: Path) -> Tuple[bool, str]:
 
 def cmd_diff(args: argparse.Namespace) -> int:
     domains = load_domains()
+    if not validate_domain_references(domains):
+        return 1
     diff_found = False
     for entry in domains:
         name = entry.get("name")

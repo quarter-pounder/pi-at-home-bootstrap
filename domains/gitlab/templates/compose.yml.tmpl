@@ -14,6 +14,9 @@ services:
       GITLAB_DOMAIN: {{ GITLAB_DOMAIN }}
       GITLAB_EXTERNAL_URL: {{ GITLAB_EXTERNAL_URL }}
       GITLAB_ROOT_PASSWORD: {{ GITLAB_ROOT_PASSWORD }}
+      REGISTRY_DOMAIN: {{ REGISTRY_DOMAIN }}
+      REGISTRY_EXTERNAL_URL: {{ REGISTRY_EXTERNAL_URL }}
+      REGISTRY_API_URL: {{ REGISTRY_API_URL }}
       DOMAIN: {{ DOMAIN }}
       SMTP_ADDRESS: {{ SMTP_ADDRESS }}
       SMTP_PORT: {{ SMTP_PORT }}
@@ -43,9 +46,13 @@ services:
       start_period: 180s
     networks:
       - gitlab-network
+      - gitlab-shared
 
 networks:
   gitlab-network:
     driver: bridge
     internal: true
+  gitlab-shared:
+    name: gitlab-shared
+    driver: bridge
 

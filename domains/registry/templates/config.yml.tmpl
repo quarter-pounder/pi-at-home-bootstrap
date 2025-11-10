@@ -1,0 +1,22 @@
+version: 0.1
+log:
+  level: info
+storage:
+  filesystem:
+    rootdirectory: /var/lib/registry
+http:
+  addr: :5000
+  secret: {{ REGISTRY_HTTP_SECRET }}
+  headers:
+    X-Content-Type-Options:
+      - nosniff
+auth:
+  token:
+    realm: {{ REGISTRY_TOKEN_REALM }}
+    service: container_registry
+    issuer: {{ REGISTRY_ISSUER }}
+    use_basic_auth: false
+compatibility:
+  schema1:
+    enabled: false
+

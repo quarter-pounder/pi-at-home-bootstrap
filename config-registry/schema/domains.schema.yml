@@ -48,3 +48,8 @@ properties:
         managed_externally:
           type: boolean
           default: false
+        networks:
+          type: array
+          items:
+            type: string
+            pattern: "^[a-z0-9_-]+$"
