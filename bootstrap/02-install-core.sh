@@ -35,7 +35,9 @@ sudo apt-get install -y \
   ca-certificates \
   gnupg \
   lsb-release \
-  software-properties-common
+  software-properties-common \
+  fail2ban \
+  unattended-upgrades
 
 # Raspberry Pi specific tools
 sudo apt-get install -y \

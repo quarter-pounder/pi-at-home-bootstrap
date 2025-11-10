@@ -71,7 +71,7 @@ Next steps (you are now in the pi-forge directory):
   4. sudo bash bootstrap/03-install-docker.sh # Install Docker
   5. sudo bash bootstrap/04-optimize-docker.sh # Optimize Docker for Pi
   6. bash bootstrap/05-verify.sh              # Verify installation
-  7. Logout and login to activate Docker group membership
+  7. sudo bash bootstrap/06-security-hardening.sh # Optional: apply SSH/fail2ban/sysctl hardening
 
 Bootstrap ready.
 EOF

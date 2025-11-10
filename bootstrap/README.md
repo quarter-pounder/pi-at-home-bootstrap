@@ -20,6 +20,7 @@ graph TD
   C --> D[03 - Install Docker]
   D --> E[04 - Optimize Docker]
   E --> F[05 - Verify Setup]
+  F --> G[06 - Security Hardening]
 ```
 
 1. **`00-migrate-to-nvme.sh`** (Optional)
@@ -67,6 +68,13 @@ graph TD
    - Optional: disk throughput test (skip with `SKIP_THROUGHPUT_TEST=1`)
    - Requires: none (some checks use sudo internally)
 
+7. **`06-security-hardening.sh`** (Optional)
+   - Applies SSH hardening (disables password login, restricts users)
+   - Configures fail2ban with sensible defaults
+   - Enables unattended security upgrades
+   - Applies kernel/sysctl hardening flags
+   - Requires: sudo privileges (installs/updates configs under `/etc`)
+
 ## Quick Start
 
 ### Option 1: Using the Installer Script
@@ -93,6 +101,7 @@ sudo bash bootstrap/02-install-core.sh
 sudo bash bootstrap/03-install-docker.sh
 sudo bash bootstrap/04-optimize-docker.sh
 bash bootstrap/05-verify.sh
+sudo bash bootstrap/06-security-hardening.sh   # Optional but recommended
 
 # Logout and login to activate Docker group membership
 ```
@@ -183,6 +192,7 @@ If migration script fails:
 - `03-install-docker.sh` - Docker installation
 - `04-optimize-docker.sh` - Docker optimization
 - `05-verify.sh` - Installation verification
+- `06-security-hardening.sh` - Applies SSH/fail2ban/sysctl hardening
 
 ## Design Principles
 
