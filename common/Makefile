@@ -1,12 +1,12 @@
-.PHONY: env generate-metadata commit-metadata diff-metadata metadata-check render deploy destroy validate validate-schema manifest help drift-check
-.DEFAULT_GOAL := help
+.ONESHELL:
 .SILENT:
 
 ENV ?= dev
 DOMAIN ?= gitlab
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))/..
 export ROOT_DIR
-METADATA_BIN := $(ROOT_DIR)/common/lib/metadata.sh
+PYTHON ?= python3
+METADATA_SCRIPT := $(ROOT_DIR)/common/metadata.py
 
 help:
 	@echo "Available targets:"
@@ -28,24 +28,21 @@ env:
 	@cd $(ROOT_DIR) && set -a && source config-registry/env/base.env && set +a
 
 generate-metadata:
-	@cd $(ROOT_DIR) && NO_CACHE=1 $(METADATA_BIN) generate
+	@cd $(ROOT_DIR) && $(PYTHON) $(METADATA_SCRIPT) generate
 
 commit-metadata:
-	@cd $(ROOT_DIR) && $(METADATA_BIN) commit
+	@cd $(ROOT_DIR) && $(PYTHON) $(METADATA_SCRIPT) commit
 
 diff-metadata:
-	@cd $(ROOT_DIR) && $(METADATA_BIN) diff
+	@cd $(ROOT_DIR) && $(PYTHON) $(METADATA_SCRIPT) diff
 
 metadata-check:
-	@cd $(ROOT_DIR) && $(METADATA_BIN) check
+	@cd $(ROOT_DIR) && $(PYTHON) $(METADATA_SCRIPT) check
 
-drift-check: metadata-check
-	@if [ $$? -eq 0 ]; then \
-		echo "[CI] Metadata drift check passed"; \
-	else \
-		echo "[CI] Metadata drift detected — please run 'make diff-metadata' locally"; \
-		exit 1; \
-	fi
+drift-check:
+	@cd $(ROOT_DIR) && $(PYTHON) $(METADATA_SCRIPT) check || ( \
+		echo "[CI] Metadata drift detected — run 'make diff-metadata' locally" && exit 1)
+	@echo "[CI] Metadata drift check passed"
 
 validate: metadata-check
 	@cd $(ROOT_DIR) && bash common/validate.sh
@@ -68,7 +65,7 @@ validate-schema:
 
 render: validate
 	@echo "[Render] $(DOMAIN) for $(ENV)"
-	@cd $(ROOT_DIR) && bash common/render-config.sh $(DOMAIN) $(ENV)
+	@cd $(ROOT_DIR) && $(PYTHON) common/render_config.py --domain $(DOMAIN) --env $(ENV) $(if $(DRY_RUN),--dry-run)
 
 deploy: render
 	@echo "[Deploy] $(DOMAIN)"
