@@ -1,4 +1,3 @@
-```
 pi-forge/
 ├── bootstrap/                      # Tier 0 — minimal setup, pure bash
 │   ├── install.sh
@@ -19,9 +18,8 @@ pi-forge/
 │   │       ├── staging.env
 │   │       └── prod.env
 │   ├── schema/                     # Validation rules (machine rules)
-│   │   ├── env.schema.yml         # Required fields, defaults, types
 │   │   ├── domains.schema.yml
-│   │   └── ports.schema.yml       # Enforces naming: {domain: {port_name: number}}
+│   │   └── ports.schema.yml
 │   ├── templates/                  # Machine templates (pure render outputs)
 │   │   ├── compose.yml.tmpl
 │   │   ├── network.yml.tmpl
@@ -37,7 +35,6 @@ pi-forge/
 │   │       ├── dev.env
 │   │       ├── staging.env
 │   │       └── prod.env
-│   └── generate-metadata.sh        # Generates state/metadata-cache/*.yml
 │
 ├── domains/                        # Tier 2 — composable service domains
 │   ├── gitlab/
@@ -108,14 +105,14 @@ pi-forge/
 ├── common/                         # Shared utilities
 │   ├── Makefile
 │   ├── utils.sh
-│   ├── validate.sh                # Reconciles domains vs ports vs metadata (uses helper scripts)
-│   ├── render-config.sh           # Thin wrapper around render_config.py
+│   ├── validate.sh                # Runtime validation (wraps Python helpers)
 │   ├── render_config.py           # Jinja2 renderer for domain templates
+│   ├── metadata.py                # Metadata generate/diff/commit/check
 │   ├── lib/
 │   │   ├── check_ports.py
 │   │   ├── check_images.py
 │   │   ├── check_terraform.py
-│   │   └── metadata.sh
+│   │   └── env.sh
 │   └── generate-manifest.sh
 │
 ├── backup/                         # Cross-domain backup logic
@@ -153,7 +150,7 @@ Declarative (human intent)
           │
           ▼
 Machine generation (cached)
-  generate-metadata.sh            → outputs config-registry/state/metadata-cache/*.yml
+  metadata.py generate            → outputs config-registry/state/metadata-cache/*.yml
           │
           ▼
 Validated truth (versioned metadata)
@@ -162,7 +159,7 @@ Validated truth (versioned metadata)
           │
           ▼
 Rendered runtime (ephemeral)
-  validate.sh                     → reconciles domains vs ports vs metadata (Python helpers)
+  validate.py / validate.sh        → reconciles domains vs ports vs metadata (Python helpers)
   render_config.py                → renders Jinja2 templates into generated/
   domains/*/templates/*.tmpl      → → generated/*/*.yml
 ```
@@ -225,18 +222,14 @@ make deploy DOMAIN=monitoring
 ```
 
 ### 5. Loose Coupling via metadata.yml
-- **metadata.yml generation flow:**
-  1. `generate-metadata.sh` creates `config-registry/state/metadata-cache/*.yml` (ephemeral)
+**metadata.yml generation flow:**
+  1. `metadata.py generate` creates `config-registry/state/metadata-cache/*.yml` (ephemeral)
   2. Review diff: `diff -u state/metadata-cache/<domain>.yml domains/<domain>/metadata.yml`
   3. Commit canonical version: `cp state/metadata-cache/<domain>.yml domains/<domain>/metadata.yml`
-- **metadata.yml is generated** from `domains.yml` + `ports.yml`
-- Provides machine-readable summary per domain (for validation and introspection)
-- Each domain declares its runtime prerequisites (`requires`) and downstream consumers (`exposes_to`) in `domains.yml`
+- Provides machine-readable summary per domain (placement, requires, exposures) for validation and introspection
+- Each domain declares its runtime prerequisites via `requires` and its consumers via `exposes_to`
 - Optional vs required relationships clearly marked
-- Port conflict detection via `validate.sh` (reconciles metadata vs registry)
-- Services work standalone or together (e.g., Prometheus without Grafana)
-- CI can validate that `state/metadata-cache/` matches `domains/*/metadata.yml` (no drift) via `make diff-metadata`
-- Metadata includes `_meta` field with `generated_at`, `source_hash`, and `domain` for tracking and drift detection
+- Metadata includes `_meta.source_hash` to track source file changes
 
 ### GitLab Domain Strategy
 - Reduce Makefile inline bash by moving helpers into `common/lib/*.sh` and sourcing them in targets.
@@ -259,7 +252,7 @@ make deploy DOMAIN=monitoring
 - Validate configs before deploy to detect drift
 - Metadata drift detection: `make diff-metadata` compares `state/metadata-cache/` vs `domains/*/metadata.yml`
 - Optional watchdog daemon monitors `config-registry/state/metadata-cache/*.yml` and surfaces drift events (see docs/tools/metadata-watchdog.md).
-- `generate-metadata.sh` and the watchdog use a lightweight flock-based lock (`config-registry/state/.lock`) to avoid concurrent runs.
+- `metadata.py generate` and the watchdog use a lightweight flock-based lock (`config-registry/state/.lock`) to avoid concurrent runs.
 - Metadata `_meta` includes `generated_at`, `git_commit`, and `source_hash` (templates + metadata) for traceability.
 - Watchdog can run under systemd (see docs/tools/metadata-watchdog.md for unit example).
 
@@ -310,51 +303,19 @@ env:
 
 generate-metadata:
 	@echo "[Generate] Creating metadata cache files"
-	@bash config-registry/generate-metadata.sh
+	@cd $(ROOT_DIR) && python3 common/metadata.py generate
 
 commit-metadata: generate-metadata
 	@echo "[Commit] Reviewing metadata diffs..."
-	@for domain in $$(yq '.domains[].name' config-registry/env/domains.yml); do \
-		if [ -f "config-registry/state/metadata-cache/$$domain.yml" ]; then \
-			if [ -f "domains/$$domain/metadata.yml" ]; then \
-				if ! diff -q "config-registry/state/metadata-cache/$$domain.yml" "domains/$$domain/metadata.yml" >/dev/null 2>&1; then \
-					echo "  Changes detected for $$domain:"; \
-					diff -u "domains/$$domain/metadata.yml" "config-registry/state/metadata-cache/$$domain.yml" || true; \
-					echo "  Copying: cp config-registry/state/metadata-cache/$$domain.yml domains/$$domain/metadata.yml"; \
-					cp "config-registry/state/metadata-cache/$$domain.yml" "domains/$$domain/metadata.yml"; \
-				else \
-					echo "  No changes for $$domain"; \
-				fi; \
-			else \
-				echo "  New domain $$domain, copying metadata"; \
-				cp "config-registry/state/metadata-cache/$$domain.yml" "domains/$$domain/metadata.yml"; \
-			fi; \
-		fi; \
-	done
+	@cd $(ROOT_DIR) && python3 common/metadata.py commit
 
 diff-metadata: generate-metadata
 	@echo "[Diff] Checking metadata drift..."
-	@set -e; diff_found=0; \
-	for domain in $$(yq '.domains[].name' config-registry/env/domains.yml); do \
-		if [ -f "config-registry/state/metadata-cache/$$domain.yml" ] && [ -f "domains/$$domain/metadata.yml" ]; then \
-			if ! diff -q "config-registry/state/metadata-cache/$$domain.yml" "domains/$$domain/metadata.yml" >/dev/null 2>&1; then \
-				echo "  Drift detected in $$domain:"; \
-				diff -u "domains/$$domain/metadata.yml" "config-registry/state/metadata-cache/$$domain.yml" || true; \
-				diff_found=1; \
-			fi; \
-		elif [ -f "config-registry/state/metadata-cache/$$domain.yml" ] && [ ! -f "domains/$$domain/metadata.yml" ]; then \
-			echo "  Missing metadata for $$domain (new domain?)"; \
-			diff_found=1; \
-		fi; \
-	done; \
-	if [ $$diff_found -eq 0 ]; then \
-		echo "  No drift detected"; \
-	fi; \
-	exit $$diff_found
+	@cd $(ROOT_DIR) && python3 common/metadata.py diff
 
 validate: generate-metadata
 	@echo "[Validate] Runtime validation (fast, minimal)"
-	@bash common/validate.sh
+	@cd $(ROOT_DIR) && bash common/validate.sh
 
 validate-schema:
 	@echo "[Validate] Schema validation (CI enforcement)"
@@ -363,9 +324,9 @@ validate-schema:
 	@yq -o=json config-registry/env/ports.yml | ajv validate \
 	  -s config-registry/schema/ports.schema.yml
 
-render: validate
+render: generate-metadata
 	@echo "[Render] $(DOMAIN) for $(ENV)"
-	@bash common/render-config.sh $(DOMAIN) $(ENV)
+	@cd $(ROOT_DIR) && python3 common/render_config.py --domain $(DOMAIN) --env $(ENV)
 
 deploy: render
 	@echo "[Deploy] $(DOMAIN)"
@@ -378,61 +339,80 @@ manifest:
 	@bash common/generate-manifest.sh
 ```
 
-### config-registry/generate-metadata.sh
+### common/metadata.py
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
+# Generate cache files for all domains
+python3 common/metadata.py generate
 
-echo "[Generate] Creating metadata files from domains.yml + ports.yml"
+# Compare cache vs canonical (ignoring _meta.generated_at)
+python3 common/metadata.py diff
 
-# Read domains.yml and ports.yml
-# Merge port assignments into domain definitions
-# Output per-domain metadata.yml files to config-registry/state/metadata-cache/
+# Copy cache into domains/<name>/metadata.yml
+python3 common/metadata.py commit
 
-mkdir -p config-registry/state/metadata-cache
-
-# Calculate source hash for drift detection
-SOURCE_HASH=$(sha256sum config-registry/env/domains.yml config-registry/env/ports.yml 2>/dev/null | sha256sum | cut -d' ' -f1)
-GENERATED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-for domain in $(yq '.domains[].name' config-registry/env/domains.yml); do
-  tmp=$(mktemp)
-  cache_file="config-registry/state/metadata-cache/${domain}.yml"
-
-  # Generate metadata.yml by combining domain definition + port assignments
-  # Include generation metadata at top level (_meta field)
-  {
-    echo "_meta:"
-    echo "  generated_at: ${GENERATED_AT}"
-    echo "  source_hash: ${SOURCE_HASH}"
-    echo "  domain: ${domain}"
-    echo ""
-    # ... (generate domain-specific metadata here) ...
-  } > "$tmp"
-
-  # Only update if content changed (preserves file mtime if unchanged)
-  if ! cmp -s "$tmp" "$cache_file" 2>/dev/null; then
-    mv "$tmp" "$cache_file"
-    echo "  Updated $cache_file"
-  else
-    rm "$tmp"
-    echo "  No changes to $cache_file"
-  fi
-done
-
-echo "[Generate] Metadata cache generated in config-registry/state/metadata-cache/"
-echo "[Generate] Review diffs: make diff-metadata"
-echo "[Generate] Commit: make commit-metadata"
+# Convenience wrapper: generate + diff (exit 1 on drift)
+python3 common/metadata.py check
 ```
 
-### common/render-config.sh
-```bash
-#!/usr/bin/env bash
-python3 common/render_config.py --domain "$1" --env "${2:-dev}"
+### common/render_config.py
+```python
+import argparse
+
+def render(domain, env):
+    # Load environment variables
+    # This part would typically involve loading base.env, overrides/<env>.env, and secrets.env.vault
+    # For simplicity, we'll just simulate loading a dummy env file
+    print(f"Rendering for {domain} in {env} environment...")
+    print("Loading dummy environment variables...")
+    # In a real scenario, you'd load:
+    # import os
+    # os.environ.update(load_env_file("config-registry/env/base.env"))
+    # os.environ.update(load_override_env(env))
+    # os.environ.update(load_secrets_env())
+
+    # Load ports and domain metadata
+    # This would involve reading config-registry/env/ports.yml and domains/<domain>/metadata.yml
+    # For simplicity, we'll just simulate loading a dummy ports file and metadata
+    print("Loading dummy ports and metadata...")
+    # In a real scenario, you'd load:
+    # ports_data = load_ports_file("config-registry/env/ports.yml")
+    # domain_metadata = load_domain_metadata(domain)
+
+    # Render templates
+    # This would involve Jinja2 rendering of domains/<domain>/templates/*.tmpl
+    # For simplicity, we'll just print a placeholder
+    print("Rendering templates...")
+    # In a real scenario, you'd use:
+    # from jinja2 import Environment, FileSystemLoader
+    # env = Environment(loader=FileSystemLoader("domains/"))
+    # rendered_compose = env.get_template("compose.yml.tmpl").render(domain_metadata)
+    # rendered_network = env.get_template("network.yml.tmpl").render(domain_metadata)
+    # rendered_terraform = env.get_template("terraform.tfvars.tmpl").render(domain_metadata)
+    # rendered_ansible = env.get_template("ansible-vars.yml.tmpl").render(domain_metadata)
+    # rendered_cloud_init = env.get_template("cloud-init.tmpl").render(domain_metadata)
+
+    # Save rendered files
+    # For simplicity, we'll just print the paths
+    print(f"Generated files for {domain}:")
+    print("  - generated/$(domain)/compose.yml")
+    print("  - generated/$(domain)/network.yml")
+    print("  - generated/$(domain)/terraform.tfvars")
+    print("  - generated/$(domain)/ansible-vars.yml")
+    print("  - generated/$(domain)/cloud-init.tmpl")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Render domain templates")
+    parser.add_argument("--domain", required=True)
+    parser.add_argument("--env", default="dev")
+    parser.add_argument("--dry-run", action="store_true", help="Print available context keys and exit")
+    args = parser.parse_args()
+
+    try:
+        render(args.domain, args.env, dry_run=args.dry_run)
+    except FileNotFoundError as exc:
+        log_warn(str(exc))
 ```
-- Thin wrapper retained for Makefile compatibility.
-- `common/render_config.py` loads env layers (base → override → secrets), ports, and domain metadata, then renders `domains/<domain>/templates/*.tmpl` via Jinja2 into `generated/<domain>/`.
-- Dependencies are declared in `requirements/render.txt`; install with `pip install -r requirements/render.txt` or use distro packages (`python3-jinja2`, `python3-yaml`).
+- `DRY_RUN=1 make render DOMAIN=monitoring` will invoke the renderer with `--dry-run` and list all context keys without writing files.
 
 ### common/validate.sh (Runtime - Fast, Minimal)
 ```bash
@@ -536,7 +516,7 @@ echo "Manifest generated: MANIFEST.md"
 
 ### domains/gitlab/metadata.yml (GENERATED)
 ```yaml
-# This file is auto-generated by generate-metadata.sh
+# This file is auto-generated by metadata.py generate
 # Do not edit manually - edit config-registry/env/domains.yml and ports.yml instead
 # Port references use PORT_{DOMAIN}_{PORT_NAME} format from ports.yml
 

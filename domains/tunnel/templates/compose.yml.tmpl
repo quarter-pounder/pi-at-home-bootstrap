@@ -1,0 +1,14 @@
+services:
+  cloudflared:
+    image: {{ CLOUDFLARE_IMAGE }}
+    container_name: tunnel-cloudflared
+    restart: always
+    command: tunnel --no-autoupdate run --token {{ CLOUDFLARE_TUNNEL_TOKEN }}
+    environment:
+      TUNNEL_TOKEN: {{ CLOUDFLARE_TUNNEL_TOKEN }}
+    networks:
+      - tunnel-network
+
+networks:
+  tunnel-network:
+    driver: bridge

@@ -30,8 +30,7 @@ except ImportError:  # pragma: no cover (Windows or constrained systems)
 ROOT_DIR = Path(__file__).resolve().parents[1]
 WATCH_DIR = ROOT_DIR / "config-registry/state/metadata-cache"
 LOCK_FILE = ROOT_DIR / "config-registry/state/.lock"
-METADATA_SCRIPT = ROOT_DIR / "common" / "metadata.py"
-PYTHON = shutil.which("python3") or "python3"
+METADATA_SCRIPT = ROOT_DIR / "common/lib/metadata.sh"
 
 LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s"
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
@@ -68,7 +67,7 @@ def run_metadata_diff(auto_diff: bool) -> None:
     try:
         with metadata_lock():
             proc = subprocess.run(
-                [PYTHON, str(METADATA_SCRIPT), "diff"],
+                ["bash", str(METADATA_SCRIPT), "diff"],
                 cwd=ROOT_DIR,
                 check=False,
                 text=True,
@@ -82,8 +81,7 @@ def run_metadata_diff(auto_diff: bool) -> None:
     if proc.returncode != 0:
         logger.warning("Metadata drift detected")
         if stdout:
-            for line in stdout.splitlines():
-                logger.info(line)
+            print(stdout)
         if auto_diff:
             if shutil.which("make"):
                 logger.info("Running make diff-metadata…")
@@ -95,8 +93,7 @@ def run_metadata_diff(auto_diff: bool) -> None:
                 logger.error("'make' not found; cannot auto-diff")
     else:
         if stdout:
-            for line in stdout.splitlines():
-                logger.info(line)
+            print(stdout)
         logger.info("No metadata drift detected")
 
 

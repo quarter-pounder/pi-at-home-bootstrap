@@ -1,5 +1,6 @@
 .ONESHELL:
 .SILENT:
+.DEFAULT_GOAL := help
 
 ENV ?= dev
 DOMAIN ?= gitlab
@@ -18,6 +19,7 @@ help:
 	@echo "  make validate                   - Runtime validation (fast, minimal)"
 	@echo "  make validate-schema            - Schema validation (CI enforcement)"
 	@echo "  make render DOMAIN=<name> ENV=<env> - Render templates"
+	@echo "    (set DRY_RUN=1 to print available context keys without writing files)"
 	@echo "  make deploy DOMAIN=<name>       - Deploy domain"
 	@echo "  make destroy DOMAIN=<name>      - Destroy domain"
 	@echo "  make manifest                   - Generate manifest"

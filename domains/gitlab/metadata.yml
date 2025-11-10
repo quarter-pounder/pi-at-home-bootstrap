@@ -1,30 +1,23 @@
 _meta:
-  generated_at: 2025-11-07T09:23:05Z
-  git_commit: 8a398f8
-  source_hash: ffbb8f61521fa99e15206f60ba9cc16c1459aebb1308386300afefedd7b53a6e
-  template_hash: f0288a3391b214be79613b5de7021030fdcb8852e024600734699f5e9de9cd8f
+  generated_at: '2025-11-10T05:32:26Z'
+  git_commit: ae9131b
+  source_hash: 48f50efd05a92c48156655a79da725ce113ffac110f26d33769f7a9ddc1eb411
   domain: gitlab
-
+  template_hash: f0288a3391b214be79613b5de7021030fdcb8852e024600734699f5e9de9cd8f
 name: gitlab
-description: Core GitLab CE instance
-
 placement: tunnel
 standalone: false
-
 requires: []
-
 exposes_to:
-  - tunnel
-  - monitoring
-  - registry
-
+- tunnel
+- monitoring
+- registry
 consumes: []
-
+networks:
+- gitlab-network
+description: Core GitLab CE instance
 ports:
   http: 80
   https: 443
   ssh: 2222
   metrics: 8080
-
-networks:
-  - gitlab-network

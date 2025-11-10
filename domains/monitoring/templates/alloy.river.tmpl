@@ -1,0 +1,182 @@
+// Alloy configuration for log collection
+local.file_match "system_logs" {
+  path_targets = [
+    {
+      __path__ = "/var/log/syslog",
+      job = "system",
+      level = "info",
+    },
+    {
+      __path__ = "/var/log/auth.log",
+      job = "system",
+      level = "info",
+    },
+    {
+      __path__ = "/var/log/kern.log",
+      job = "system",
+      level = "info",
+    },
+  ]
+}
+
+local.file_match "gitlab_logs" {
+  path_targets = [
+    {
+      __path__ = "/srv/gitlab/logs/gitlab-rails/production.log",
+      job = "gitlab",
+      service = "rails",
+      level = "info",
+    },
+    {
+      __path__ = "/srv/gitlab/logs/gitlab-rails/api.log",
+      job = "gitlab",
+      service = "api",
+      level = "info",
+    },
+    {
+      __path__ = "/srv/gitlab/logs/gitlab-rails/git_json.log",
+      job = "gitlab",
+      service = "git",
+      level = "info",
+    },
+    {
+      __path__ = "/srv/gitlab/logs/gitlab-rails/sidekiq.log",
+      job = "gitlab",
+      service = "sidekiq",
+      level = "info",
+    },
+    {
+      __path__ = "/srv/gitlab/logs/nginx/gitlab_access.log",
+      job = "gitlab",
+      service = "nginx",
+      level = "info",
+    },
+    {
+      __path__ = "/srv/gitlab/logs/nginx/gitlab_error.log",
+      job = "gitlab",
+      service = "nginx",
+      level = "error",
+    },
+  ]
+}
+
+local.file_match "docker_logs" {
+  path_targets = [
+    {
+      __path__ = "/var/lib/docker/containers/*/*.log",
+      job = "docker",
+      level = "info",
+    },
+  ]
+}
+
+// Docker log discovery
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+loki.source.file "system" {
+  targets    = local.file_match.system_logs.targets
+  forward_to = [loki.process.system.receiver]
+}
+
+loki.source.file "gitlab" {
+  targets    = local.file_match.gitlab_logs.targets
+  forward_to = [loki.process.gitlab.receiver]
+}
+
+loki.source.file "docker" {
+  targets    = local.file_match.docker_logs.targets
+  forward_to = [loki.process.docker.receiver]
+}
+
+// Docker container logs
+loki.source.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+  forward_to = [loki.process.docker.receiver]
+}
+
+loki.process "system" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.regex {
+    expression = "^(?P<timestamp>\\S+\\s+\\S+)\\s+(?P<hostname>\\S+)\\s+(?P<service>\\S+):\\s+(?P<message>.*)$"
+  }
+
+  stage.labels {
+    values = {
+      level = "info",
+    }
+  }
+
+  stage.timestamp {
+    source = "timestamp"
+    format = "Jan 02 15:04:05"
+  }
+}
+
+loki.process "gitlab" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.json {
+    expressions = {
+      timestamp = "time",
+      level     = "severity",
+      message   = "message",
+    }
+  }
+
+  stage.labels {
+    values = {
+      level = "info",
+    }
+  }
+
+  stage.timestamp {
+    source = "timestamp"
+    format = "2006-01-02T15:04:05.000Z"
+  }
+}
+
+loki.process "docker" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.json {
+    expressions = {
+      timestamp = "time",
+      level     = "level",
+      message   = "log",
+    }
+  }
+
+  stage.labels {
+    values = {
+      level = "info",
+    }
+  }
+
+  stage.timestamp {
+    source = "timestamp"
+    format = "2006-01-02T15:04:05.000000000Z"
+  }
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+prometheus.exporter.self "alloy" {}
+
+prometheus.scrape "alloy" {
+  targets    = prometheus.exporter.self.alloy.targets
+  scrape_interval = "15s"
+  forward_to = [prometheus.remote_write.default.receiver]
+}
+
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}

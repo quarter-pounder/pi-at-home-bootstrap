@@ -1,0 +1,50 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Domains Configuration Schema
+type: object
+additionalProperties: false
+required:
+  - domains
+properties:
+  domains:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          pattern: "^[a-z0-9_-]+$"
+        description:
+          type: string
+        placement:
+          type: string
+          enum: [local, tunnel, external]
+          default: local
+        standalone:
+          type: boolean
+          default: false
+        requires:
+          type: array
+          default: []
+          items:
+            type: string
+            pattern: "^[a-z0-9_-]+$"
+        exposes_to:
+          type: array
+          default: []
+          items:
+            type: string
+            pattern: "^[a-z0-9_-]+$"
+        consumes:
+          type: array
+          default: []
+          items:
+            type: string
+            pattern: "^[a-z0-9_-]+$"
+        managed_externally:
+          type: boolean
+          default: false

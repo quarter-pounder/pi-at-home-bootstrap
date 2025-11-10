@@ -1,0 +1,18 @@
+services:
+  registry:
+    image: {{ REGISTRY_IMAGE }}
+    container_name: gitlab-registry
+    restart: always
+    ports:
+      - "{{ PORT_REGISTRY_HTTP }}:5000"
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+    volumes:
+      - /srv/registry:/var/lib/registry
+    networks:
+      - registry-network
+
+networks:
+  registry-network:
+    driver: bridge
