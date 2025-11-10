@@ -1,4 +1,3 @@
-export ANSIBLE_VAULT_PASSWORD_FILE := $(VAULT_PASS)
 .ONESHELL:
 .SILENT:
 .DEFAULT_GOAL := help
@@ -92,10 +91,10 @@ vault-create:
 	if ! command -v ansible-vault >/dev/null 2>&1; then \
 		echo "[Vault][err] ansible-vault not installed"; exit 1; \
 	fi; \
-	if [[ -f config-registry/env/secrets.env.vault ]]; then \
+	if [ -f config-registry/env/secrets.env.vault ]; then \
 		echo "[Vault][warn] secrets.env.vault already exists"; exit 1; \
 	fi; \
-	if [[ -f .vault_pass ]]; then \
+	if [ -f .vault_pass ]; then \
 		ansible-vault create config-registry/env/secrets.env.vault --vault-password-file .vault_pass; \
 	else \
 		ansible-vault create config-registry/env/secrets.env.vault; \
@@ -106,10 +105,10 @@ vault-edit:
 	if ! command -v ansible-vault >/dev/null 2>&1; then \
 		echo "[Vault][err] ansible-vault not installed"; exit 1; \
 	fi; \
-	if [[ ! -f config-registry/env/secrets.env.vault ]]; then \
+	if [ ! -f config-registry/env/secrets.env.vault ]; then \
 		echo "[Vault][err] secrets.env.vault missing"; exit 1; \
 	fi; \
-	if [[ -f .vault_pass ]]; then \
+	if [ -f .vault_pass ]; then \
 		ansible-vault edit config-registry/env/secrets.env.vault --vault-password-file .vault_pass; \
 	else \
 		ansible-vault edit config-registry/env/secrets.env.vault; \
@@ -120,10 +119,10 @@ vault-view:
 	if ! command -v ansible-vault >/dev/null 2>&1; then \
 		echo "[Vault][err] ansible-vault not installed"; exit 1; \
 	fi; \
-	if [[ ! -f config-registry/env/secrets.env.vault ]]; then \
+	if [ ! -f config-registry/env/secrets.env.vault ]; then \
 		echo "[Vault][err] secrets.env.vault missing"; exit 1; \
 	fi; \
-	if [[ -f .vault_pass ]]; then \
+	if [ -f .vault_pass ]; then \
 		ansible-vault view config-registry/env/secrets.env.vault --vault-password-file .vault_pass; \
 	else \
 		ansible-vault view config-registry/env/secrets.env.vault; \
@@ -131,9 +130,9 @@ vault-view:
 
 check-secrets:
 	@cd $(ROOT_DIR) && \
-	if [[ ! -f $(VAULT_FILE) ]]; then \
+	if [ ! -f "$(VAULT_FILE)" ]; then \
 		echo "[Vault][warn] $(VAULT_FILE) missing — templates may lack secrets"; \
 	fi; \
-	if [[ ! -s $(VAULT_PASS) ]]; then \
+	if [ ! -s "$(VAULT_PASS)" ]; then \
 		echo "[Vault][warn] $(VAULT_PASS) missing or empty"; \
 	fi
