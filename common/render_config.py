@@ -143,7 +143,17 @@ def build_port_env_vars(ports: Dict[str, Dict[str, int]]) -> Dict[str, int]:
     return env_vars
 
 
-def render(domain: str, env_name: str) -> None:
+TEMPLATE_SUFFIXES = {".tmpl", ".jinja", ".j2", ".jinja2"}
+
+
+def derive_output_name(path: Path) -> str:
+    candidate = path
+    while candidate.suffix in TEMPLATE_SUFFIXES:
+        candidate = candidate.with_suffix("")
+    return candidate.name
+
+
+def render(domain: str, env_name: str, dry_run: bool = False) -> None:
     root = ROOT
     src = root / "domains" / domain / "templates"
     if not src.exists():
@@ -166,6 +176,14 @@ def render(domain: str, env_name: str) -> None:
     context["ports"] = ports
     context.update(build_port_env_vars(ports))
 
+    log_info(f"Rendering {domain} for environment {env_name}")
+
+    if dry_run:
+        log_info("DRY-RUN: available context keys")
+        for key in sorted(context):
+            print(f"  {key}")
+        return
+
     jinja_env = Environment(
         loader=FileSystemLoader(str(src)),
         autoescape=False,
@@ -175,10 +193,15 @@ def render(domain: str, env_name: str) -> None:
     )
 
     rendered_any = False
-    for template_path in sorted(src.glob("*.tmpl")):
+    template_files = sorted({p for suffix in TEMPLATE_SUFFIXES for p in src.glob(f"*{suffix}")})
+    for template_path in template_files:
         template = jinja_env.get_template(template_path.name)
-        output_text = template.render(**context)
-        out_file = dst / template_path.stem
+        try:
+            output_text = template.render(**context)
+        except Exception as exc:  # pragma: no cover - rendering failures
+            log_warn(f"Render failed for {template_path.name}: {exc}")
+            continue
+        out_file = dst / derive_output_name(template_path)
         out_file.write_text(output_text)
         log_info(f"wrote {out_file.relative_to(root)}")
         rendered_any = True
@@ -191,10 +214,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Render domain templates")
     parser.add_argument("--domain", required=True, help="Domain name (matches folder under domains/)")
     parser.add_argument("--env", default="dev", help="Environment override to load")
+    parser.add_argument("--dry-run", action="store_true", help="Print available context keys and exit")
     args = parser.parse_args()
 
     try:
-        render(args.domain, args.env)
+        render(args.domain, args.env, dry_run=args.dry_run)
     except FileNotFoundError as exc:
         log_warn(str(exc))
         sys.exit(1)
