@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import os
+import re
 import shutil
 import subprocess
 import sys
@@ -25,6 +27,12 @@ except ImportError as exc:  # pragma: no cover - dependency hint
 
 
 ROOT = Path(__file__).resolve().parents[1]
+_MASK = re.compile(r"=[^=\n]+")
+
+
+def mask_assignment(key: str, value: object) -> str:
+    line = f"{key}={value}"
+    return _MASK.sub("=<redacted>", line)
 
 
 def log_info(message: str) -> None:
@@ -62,12 +70,15 @@ def decrypt_secrets(root: Path) -> Dict[str, str]:
     vault_file = root / "config-registry" / "env" / "secrets.env.vault"
     if not vault_file.exists():
         return {}
+    if os.environ.get("VAULT_SKIP_DECRYPT"):
+        log_warn("Skipping vault decryption (VAULT_SKIP_DECRYPT=1)")
+        return {}
     if not shutil.which("ansible-vault"):
-        log_warn("ansible-vault not found; skipping secrets.env.vault")
+        log_warn("ansible-vault not found; skipping secrets.env.vault (see docs/operations/secrets.md)")
         return {}
     pass_file = root / ".vault_pass"
     if not pass_file.exists():
-        log_warn(".vault_pass not found; skipping secrets.env.vault")
+        log_warn(".vault_pass not found; skipping secrets.env.vault (see docs/operations/secrets.md)")
         return {}
     try:
         result = subprocess.run(
@@ -83,7 +94,7 @@ def decrypt_secrets(root: Path) -> Dict[str, str]:
             capture_output=True,
         )
     except subprocess.CalledProcessError as exc:
-        log_warn(f"Unable to decrypt secrets.env.vault ({exc})")
+        log_warn(f"Unable to decrypt secrets.env.vault ({exc}); see docs/operations/secrets.md")
         return {}
     return parse_env_content(result.stdout)
 
@@ -102,6 +113,17 @@ def resolve_variables(env: Dict[str, str]) -> Dict[str, str]:
                 changed = True
         if not changed:
             break
+    else:
+        unresolved = [
+            mask_assignment(key, value)
+            for key, value in resolved.items()
+            if isinstance(value, str) and "${" in value
+        ]
+        if unresolved:
+            log_warn(
+                "Possible circular reference in environment variable expansion: "
+                + ", ".join(unresolved)
+            )
     return resolved
 
 
@@ -174,6 +196,9 @@ def render(domain: str, env_name: str, dry_run: bool = False) -> None:
     context["domain"] = domain_entry
     context["ports"] = ports
     context.update(build_port_env_vars(ports))
+
+    if domain == "registry" and not context.get("REGISTRY_HTTP_SECRET"):
+        log_warn("REGISTRY_HTTP_SECRET is empty; token authentication will fail until it is set")
 
     log_info(f"Rendering {domain} for environment {env_name}")
 
