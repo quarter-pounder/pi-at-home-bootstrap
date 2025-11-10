@@ -17,6 +17,23 @@
 - `make vault-edit` – Opens the vault for editing with `ansible-vault edit`.
 - `make vault-view` – Displays decrypted contents without writing to disk.
 
+### Editing Workflow
+1. Ensure `.vault_pass` exists (or be ready to enter the password when prompted).
+2. Run:
+   ```bash
+   make vault-edit
+   ```
+   This invokes `ansible-vault edit`, which decrypts the file to a temporary buffer and launches the editor defined by `$EDITOR` (defaults to `vi`).
+3. Add or update key/value pairs in `KEY=value` form, e.g.:
+   ```
+   GITLAB_ROOT_PASSWORD=change-me
+   SMTP_PASSWORD=super-secret
+   REGISTRY_HTTP_SECRET=long-random-string
+   ```
+4. Save and exit; `ansible-vault` re-encrypts the file automatically.
+
+> Tip: set `EDITOR="nano"` or another favorite editor before running `make vault-edit` if plain `vi` is unfamiliar.
+
 The renderer automatically decrypts `secrets.env.vault` when both files exist. Missing prerequisites trigger warnings but do not abort template generation.
 
 ## Recommended Keys
