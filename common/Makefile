@@ -1,3 +1,4 @@
+export ANSIBLE_VAULT_PASSWORD_FILE := $(VAULT_PASS)
 .ONESHELL:
 .SILENT:
 .DEFAULT_GOAL := help
@@ -8,6 +9,8 @@ ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))/..
 export ROOT_DIR
 PYTHON ?= python3
 METADATA_SCRIPT := $(ROOT_DIR)/common/metadata.py
+VAULT_FILE := $(ROOT_DIR)/config-registry/env/secrets.env.vault
+VAULT_PASS := $(ROOT_DIR)/.vault_pass
 
 help:
 	@echo "Available targets:"
@@ -24,6 +27,9 @@ help:
 	@echo "  make destroy DOMAIN=<name>      - Destroy domain"
 	@echo "  make manifest                   - Generate manifest"
 	@echo "  make drift-check                - Fail CI if metadata drift detected"
+	@echo "  make vault-create               - Create secrets.env.vault (uses .vault_pass when present)"
+	@echo "  make vault-edit                 - Edit secrets.env.vault"
+	@echo "  make vault-view                 - View secrets.env.vault contents"
 
 env:
 	@echo "[Env] Loading environment $(ENV)"
@@ -80,3 +86,54 @@ destroy:
 manifest:
 	@echo "[Manifest] Generating manifest..."
 	@cd $(ROOT_DIR) && bash common/generate-manifest.sh || echo "Manifest generation not yet implemented"
+
+vault-create:
+	@cd $(ROOT_DIR) && \
+	if ! command -v ansible-vault >/dev/null 2>&1; then \
+		echo "[Vault][err] ansible-vault not installed"; exit 1; \
+	fi; \
+	if [[ -f config-registry/env/secrets.env.vault ]]; then \
+		echo "[Vault][warn] secrets.env.vault already exists"; exit 1; \
+	fi; \
+	if [[ -f .vault_pass ]]; then \
+		ansible-vault create config-registry/env/secrets.env.vault --vault-password-file .vault_pass; \
+	else \
+		ansible-vault create config-registry/env/secrets.env.vault; \
+	fi
+
+vault-edit:
+	@cd $(ROOT_DIR) && \
+	if ! command -v ansible-vault >/dev/null 2>&1; then \
+		echo "[Vault][err] ansible-vault not installed"; exit 1; \
+	fi; \
+	if [[ ! -f config-registry/env/secrets.env.vault ]]; then \
+		echo "[Vault][err] secrets.env.vault missing"; exit 1; \
+	fi; \
+	if [[ -f .vault_pass ]]; then \
+		ansible-vault edit config-registry/env/secrets.env.vault --vault-password-file .vault_pass; \
+	else \
+		ansible-vault edit config-registry/env/secrets.env.vault; \
+	fi
+
+vault-view:
+	@cd $(ROOT_DIR) && \
+	if ! command -v ansible-vault >/dev/null 2>&1; then \
+		echo "[Vault][err] ansible-vault not installed"; exit 1; \
+	fi; \
+	if [[ ! -f config-registry/env/secrets.env.vault ]]; then \
+		echo "[Vault][err] secrets.env.vault missing"; exit 1; \
+	fi; \
+	if [[ -f .vault_pass ]]; then \
+		ansible-vault view config-registry/env/secrets.env.vault --vault-password-file .vault_pass; \
+	else \
+		ansible-vault view config-registry/env/secrets.env.vault; \
+	fi
+
+check-secrets:
+	@cd $(ROOT_DIR) && \
+	if [[ ! -f $(VAULT_FILE) ]]; then \
+		echo "[Vault][warn] $(VAULT_FILE) missing — templates may lack secrets"; \
+	fi; \
+	if [[ ! -s $(VAULT_PASS) ]]; then \
+		echo "[Vault][warn] $(VAULT_PASS) missing or empty"; \
+	fi
