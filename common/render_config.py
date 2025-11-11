@@ -190,6 +190,8 @@ def render(domain: str, env_name: str, dry_run: bool = False) -> None:
     for child in dst.iterdir():
         if child.is_file() or child.is_symlink():
             child.unlink()
+        elif child.is_dir():
+            shutil.rmtree(child)
 
     env_vars = load_env_layers(root, env_name)
     ports = load_ports(root)
