@@ -1,35 +1,160 @@
-// grafana alloy configuration (river language)
-logging {
-  level = "info"
+// Grafana Alloy configuration (River language)
+
+local.file_match "system_logs" {
+  path_targets = [
+    {
+      __path__ = "/var/log/syslog"
+      job      = "system"
+      level    = "info"
+    },
+    {
+      __path__ = "/var/log/auth.log"
+      job      = "system"
+      level    = "info"
+    },
+    {
+      __path__ = "/var/log/kern.log"
+      job      = "system"
+      level    = "info"
+    },
+  ]
 }
 
-loki "local" {
-  endpoint = "http://monitoring-loki:3100"
+local.file_match "forgejo_logs" {
+  path_targets = [
+    {
+      __path__ = "/srv/forgejo/log/forgejo.log"
+      job      = "forgejo"
+      service  = "web"
+      level    = "info"
+    },
+    {
+      __path__ = "/srv/forgejo/log/hooks.log"
+      job      = "forgejo"
+      service  = "hooks"
+      level    = "info"
+    },
+    {
+      __path__ = "/srv/forgejo/log/http.log"
+      job      = "forgejo"
+      service  = "http"
+      level    = "info"
+    },
+  ]
+}
+
+local.file_match "docker_logs" {
+  path_targets = [
+    {
+      __path__ = "/var/lib/docker/containers/*/*.log"
+      job      = "docker"
+      level    = "info"
+    },
+  ]
+}
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+loki.source.file "system" {
+  targets    = local.file_match.system_logs.targets
+  forward_to = [loki.process.system.receiver]
+}
+
+loki.source.file "forgejo" {
+  targets    = local.file_match.forgejo_logs.targets
+  forward_to = [loki.process.forgejo.receiver]
+}
+
+loki.source.file "docker_file" {
+  targets    = local.file_match.docker_logs.targets
+  forward_to = [loki.process.docker.receiver]
 }
 
 loki.source.docker "containers" {
-  host             = "unix:///var/run/docker.sock"
-  targets          = docker.containers.targets
-  forward_to       = [loki.write.local.receiver]
-  keep_file_open   = false
-  ignore_older     = "24h"
+  host       = "unix:///var/run/docker.sock"
+  forward_to = [loki.process.docker.receiver]
 }
 
-prometheus.exporter.cadvisor "cadvisor" {
-  cadvisor_url     = "http://monitoring-cadvisor:8080/metrics"
-  scrape_interval  = "15s"
+loki.process "system" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.regex {
+    expression = "^(?P<timestamp>\\S+\\s+\\S+)\\s+(?P<hostname>\\S+)\\s+(?P<service>\\S+):\\s+(?P<message>.*)$"
+  }
+
+  stage.labels {
+    values = {
+      level = "info"
+    }
+  }
+
+  stage.timestamp {
+    source = "timestamp"
+    format = "Jan 02 15:04:05"
+  }
 }
 
-prometheus.scrape "cadvisor" {
-  targets        = prometheus.exporter.cadvisor.cadvisor.targets
-  forward_to     = [prometheus.remote_write.default.receiver]
-  scrape_interval = "15s"
+loki.process "forgejo" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.json {
+    expressions = {
+      timestamp = "time"
+      level     = "severity"
+      message   = "message"
+    }
+  }
+
+  stage.labels {
+    values = {
+      level = "info"
+      job   = "forgejo"
+    }
+  }
+
+  stage.timestamp {
+    source = "timestamp"
+    format = "2006-01-02T15:04:05.000Z"
+  }
 }
 
-prometheus.scrape "node" {
-  targets        = ["monitoring-node-exporter:9100"]
-  forward_to     = [prometheus.remote_write.default.receiver]
-  scrape_interval = "15s"
+loki.process "docker" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.json {
+    expressions = {
+      timestamp = "time"
+      level     = "level"
+      message   = "log"
+    }
+  }
+
+  stage.labels {
+    values = {
+      level = "info"
+    }
+  }
+
+  stage.timestamp {
+    source = "timestamp"
+    format = "2006-01-02T15:04:05.000000000Z"
+  }
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://monitoring-loki:3100/loki/api/v1/push"
+  }
+}
+
+prometheus.exporter.self "alloy" {}
+
+prometheus.scrape "alloy" {
+  targets         = prometheus.exporter.self.alloy.targets
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.default.receiver]
 }
 
 prometheus.remote_write "default" {

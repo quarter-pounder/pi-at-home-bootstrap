@@ -31,6 +31,7 @@ services:
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
+      - '--cluster.listen-address='
     networks:
       - monitoring-network
     depends_on:
@@ -112,7 +113,10 @@ services:
       - /srv/forgejo/log:/srv/forgejo/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: run --config.file=/etc/alloy/config.alloy --server.http.listen-addr=0.0.0.0:12345
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --server.http.listen-addr=0.0.0.0:12345
     networks:
       - monitoring-network
     depends_on:
