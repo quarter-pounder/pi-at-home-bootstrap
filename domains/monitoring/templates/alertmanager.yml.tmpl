@@ -1,7 +1,8 @@
 {% set smtp_host = SMTP_ADDRESS if SMTP_ADDRESS else 'localhost' %}
 {% set smtp_port = SMTP_PORT if SMTP_PORT else '25' %}
 {% set smtp_from = SMTP_FROM if SMTP_FROM else ('alerts@' ~ (DOMAIN if DOMAIN else 'local')) %}
-{% set default_webhook = DR_WEBHOOK_URL if DR_WEBHOOK_URL else 'http://localhost:8081/webhook' %}
+{% set dr_enabled = DR_WEBHOOK_URL is not none and DR_WEBHOOK_URL|length > 0 %}
+{% set primary_receiver = 'dr-webhook' if dr_enabled else ('email' if ALERT_EMAIL else 'null') %}
 {% set webhook_token = DR_WEBHOOK_TOKEN if DR_WEBHOOK_TOKEN else '' %}
 
 global:
@@ -13,9 +14,9 @@ route:
   group_wait: 10s
   group_interval: 10s
   repeat_interval: 1h
-  receiver: 'webhook'
+  receiver: '{{ primary_receiver }}'
   routes:
-{% if DR_WEBHOOK_URL %}
+{% if dr_enabled %}
     - match:
         action: trigger_dr
       receiver: 'dr-webhook'
@@ -31,16 +32,7 @@ route:
 {% endif %}
 
 receivers:
-  - name: 'webhook'
-    webhook_configs:
-      - url: '{{ default_webhook }}'
-        send_resolved: true
-{% if webhook_token %}
-        http_config:
-          bearer_token: '{{ webhook_token }}'
-{% endif %}
-
-{% if DR_WEBHOOK_URL %}
+{% if dr_enabled %}
   - name: 'dr-webhook'
     webhook_configs:
       - url: '{{ DR_WEBHOOK_URL }}'
@@ -50,7 +42,6 @@ receivers:
           bearer_token: '{{ webhook_token }}'
 {% endif %}
 {% endif %}
-
 {% if ALERT_EMAIL %}
   - name: 'email'
     email_configs:
@@ -63,3 +54,7 @@ receivers:
           {{ end }}
 {% endraw %}
 {% endif %}
+  - name: 'null'
+    webhook_configs:
+      - url: 'http://127.0.0.1:0'
+        send_resolved: false
