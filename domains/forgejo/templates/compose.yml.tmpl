@@ -1,11 +1,35 @@
 services:
+  forgejo-init:
+    image: {{ FORGEJO_IMAGE }}
+    container_name: forgejo-init
+    restart: "no"
+    environment:
+      USER_UID: "{{ FORGEJO_UID }}"
+      USER_GID: "{{ FORGEJO_GID }}"
+      FORGEJO_ADMIN_USERNAME: "{{ FORGEJO_ADMIN_USERNAME }}"
+      FORGEJO_ADMIN_PASSWORD: "{{ FORGEJO_ADMIN_PASSWORD }}"
+      FORGEJO_ADMIN_EMAIL: "{{ FORGEJO_ADMIN_EMAIL }}"
+    volumes:
+      - /srv/forgejo/data:/data
+      - ./app.ini:/data/gitea/conf/app.ini:ro
+      - ./bootstrap.sh:/init/bootstrap.sh:ro
+    entrypoint: ["/bin/sh", "/init/bootstrap.sh"]
+    networks:
+      - forgejo-network
+
   forgejo:
     image: {{ FORGEJO_IMAGE }}
     container_name: forgejo
     restart: unless-stopped
+    depends_on:
+      forgejo-init:
+        condition: service_completed_successfully
     environment:
       USER_UID: "{{ FORGEJO_UID }}"
       USER_GID: "{{ FORGEJO_GID }}"
+      FORGEJO_ADMIN_USERNAME: "{{ FORGEJO_ADMIN_USERNAME }}"
+      FORGEJO_ADMIN_PASSWORD: "{{ FORGEJO_ADMIN_PASSWORD }}"
+      FORGEJO_ADMIN_EMAIL: "{{ FORGEJO_ADMIN_EMAIL }}"
     ports:
       - "{{ PORT_FORGEJO_HTTP }}:3000"
       - "{{ PORT_FORGEJO_SSH }}:22"

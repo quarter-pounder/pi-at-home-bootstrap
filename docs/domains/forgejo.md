@@ -33,12 +33,14 @@ Forgejo delivers the core features I need (Git hosting, web UI, container regist
 ### Prerequisites
 - Create the shared Docker network once: `docker network create forgejo-network`
 - Pull images directly from Docker Hub (pre-auth not required for public tags)
+- Supply `FORGEJO_ADMIN_USERNAME`, `FORGEJO_ADMIN_PASSWORD`, `FORGEJO_ADMIN_EMAIL`, and `FORGEJO_APP_SECRET` via `.env` or vault secrets
 
 ## Templates
 - `domains/forgejo/templates/compose.yml.tmpl`
-  - Mounts `/srv/forgejo/{data,config,log}`
+  - Mounts `/srv/forgejo/data` to `/data` and binds the rendered `app.ini`
   - Publishes HTTP (`PORT_FORGEJO_HTTP`) and SSH (`PORT_FORGEJO_SSH`) endpoints
   - Attaches to the shared `forgejo-network` bridge used by PostgreSQL, Woodpecker, and the registry
+  - Spawns a short-lived `forgejo-init` helper that seeds the admin user if missing
 - `domains/forgejo/templates/app.ini.tmpl`
   - Configures database DSN, site URL, SSH/HTTP ports, metrics, and mail settings
   - Enables `/metrics` with a bearer token for Prometheus scraping

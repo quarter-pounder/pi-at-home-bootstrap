@@ -1,0 +1,54 @@
+#!/bin/sh
+set -eu
+
+CONFIG="/data/gitea/conf/app.ini"
+ADMIN_USER="${FORGEJO_ADMIN_USERNAME:-}"
+ADMIN_PASS="${FORGEJO_ADMIN_PASSWORD:-}"
+ADMIN_EMAIL="${FORGEJO_ADMIN_EMAIL:-}"
+
+log() {
+  echo "[forgejo-bootstrap] $*" >&2
+}
+
+wait_for_db() {
+  retries=30
+  while [ "$retries" -gt 0 ]; do
+    if /usr/bin/forgejo admin doctor check-db --config "$CONFIG" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+    retries=$((retries - 1))
+  done
+  return 1
+}
+
+if ! [ -f "$CONFIG" ]; then
+  log "config $CONFIG not found; aborting"
+  exit 1
+fi
+
+if [ -z "$ADMIN_USER" ] || [ -z "$ADMIN_PASS" ] || [ -z "$ADMIN_EMAIL" ]; then
+  log "admin credentials incomplete; skipping bootstrap"
+  exit 0
+fi
+
+if ! wait_for_db; then
+  log "database is unreachable; aborting"
+  exit 1
+fi
+
+if /usr/bin/forgejo admin user list --config "$CONFIG" 2>/dev/null | grep -q "^$ADMIN_USER"; then
+  log "admin user already present; nothing to do"
+  exit 0
+fi
+
+/usr/bin/forgejo admin user create \
+  --config "$CONFIG" \
+  --username "$ADMIN_USER" \
+  --password "$ADMIN_PASS" \
+  --email "$ADMIN_EMAIL" \
+  --admin \
+  --must-change-password=false >/dev/null
+
+log "admin user $ADMIN_USER created"
+
