@@ -9,6 +9,11 @@ DB_HOST="${FORGEJO_DB_HOST:-forgejo-postgres}"
 DB_PORT="${FORGEJO_DB_PORT:-5432}"
 DB_NAME="${FORGEJO_DB_NAME:-forgejo}"
 DB_USER="${FORGEJO_DB_USER:-forgejo}"
+FORGEJO_BIN="/usr/local/bin/forgejo"
+
+if [ -f /usr/local/bin/entrypoint ]; then
+  . /usr/local/bin/entrypoint
+fi
 
 log() {
   echo "[forgejo-bootstrap] $*" >&2
@@ -18,7 +23,7 @@ wait_for_db() {
   retries=60
   attempt=1
   while [ "$retries" -gt 0 ]; do
-    if OUTPUT=$(/usr/bin/forgejo admin doctor check-db --config "$CONFIG" 2>&1); then
+    if OUTPUT=$("$FORGEJO_BIN" admin doctor check-db --config "$CONFIG" 2>&1); then
       return 0
     fi
     if [ "$attempt" -le 5 ] || [ "$retries" -le 3 ]; then
@@ -47,12 +52,12 @@ if ! wait_for_db; then
   exit 1
 fi
 
-if /usr/bin/forgejo admin user list --config "$CONFIG" 2>/dev/null | grep -q "^$ADMIN_USER"; then
+if "$FORGEJO_BIN" admin user list --config "$CONFIG" 2>/dev/null | grep -q "^$ADMIN_USER"; then
   log "admin user already present; nothing to do"
   exit 0
 fi
 
-/usr/bin/forgejo admin user create \
+"$FORGEJO_BIN" admin user create \
   --config "$CONFIG" \
   --username "$ADMIN_USER" \
   --password "$ADMIN_PASS" \
