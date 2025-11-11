@@ -128,7 +128,7 @@ groups:
           description: "Memory usage: {{ $value | humanize }}B"
         {% endraw %}
 
-{% if DR_WEBHOOK_URL %}
+{% if DR_WEBHOOK_URL|default('') %}
   - name: dr_alerts
     interval: 30s
     rules:

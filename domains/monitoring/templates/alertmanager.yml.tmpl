@@ -1,9 +1,10 @@
 {% set smtp_host = SMTP_ADDRESS if SMTP_ADDRESS else 'localhost' %}
 {% set smtp_port = SMTP_PORT if SMTP_PORT else '25' %}
 {% set smtp_from = SMTP_FROM if SMTP_FROM else ('alerts@' ~ (DOMAIN if DOMAIN else 'local')) %}
-{% set dr_enabled = DR_WEBHOOK_URL is not none and DR_WEBHOOK_URL|length > 0 %}
+{% set dr_url = (DR_WEBHOOK_URL|default('')) %}
+{% set dr_enabled = dr_url|length > 0 %}
 {% set primary_receiver = 'dr-webhook' if dr_enabled else ('email' if ALERT_EMAIL else 'null') %}
-{% set webhook_token = DR_WEBHOOK_TOKEN if DR_WEBHOOK_TOKEN else '' %}
+{% set webhook_token = DR_WEBHOOK_TOKEN|default('') %}
 
 global:
   smtp_smarthost: '{{ smtp_host }}:{{ smtp_port }}'
