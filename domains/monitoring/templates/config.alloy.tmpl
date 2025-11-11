@@ -72,6 +72,7 @@ loki.source.file "docker_file" {
 
 loki.source.docker "containers" {
   host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.containers.targets
   forward_to = [loki.process.docker.receiver]
 }
 
