@@ -107,12 +107,12 @@ services:
     ports:
       - "{{ PORT_MONITORING_ALLOY }}:12345"
     volumes:
-      - ./alloy.river:/etc/alloy/config.river:ro
+      - ./config.alloy:/etc/alloy/config.alloy:ro
       - /var/log:/var/log:ro
       - /srv/forgejo/log:/srv/forgejo/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: run --config.file=/etc/alloy/config.river --server.http.listen-addr=0.0.0.0:12345
+    command: run --config.file=/etc/alloy/config.alloy --server.http.listen-addr=0.0.0.0:12345
     networks:
       - monitoring-network
     depends_on:
