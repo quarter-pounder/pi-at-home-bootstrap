@@ -9,6 +9,11 @@ services:
       FORGEJO_ADMIN_USERNAME: "{{ FORGEJO_ADMIN_USERNAME }}"
       FORGEJO_ADMIN_PASSWORD: "{{ FORGEJO_ADMIN_PASSWORD }}"
       FORGEJO_ADMIN_EMAIL: "{{ FORGEJO_ADMIN_EMAIL }}"
+      FORGEJO_DB_HOST: "forgejo-postgres"
+      FORGEJO_DB_PORT: "5432"
+      FORGEJO_DB_NAME: "{{ POSTGRES_DB_FORGEJO }}"
+      FORGEJO_DB_USER: "{{ POSTGRES_USER_FORGEJO }}"
+      FORGEJO_DB_PASS: "{{ POSTGRES_PASSWORD_FORGEJO }}"
     volumes:
       - /srv/forgejo/data:/data
       - ./app.ini:/data/gitea/conf/app.ini:ro
@@ -30,12 +35,18 @@ services:
       FORGEJO_ADMIN_USERNAME: "{{ FORGEJO_ADMIN_USERNAME }}"
       FORGEJO_ADMIN_PASSWORD: "{{ FORGEJO_ADMIN_PASSWORD }}"
       FORGEJO_ADMIN_EMAIL: "{{ FORGEJO_ADMIN_EMAIL }}"
+      FORGEJO_DB_HOST: "forgejo-postgres"
+      FORGEJO_DB_PORT: "5432"
+      FORGEJO_DB_NAME: "{{ POSTGRES_DB_FORGEJO }}"
+      FORGEJO_DB_USER: "{{ POSTGRES_USER_FORGEJO }}"
+      FORGEJO_DB_PASS: "{{ POSTGRES_PASSWORD_FORGEJO }}"
     ports:
       - "{{ PORT_FORGEJO_HTTP }}:3000"
       - "{{ PORT_FORGEJO_SSH }}:22"
     volumes:
       - /srv/forgejo/data:/data
       - ./app.ini:/data/gitea/conf/app.ini:ro
+      - ./bootstrap.sh:/init/bootstrap.sh:ro
     networks:
       - forgejo-network
 

@@ -5,19 +5,28 @@ CONFIG="/data/gitea/conf/app.ini"
 ADMIN_USER="${FORGEJO_ADMIN_USERNAME:-}"
 ADMIN_PASS="${FORGEJO_ADMIN_PASSWORD:-}"
 ADMIN_EMAIL="${FORGEJO_ADMIN_EMAIL:-}"
+DB_HOST="${FORGEJO_DB_HOST:-forgejo-postgres}"
+DB_PORT="${FORGEJO_DB_PORT:-5432}"
+DB_NAME="${FORGEJO_DB_NAME:-forgejo}"
+DB_USER="${FORGEJO_DB_USER:-forgejo}"
 
 log() {
   echo "[forgejo-bootstrap] $*" >&2
 }
 
 wait_for_db() {
-  retries=30
+  retries=60
+  attempt=1
   while [ "$retries" -gt 0 ]; do
-    if /usr/bin/forgejo admin doctor check-db --config "$CONFIG" >/dev/null 2>&1; then
+    if OUTPUT=$(/usr/bin/forgejo admin doctor check-db --config "$CONFIG" 2>&1); then
       return 0
+    fi
+    if [ "$attempt" -le 5 ] || [ "$retries" -le 3 ]; then
+      log "db check attempt $attempt failed: $OUTPUT"
     fi
     sleep 2
     retries=$((retries - 1))
+    attempt=$((attempt + 1))
   done
   return 1
 }
@@ -32,6 +41,7 @@ if [ -z "$ADMIN_USER" ] || [ -z "$ADMIN_PASS" ] || [ -z "$ADMIN_EMAIL" ]; then
   exit 0
 fi
 
+log "Waiting for database $DB_USER@$DB_HOST:$DB_PORT/$DB_NAME"
 if ! wait_for_db; then
   log "database is unreachable; aborting"
   exit 1
