@@ -28,8 +28,10 @@ pi-forge/
 │   │   └── cloud-init.tmpl
 │   ├── state/                      # Ephemeral, auto-generated (git-ignored)
 │   │   ├── metadata-cache/        # Intermediate (pre-commit) generation output
-│   │   │   ├── gitlab.yml
-│   │   │   ├── monitoring.yml
+│   │   │   ├── forgejo.yml
+│   │   │   ├── postgres.yml
+│   │   │   ├── woodpecker.yml
+│   │   │   ├── woodpecker-runner.yml
 │   │   │   └── ...
 │   │   └── env-resolved/          # Cached merged env (for debugging/performance)
 │   │       ├── dev.env
@@ -37,17 +39,30 @@ pi-forge/
 │   │       └── prod.env
 │
 ├── domains/                        # Tier 2 — composable service domains
-│   ├── gitlab/
+│   ├── forgejo/
 │   │   ├── metadata.yml           # Final reconciled, version-controlled output
-│   │   ├── templates/              # Static (uses Jinja2 + env context)
+│   │   ├── templates/              # Static (compose/app.ini)
 │   │   │   ├── compose.yml.tmpl
-│   │   │   ├── gitlab.rb.tmpl
-│   │   │   └── runner-config.toml.tmpl
-│   │   ├── scripts/                # Lifecycle operations
-│   │   │   ├── setup.sh
-│   │   │   ├── register-runner.sh
-│   │   │   ├── backup.sh
-│   │   │   └── restore.sh
+│   │   │   └── app.ini.tmpl
+│   │   └── README.md
+│   │
+│   ├── postgres/
+│   │   ├── metadata.yml
+│   │   ├── templates/
+│   │   │   ├── compose.yml.tmpl
+│   │   │   └── init.sql.tmpl
+│   │   └── README.md
+│   │
+│   ├── woodpecker/
+│   │   ├── metadata.yml
+│   │   ├── templates/
+│   │   │   └── compose.yml.tmpl
+│   │   └── README.md
+│   │
+│   ├── woodpecker-runner/
+│   │   ├── metadata.yml
+│   │   ├── templates/
+│   │   │   └── compose.yml.tmpl
 │   │   └── README.md
 │   │
 │   ├── monitoring/
@@ -128,7 +143,7 @@ pi-forge/
 │       ├── network.yml
 │       └── ...
 │
-├── examples/
+├── examples/                       # Legacy GitLab CI pipeline examples (reference only)
 │   ├── gitlab-ci-docker.yml
 │   ├── gitlab-ci-nodejs.yml
 │   ├── gitlab-ci-python.yml
@@ -209,16 +224,18 @@ _Reminder: capturing `requires`, `exposes_to`, and `consumes` may feel like extr
 # Initial setup or after changing domains.yml/ports.yml
 make generate-metadata    # Generate metadata.yml files
 make validate            # Validate configuration
-make render DOMAIN=gitlab ENV=prod
-make deploy DOMAIN=gitlab
+make render DOMAIN=forgejo ENV=prod
+make deploy DOMAIN=forgejo
 
 # Or for multiple domains
 make generate-metadata
 make validate
-make render DOMAIN=gitlab ENV=prod
+make render DOMAIN=forgejo ENV=prod
 make render DOMAIN=monitoring ENV=prod
-make deploy DOMAIN=gitlab
+make render DOMAIN=woodpecker ENV=prod
+make deploy DOMAIN=forgejo
 make deploy DOMAIN=monitoring
+make deploy DOMAIN=woodpecker
 ```
 
 ### 5. Loose Coupling via metadata.yml
@@ -231,17 +248,11 @@ make deploy DOMAIN=monitoring
 - Optional vs required relationships clearly marked
 - Metadata includes `_meta.source_hash` to track source file changes
 
-### GitLab Domain Strategy
-- Reduce Makefile inline bash by moving helpers into `common/lib/*.sh` and sourcing them in targets.
-- Validation enforces pinned container image tags and Terraform provider versions (no `:latest`, no unpinned providers).
-- Default metadata workflow: `make generate-metadata && make diff-metadata` fails CI if drift persists.
-
-- Treat GitLab CE as a sealed appliance. Inputs = rendered `gitlab.rb` + environment variables. Outputs = HTTP(S)/SSH endpoints and the exported metrics port defined in `ports.yml`.
-- Runtime state is limited to `/srv/gitlab/{config,data,logs}`. Compose lifecycle (up/down) plus scripted backup/restore are the only control surfaces.
-- Never mutate the container interactively. Regenerate config via templates (`domains/gitlab/templates/gitlab.rb.tmpl`, `compose.yml.tmpl`) and redeploy.
-- Disable Omnibus ancillary stacks (Prometheus, registry) unless explicitly required. Expose only the ports declared in metadata and let downstream services consume them by service name.
-- Keep the rendered `gitlab.rb` under version control. Changes flow: update env/metadata → render → review → deploy.
-- Backups run from outside the container via `gitlab-rake gitlab:backup:create`; artifacts sync to cloud storage. Restores provision a fresh container, mount `/srv/gitlab`, apply backup.
+### Forgejo Domain Strategy
+- Treat Forgejo + PostgreSQL as the core code-hosting pair; inputs are rendered `app.ini` and database DSNs, outputs are HTTP/SSH endpoints plus `/metrics`.
+- Runtime state lives under `/srv/forgejo/{config,data,log}` with relational data in the shared PostgreSQL domain. Manage lifecycle via compose and database dumps—no interactive mutations.
+- Regenerate config through Jinja templates (`domains/forgejo/templates/app.ini.tmpl`, `compose.yml.tmpl`) and redeploy; rotate secrets via the vault.
+- Container registry support is externalized: the standalone `registry` domain reuses Forgejo’s token service; Woodpecker CI integrates through OAuth + shared agent secrets.
 
 ### 6. Version Locking & Drift Detection
 - Legacy reference material remains in `/legacy` until v2 stabilises; plan to archive or relocate once new domains are fully operational.
@@ -295,7 +306,7 @@ Note: remember to check port conflicts
 .PHONY: env generate-metadata commit-metadata diff-metadata render deploy destroy validate validate-schema manifest
 
 ENV ?= dev
-DOMAIN ?= gitlab
+DOMAIN ?= forgejo
 
 env:
 	@echo "[Env] Loading environment $(ENV)"
@@ -455,22 +466,21 @@ yq -o=json config-registry/env/ports.yml | ajv validate \
   -s config-registry/schema/ports.schema.yml
 ```
 
-### Example: domains/gitlab/metadata.yml
+### Example: domains/forgejo/metadata.yml
 ```yaml
 _meta:
   generated_at: "2024-01-15T10:30:00Z"
   source_hash: "abc123def456..."
-  domain: gitlab
+  domain: forgejo
 
-name: gitlab
+name: forgejo
 ports:
-  http: 8080
-  https: 443
+  http: 3001
   ssh: 2222
 networks:
-  - gitlab-network
+  - forgejo-network
 dependencies:
-  - monitoring
+  - postgres
 # ... (domain-specific metadata) ...
 ```
 
@@ -514,36 +524,34 @@ echo "Generating manifest..."
 echo "Manifest generated: MANIFEST.md"
 ```
 
-### domains/gitlab/metadata.yml (GENERATED)
+### domains/forgejo/metadata.yml (GENERATED)
 ```yaml
 # This file is auto-generated by metadata.py generate
 # Do not edit manually - edit config-registry/env/domains.yml and ports.yml instead
 # Port references use PORT_{DOMAIN}_{PORT_NAME} format from ports.yml
 
-domain: gitlab
-description: GitLab CE and Runner for self-hosted CI/CD
+domain: forgejo
+description: Forgejo code hosting service
 version: latest
 
 depends_on: []
 
 exports:
   ports:
-    http: ${PORT_GITLAB_HTTP}      # From ports.yml: gitlab.http
-    https: ${PORT_GITLAB_HTTPS}    # From ports.yml: gitlab.https
-    ssh: ${PORT_GITLAB_SSH}        # From ports.yml: gitlab.ssh
-    metrics: ${PORT_GITLAB_METRICS} # From ports.yml: gitlab.metrics
+    http: ${PORT_FORGEJO_HTTP}     # From ports.yml: forgejo.http
+    ssh: ${PORT_FORGEJO_SSH}       # From ports.yml: forgejo.ssh
 
   endpoints:
-    web: https://gitlab.${DOMAIN}
-    metrics: http://gitlab:${PORT_GITLAB_METRICS}/metrics
+    web: https://forgejo.${DOMAIN}
+    metrics: http://forgejo:${PORT_FORGEJO_HTTP}/metrics
 
 networks:
-  - gitlab-net
+  - forgejo-network
 
 volumes:
-  - /srv/gitlab/config
-  - /srv/gitlab/data
-  - /srv/gitlab/logs
+  - /srv/forgejo/config
+  - /srv/forgejo/data
+  - /srv/forgejo/log
 ```
 
 ### bootstrap/install.sh
