@@ -42,6 +42,20 @@
 
 The renderer automatically decrypts `secrets.env.vault` when both files exist. Missing prerequisites trigger warnings but do not abort template generation.
 
+### Required secrets
+```
+FORGEJO_APP_SECRET=change-me
+FORGEJO_METRICS_TOKEN=change-me
+FORGEJO_ADMIN_USERNAME=forgejo-admin
+FORGEJO_ADMIN_PASSWORD=change-me
+FORGEJO_ADMIN_EMAIL=admin@example.com
+SMTP_ADDRESS=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=forgejo@example.com
+SMTP_PASSWORD=change-me
+SMTP_FROM=Forgejo <forgejo@example.com>
+```
+
 ## Recommended Keys
 Store the following sensitive values inside the vault (non-exhaustive):
 - `FORGEJO_ADMIN_PASSWORD`
