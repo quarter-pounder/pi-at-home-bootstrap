@@ -21,7 +21,7 @@ Woodpecker provides lightweight CI/CD for Forgejo repositories. The server relie
 - The `woodpecker-runner` domain hosts the Docker runner.
 - Shared secret (`WOODPECKER_AGENT_SECRET`) lives in the vault and must match between server and runner.
 - Runner attaches to the same `forgejo-network` bridge to reach the server.
-- Authenticate against GHCR before pulling the official images: `docker login ghcr.io` (GitHub PAT with `read:packages`).
+- Pull server and agent images from Docker Hub (no authentication needed for public tags).
 
 ## OAuth Setup
 1. Create a Forgejo OAuth application with callback `${WOODPECKER_HOST}/authorize`.

@@ -32,7 +32,7 @@ Forgejo delivers the core features I need (Git hosting, web UI, container regist
 
 ### Prerequisites
 - Create the shared Docker network once: `docker network create forgejo-network`
-- Authenticate against GHCR before pulling Forgejo/Woodpecker images: `docker login ghcr.io` (GitHub PAT with `read:packages`)
+- Pull images directly from Docker Hub (pre-auth not required for public tags)
 
 ## Templates
 - `domains/forgejo/templates/compose.yml.tmpl`
