@@ -186,6 +186,11 @@ def render(domain: str, env_name: str, dry_run: bool = False) -> None:
     dst = root / "generated" / domain
     dst.mkdir(parents=True, exist_ok=True)
 
+    # ensure old outputs are removed so we don't collide with directories
+    for child in dst.iterdir():
+        if child.is_file() or child.is_symlink():
+            child.unlink()
+
     env_vars = load_env_layers(root, env_name)
     ports = load_ports(root)
     domains_data = list(load_domains(root))
