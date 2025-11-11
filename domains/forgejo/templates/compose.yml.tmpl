@@ -44,12 +44,16 @@ services:
       FORGEJO__mailer__SKIP_TLS_VERIFY: "{{ 'false' if SMTP_SSL_VERIFY_MODE != 'none' else 'true' }}"
       FORGEJO__mailer__USE_CERTIFICATE: "false"
       FORGEJO__mailer__USE_CLIENT_CERTIFICATE: "false"
+{% if FORGEJO_ADMIN_USERNAME and FORGEJO_ADMIN_PASSWORD and FORGEJO_ADMIN_EMAIL %}
       FORGEJO__admin__USER_CREATE__ENABLED: "true"
       FORGEJO__admin__USER_CREATE__USERNAME: "{{ FORGEJO_ADMIN_USERNAME }}"
       FORGEJO__admin__USER_CREATE__PASSWORD: "{{ FORGEJO_ADMIN_PASSWORD }}"
       FORGEJO__admin__USER_CREATE__EMAIL: "{{ FORGEJO_ADMIN_EMAIL }}"
       FORGEJO__admin__USER_CREATE__IS_ADMIN: "true"
       FORGEJO__admin__USER_CREATE__MUST_CHANGE_PASSWORD: "false"
+{% else %}
+      FORGEJO__admin__USER_CREATE__ENABLED: "false"
+{% endif %}
     ports:
       - "{{ PORT_FORGEJO_HTTP }}:3000"
       - "{{ PORT_FORGEJO_SSH }}:22"
