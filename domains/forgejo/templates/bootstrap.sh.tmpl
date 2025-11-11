@@ -9,14 +9,34 @@ DB_HOST="${FORGEJO_DB_HOST:-forgejo-postgres}"
 DB_PORT="${FORGEJO_DB_PORT:-5432}"
 DB_NAME="${FORGEJO_DB_NAME:-forgejo}"
 DB_USER="${FORGEJO_DB_USER:-forgejo}"
-FORGEJO_BIN="/usr/local/bin/forgejo"
+
+FORGEJO_BIN=""
+for candidate in /usr/local/bin/forgejo /usr/bin/forgejo; do
+  if [ -x "$candidate" ]; then
+    FORGEJO_BIN="$candidate"
+    break
+  fi
+done
+
+if [ -z "$FORGEJO_BIN" ]; then
+  echo "[forgejo-bootstrap] forgejo binary not found" >&2
+  exit 1
+fi
 
 if [ -f /usr/local/bin/entrypoint ]; then
   . /usr/local/bin/entrypoint
 fi
 
 run_forgejo() {
-  su-exec forgejo "$FORGEJO_BIN" "$@"
+  if command -v su-exec >/dev/null 2>&1; then
+    su-exec forgejo "$FORGEJO_BIN" "$@"
+  elif command -v runuser >/dev/null 2>&1; then
+    runuser -u forgejo -- "$FORGEJO_BIN" "$@"
+  elif command -v gosu >/dev/null 2>&1; then
+    gosu forgejo "$FORGEJO_BIN" "$@"
+  else
+    su -s /bin/sh forgejo -c "\"$FORGEJO_BIN\" $*"
+  fi
 }
 
 log() {
