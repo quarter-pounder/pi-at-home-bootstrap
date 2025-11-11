@@ -30,6 +30,10 @@ Forgejo delivers the core features I need (Git hosting, web UI, container regist
 3. Render Forgejo assets (`make render DOMAIN=forgejo ENV=<env>`).
 4. Deploy with `make deploy DOMAIN=forgejo`.
 
+### Prerequisites
+- Create the shared Docker network once: `docker network create forgejo-network`
+- Authenticate against GHCR before pulling Forgejo/Woodpecker images: `docker login ghcr.io` (GitHub PAT with `read:packages`)
+
 ## Templates
 - `domains/forgejo/templates/compose.yml.tmpl`
   - Mounts `/srv/forgejo/{data,config,log}`
