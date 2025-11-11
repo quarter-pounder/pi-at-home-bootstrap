@@ -1,52 +1,58 @@
 services:
-  forgejo-init:
-    image: {{ FORGEJO_IMAGE }}
-    container_name: forgejo-init
-    restart: "no"
-    environment:
-      USER_UID: "{{ FORGEJO_UID }}"
-      USER_GID: "{{ FORGEJO_GID }}"
-      FORGEJO_ADMIN_USERNAME: "{{ FORGEJO_ADMIN_USERNAME }}"
-      FORGEJO_ADMIN_PASSWORD: "{{ FORGEJO_ADMIN_PASSWORD }}"
-      FORGEJO_ADMIN_EMAIL: "{{ FORGEJO_ADMIN_EMAIL }}"
-      FORGEJO_DB_HOST: "forgejo-postgres"
-      FORGEJO_DB_PORT: "5432"
-      FORGEJO_DB_NAME: "{{ POSTGRES_DB_FORGEJO }}"
-      FORGEJO_DB_USER: "{{ POSTGRES_USER_FORGEJO }}"
-      FORGEJO_DB_PASS: "{{ POSTGRES_PASSWORD_FORGEJO }}"
-    volumes:
-      - /srv/forgejo/data:/data
-      - ./app.ini:/data/gitea/conf/app.ini:ro
-      - ./bootstrap.sh:/init/bootstrap.sh:ro
-    entrypoint: ["/bin/sh", "/init/bootstrap.sh"]
-    networks:
-      - forgejo-network
-
   forgejo:
     image: {{ FORGEJO_IMAGE }}
     container_name: forgejo
     restart: unless-stopped
-    depends_on:
-      forgejo-init:
-        condition: service_completed_successfully
     environment:
       USER_UID: "{{ FORGEJO_UID }}"
       USER_GID: "{{ FORGEJO_GID }}"
-      FORGEJO_ADMIN_USERNAME: "{{ FORGEJO_ADMIN_USERNAME }}"
-      FORGEJO_ADMIN_PASSWORD: "{{ FORGEJO_ADMIN_PASSWORD }}"
-      FORGEJO_ADMIN_EMAIL: "{{ FORGEJO_ADMIN_EMAIL }}"
-      FORGEJO_DB_HOST: "forgejo-postgres"
-      FORGEJO_DB_PORT: "5432"
-      FORGEJO_DB_NAME: "{{ POSTGRES_DB_FORGEJO }}"
-      FORGEJO_DB_USER: "{{ POSTGRES_USER_FORGEJO }}"
-      FORGEJO_DB_PASS: "{{ POSTGRES_PASSWORD_FORGEJO }}"
+      FORGEJO__server__DOMAIN: "{{ FORGEJO_DOMAIN }}"
+      FORGEJO__server__ROOT_URL: "{{ FORGEJO_EXTERNAL_URL }}"
+      FORGEJO__server__SSH_DOMAIN: "{{ FORGEJO_DOMAIN }}"
+      FORGEJO__server__SSH_PORT: "{{ PORT_FORGEJO_SSH }}"
+      FORGEJO__server__HTTP_PORT: "3000"
+      FORGEJO__server__PROTOCOL: "http"
+      FORGEJO__lfs__START_SERVER: "true"
+      FORGEJO__lfs__JWT_SECRET: "{{ FORGEJO_LFS_JWT_SECRET }}"
+      FORGEJO__database__DB_TYPE: "postgres"
+      FORGEJO__database__HOST: "forgejo-postgres:5432"
+      FORGEJO__database__NAME: "{{ POSTGRES_DB_FORGEJO }}"
+      FORGEJO__database__USER: "{{ POSTGRES_USER_FORGEJO }}"
+      FORGEJO__database__PASSWD: "{{ POSTGRES_PASSWORD_FORGEJO }}"
+      FORGEJO__database__SCHEMA: "public"
+      FORGEJO__database__LOG_SQL: "false"
+      FORGEJO__security__INTERNAL_TOKEN: "{{ FORGEJO_APP_SECRET }}"
+      FORGEJO__security__SECRET_KEY: "{{ FORGEJO_APP_SECRET }}"
+      FORGEJO__security__INSTALL_LOCK: "true"
+      FORGEJO__metrics__ENABLED: "true"
+      FORGEJO__metrics__TOKEN: "{{ FORGEJO_METRICS_TOKEN }}"
+      FORGEJO__service__DISABLE_REGISTRATION: "true"
+      FORGEJO__service__REQUIRE_SIGNIN_VIEW: "false"
+      FORGEJO__service__ALLOW_ONLY_EXTERNAL_REGISTRATION: "false"
+      FORGEJO__service__DEFAULT_KEEP_EMAIL_PRIVATE: "true"
+      FORGEJO__actions__ENABLED: "false"
+      FORGEJO__packages__ENABLED: "true"
+      FORGEJO__packages__REGISTRY__ENABLED: "true"
+      FORGEJO__packages__REGISTRY__LOG_PACKAGE_ACCESS: "true"
+      FORGEJO__mailer__ENABLED: "{{ 'true' if SMTP_ADDRESS else 'false' }}"
+      FORGEJO__mailer__MAILER_TYPE: "smtp"
+      FORGEJO__mailer__FROM: "{{ SMTP_FROM if SMTP_FROM else 'noreply@' ~ DOMAIN }}"
+      FORGEJO__mailer__HOST: "{{ (SMTP_ADDRESS ~ ':' ~ SMTP_PORT) if SMTP_ADDRESS else '' }}"
+      FORGEJO__mailer__IS_TLS_ENABLED: "{{ 'true' if SMTP_TLS == 'true' else 'false' }}"
+      FORGEJO__mailer__USER: "{{ SMTP_USERNAME if SMTP_USERNAME else '' }}"
+      FORGEJO__mailer__PASSWD: "{{ SMTP_PASSWORD if SMTP_PASSWORD else '' }}"
+      FORGEJO__log__MODE: "console"
+      FORGEJO__log__LEVEL: "info"
+      FORGEJO__admin__USER_CREATE__USERNAME: "{{ FORGEJO_ADMIN_USERNAME }}"
+      FORGEJO__admin__USER_CREATE__PASSWORD: "{{ FORGEJO_ADMIN_PASSWORD }}"
+      FORGEJO__admin__USER_CREATE__EMAIL: "{{ FORGEJO_ADMIN_EMAIL }}"
+      FORGEJO__admin__USER_CREATE__IS_ADMIN: "true"
+      FORGEJO__admin__USER_CREATE__MUST_CHANGE_PASSWORD: "false"
     ports:
       - "{{ PORT_FORGEJO_HTTP }}:3000"
       - "{{ PORT_FORGEJO_SSH }}:22"
     volumes:
       - /srv/forgejo/data:/data
-      - ./app.ini:/data/gitea/conf/app.ini:ro
-      - ./bootstrap.sh:/init/bootstrap.sh:ro
     networks:
       - forgejo-network
 

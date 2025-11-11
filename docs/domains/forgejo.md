@@ -38,13 +38,12 @@ Forgejo delivers the core features I need (Git hosting, web UI, container regist
 
 ## Templates
 - `domains/forgejo/templates/compose.yml.tmpl`
-  - Mounts `/srv/forgejo/data` to `/data` and binds the rendered `app.ini`
+  - Mounts `/srv/forgejo/data` to `/data`
   - Publishes HTTP (`PORT_FORGEJO_HTTP`) and SSH (`PORT_FORGEJO_SSH`) endpoints
   - Attaches to the shared `forgejo-network` bridge used by PostgreSQL, Woodpecker, and the registry
-  - Spawns a short-lived `forgejo-init` helper that seeds the admin user if missing
+  - Seeds configuration (database, mailer, metrics, admin bootstrap) through environment variables with `FORGEJO__...` prefixes
 - `domains/forgejo/templates/app.ini.tmpl`
-  - Configures database DSN, site URL, SSH/HTTP ports, metrics, and mail settings
-  - Enables `/metrics` with a bearer token for Prometheus scraping
+  - (Optional) reference configuration; runtime settings are driven by environment variables
 
 ## CI Integration
 - Woodpecker CI runs as a separate domain against the same PostgreSQL instance.
