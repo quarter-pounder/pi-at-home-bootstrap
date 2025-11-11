@@ -10,9 +10,8 @@ services:
       - "{{ PORT_FORGEJO_HTTP }}:3000"
       - "{{ PORT_FORGEJO_SSH }}:22"
     volumes:
-      - /srv/forgejo/data:/var/lib/forgejo
-      - /srv/forgejo/log:/var/log/forgejo
-      - ./app.ini:/var/lib/forgejo/custom/conf/app.ini:ro
+      - /srv/forgejo/data:/data
+      - ./app.ini:/data/gitea/conf/app.ini:ro
     networks:
       - forgejo-network
 
