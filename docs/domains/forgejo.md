@@ -34,6 +34,7 @@ Forgejo delivers the core features I need (Git hosting, web UI, container regist
 - Create the shared Docker network once: `docker network create forgejo-network`
 - Pull images directly from Docker Hub (pre-auth not required for public tags)
 - Supply `FORGEJO_ADMIN_USERNAME`, `FORGEJO_ADMIN_PASSWORD`, `FORGEJO_ADMIN_EMAIL`, and `FORGEJO_APP_SECRET` via `.env` or vault secrets
+- Ensure the PostgreSQL init script grants schema ownership to the Forgejo role (update applied in `domains/postgres/templates/init.sql.tmpl`)
 
 ## Templates
 - `domains/forgejo/templates/compose.yml.tmpl`
