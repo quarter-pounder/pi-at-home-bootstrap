@@ -2,14 +2,15 @@
 # Naming convention: {domain: {port_name: number}}
 # Converted to: PORT_{DOMAIN}_{PORT_NAME} (uppercase)
 
-gitlab:
-  http: 80
-  https: 443
+forgejo:
+  http: 3001
   ssh: 2222
-  metrics: 8080
 
 registry:
   http: 5050
+
+postgres:
+  postgres: 5432
 
 monitoring:
   prometheus: 9090
@@ -17,6 +18,12 @@ monitoring:
   alertmanager: 9093
   loki: 3100
   alloy: 12345
+
+woodpecker:
+  http: 8000
+  metrics: 9000
+
+woodpecker-runner: {}
 
 adblocker:
   dns: 53

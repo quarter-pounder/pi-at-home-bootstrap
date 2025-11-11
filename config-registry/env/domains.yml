@@ -2,19 +2,63 @@
 # This is the declarative source of truth for domain modelling
 
 domains:
-  - name: gitlab
-    description: Core GitLab CE instance
+  - name: forgejo
+    description: Forgejo code hosting service
     placement: tunnel
     standalone: false
-    requires: []
+    requires:
+      - postgres
     exposes_to:
       - tunnel
       - monitoring
+      - woodpecker
       - registry
+    consumes:
+      - postgres
+    networks:
+      - forgejo-network
+
+  - name: postgres
+    description: PostgreSQL backing database for Forgejo and Woodpecker
+    placement: local
+    standalone: true
+    requires: []
+    exposes_to:
+      - forgejo
+      - woodpecker
     consumes: []
     networks:
-      - gitlab-network
-      - gitlab-shared
+      - forgejo-network
+
+  - name: woodpecker
+    description: Woodpecker CI server
+    placement: tunnel
+    standalone: false
+    requires:
+      - postgres
+      - forgejo
+    exposes_to:
+      - tunnel
+      - monitoring
+    consumes:
+      - forgejo
+      - postgres
+    networks:
+      - forgejo-network
+
+  - name: woodpecker-runner
+    description: Woodpecker Docker runner
+    placement: local
+    standalone: false
+    requires:
+      - woodpecker
+      - forgejo
+    exposes_to: []
+    consumes:
+      - woodpecker
+      - forgejo
+    networks:
+      - forgejo-network
 
   - name: monitoring
     description: Prometheus, Grafana, Loki
@@ -24,7 +68,8 @@ domains:
     exposes_to:
       - tunnel
     consumes:
-      - gitlab
+      - forgejo
+      - woodpecker
 
   - name: adblocker
     description: Pi-hole + Unbound DNS filtering
@@ -42,24 +87,25 @@ domains:
     standalone: true
     requires: []
     exposes_to:
-      - gitlab
+      - forgejo
+      - woodpecker
       - registry
       - adblocker
     consumes: []
     managed_externally: true
 
   - name: registry
-    description: GitLab container registry
+    description: Container registry exposed via Forgejo
     placement: tunnel
     standalone: false
     requires:
-      - gitlab
+      - forgejo
     exposes_to:
       - tunnel
-      - gitlab
+      - forgejo
     consumes:
-      - gitlab
+      - forgejo
     networks:
       - registry-network
-      - gitlab-shared
+      - forgejo-network
 
