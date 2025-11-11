@@ -19,43 +19,25 @@ local.file_match "system_logs" {
   ]
 }
 
-local.file_match "gitlab_logs" {
+local.file_match "forgejo_logs" {
   path_targets = [
     {
-      __path__ = "/srv/gitlab/logs/gitlab-rails/production.log",
-      job = "gitlab",
-      service = "rails",
+      __path__ = "/srv/forgejo/log/forgejo.log",
+      job = "forgejo",
+      service = "web",
       level = "info",
     },
     {
-      __path__ = "/srv/gitlab/logs/gitlab-rails/api.log",
-      job = "gitlab",
-      service = "api",
+      __path__ = "/srv/forgejo/log/hooks.log",
+      job = "forgejo",
+      service = "hooks",
       level = "info",
     },
     {
-      __path__ = "/srv/gitlab/logs/gitlab-rails/git_json.log",
-      job = "gitlab",
-      service = "git",
+      __path__ = "/srv/forgejo/log/http.log",
+      job = "forgejo",
+      service = "http",
       level = "info",
-    },
-    {
-      __path__ = "/srv/gitlab/logs/gitlab-rails/sidekiq.log",
-      job = "gitlab",
-      service = "sidekiq",
-      level = "info",
-    },
-    {
-      __path__ = "/srv/gitlab/logs/nginx/gitlab_access.log",
-      job = "gitlab",
-      service = "nginx",
-      level = "info",
-    },
-    {
-      __path__ = "/srv/gitlab/logs/nginx/gitlab_error.log",
-      job = "gitlab",
-      service = "nginx",
-      level = "error",
     },
   ]
 }
@@ -80,9 +62,9 @@ loki.source.file "system" {
   forward_to = [loki.process.system.receiver]
 }
 
-loki.source.file "gitlab" {
-  targets    = local.file_match.gitlab_logs.targets
-  forward_to = [loki.process.gitlab.receiver]
+loki.source.file "forgejo" {
+  targets    = local.file_match.forgejo_logs.targets
+  forward_to = [loki.process.forgejo.receiver]
 }
 
 loki.source.file "docker" {
@@ -115,7 +97,7 @@ loki.process "system" {
   }
 }
 
-loki.process "gitlab" {
+loki.process "forgejo" {
   forward_to = [loki.write.default.receiver]
 
   stage.json {
@@ -129,6 +111,7 @@ loki.process "gitlab" {
   stage.labels {
     values = {
       level = "info",
+      job   = "forgejo",
     }
   }
 

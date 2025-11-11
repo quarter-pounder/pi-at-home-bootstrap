@@ -1,0 +1,24 @@
+services:
+  forgejo:
+    image: {{ FORGEJO_IMAGE }}
+    container_name: forgejo
+    restart: unless-stopped
+    environment:
+      USER_UID: "{{ FORGEJO_UID }}"
+      USER_GID: "{{ FORGEJO_GID }}"
+    ports:
+      - "{{ PORT_FORGEJO_HTTP }}:3000"
+      - "{{ PORT_FORGEJO_SSH }}:22"
+    volumes:
+      - /srv/forgejo/data:/var/lib/forgejo
+      - /srv/forgejo/config:/etc/forgejo
+      - /srv/forgejo/log:/var/log/forgejo
+      - ./app.ini:/etc/forgejo/app.ini:ro
+    networks:
+      - forgejo-network
+
+networks:
+  forgejo-network:
+    external: true
+    name: forgejo-network
+

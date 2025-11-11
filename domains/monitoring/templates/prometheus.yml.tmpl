@@ -2,7 +2,7 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    monitor: 'gitlab-pi-monitor'
+    monitor: 'forgejo-pi-monitor'
 
 rule_files:
   - '/etc/prometheus/alerts.yml'
@@ -26,9 +26,17 @@ scrape_configs:
     static_configs:
       - targets: ['cadvisor:8080']
 
-  - job_name: 'gitlab'
+  - job_name: 'forgejo'
     scheme: http
-    metrics_path: '/-/metrics'
+    metrics_path: '/metrics'
+    bearer_token: "{{ FORGEJO_METRICS_TOKEN }}"
     static_configs:
       - targets:
-          - "{{ 'host.docker.internal:' ~ PORT_GITLAB_METRICS if PORT_GITLAB_METRICS is defined else 'host.docker.internal:8080' }}"
+          - "host.docker.internal:{{ PORT_FORGEJO_HTTP }}"
+
+  - job_name: 'woodpecker'
+    scheme: http
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+          - "host.docker.internal:{{ PORT_WOODPECKER_METRICS }}"

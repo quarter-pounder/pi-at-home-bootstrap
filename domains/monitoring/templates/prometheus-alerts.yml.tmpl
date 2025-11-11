@@ -56,35 +56,38 @@ groups:
           summary: "CRITICAL: CPU temperature very high on {{ $labels.instance }}"
           description: "CPU temperature is above 85°C (current value: {{ $value }}°C)"
 
-  - name: gitlab_alerts
+  - name: forgejo_alerts
     interval: 30s
     rules:
-      - alert: GitLabDown
-        expr: up{job="gitlab"} == 0
+      - alert: ForgejoDown
+        expr: up{job="forgejo"} == 0
         for: 2m
         labels:
           severity: critical
         annotations:
-          summary: "GitLab is down"
-          description: "GitLab has been down for more than 2 minutes"
+          summary: "Forgejo is down"
+          description: "Forgejo has been down for more than 2 minutes"
 
-      - alert: GitLabHighMemory
-        expr: process_resident_memory_bytes{job="gitlab"} > 3000000000
+      - alert: ForgejoHighMemory
+        expr: process_resident_memory_bytes{job="forgejo"} > 2000000000
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "GitLab using high memory"
-          description: "GitLab memory usage is above 3GB (current: {{ $value | humanize }}B)"
+          summary: "Forgejo using high memory"
+          description: "Forgejo memory usage is above 2GB (current: {{ $value | humanize }}B)"
 
-      - alert: RunnerDown
-        expr: up{job="gitlab-runner"} == 0
-        for: 5m
+  - name: woodpecker_alerts
+    interval: 30s
+    rules:
+      - alert: WoodpeckerDown
+        expr: up{job="woodpecker"} == 0
+        for: 2m
         labels:
-          severity: warning
+          severity: critical
         annotations:
-          summary: "GitLab Runner is down"
-          description: "GitLab Runner has been down for more than 5 minutes"
+          summary: "Woodpecker CI is down"
+          description: "Woodpecker server has been unreachable for more than 2 minutes"
 
   - name: docker_alerts
     interval: 30s
@@ -120,18 +123,18 @@ groups:
           summary: "Pi system is down - triggering DR"
           description: "Node exporter has been down for more than 3 minutes. Activating disaster recovery."
 
-      - alert: GitLabCriticalDown
-        expr: up{job="gitlab"} == 0
+      - alert: ForgejoCriticalDown
+        expr: up{job="forgejo"} == 0
         for: 3m
         labels:
           severity: critical
           action: "trigger_dr"
         annotations:
-          summary: "GitLab critical failure - triggering DR"
-          description: "GitLab has been down for more than 3 minutes. Activating disaster recovery."
+          summary: "Forgejo critical failure - triggering DR"
+          description: "Forgejo has been down for more than 3 minutes. Activating disaster recovery."
 
       - alert: MultipleServicesDown
-        expr: (up{job="gitlab"} == 0) + (up{job="prometheus"} == 0) + (up{job="grafana"} == 0) >= 2
+        expr: (up{job="forgejo"} == 0) + (up{job="prometheus"} == 0) + (up{job="grafana"} == 0) >= 2
         for: 2m
         labels:
           severity: critical
@@ -141,7 +144,7 @@ groups:
           description: "Multiple critical services are down. Activating disaster recovery."
 
       - alert: PiRecovered
-        expr: up{job="node-exporter"} == 1 and up{job="gitlab"} == 1
+        expr: up{job="node-exporter"} == 1 and up{job="forgejo"} == 1
         for: 1m
         labels:
           severity: info

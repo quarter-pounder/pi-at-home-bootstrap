@@ -1,0 +1,22 @@
+services:
+  woodpecker-runner:
+    image: {{ WOODPECKER_RUNNER_IMAGE }}
+    container_name: woodpecker-runner
+    restart: unless-stopped
+    environment:
+      WOODPECKER_SERVER: http://woodpecker:9000
+      WOODPECKER_AGENT_SECRET: {{ WOODPECKER_AGENT_SECRET }}
+      WOODPECKER_RUNNER_NAME: forgejo-runner
+      WOODPECKER_RUNNER_CAPACITY: "2"
+      WOODPECKER_BACKEND: docker
+      WOODPECKER_BACKEND_DOCKER_HOST: unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - forgejo-network
+
+networks:
+  forgejo-network:
+    external: true
+    name: forgejo-network
+

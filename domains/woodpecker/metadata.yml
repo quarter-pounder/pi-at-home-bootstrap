@@ -2,21 +2,24 @@ _meta:
   generated_at: '2025-11-10T11:39:29Z'
   git_commit: c9d5269
   source_hash: 1b143d2cae45c5391f870a852b07a4589c6112f514857f62e97b432c533cb51c
-  domain: registry
-  template_hash: 32eccf93fa258ac57dea794c47709e392d60d4c155e34ed368d452fe9df4226b
-name: registry
+  domain: woodpecker
+  template_hash: daecc3a92e31804055fb8e8bbc77df508e151557f059c76636e55b7f1cef262f
+name: woodpecker
 placement: tunnel
 standalone: false
 requires:
+- postgres
 - forgejo
 exposes_to:
 - tunnel
-- forgejo
+- monitoring
 consumes:
 - forgejo
+- postgres
 networks:
-- registry-network
+- woodpecker-network
 - forgejo-network
-description: Container registry exposed via Forgejo
+description: Woodpecker CI server
 ports:
-  http: 5050
+  http: 8000
+  metrics: 9000

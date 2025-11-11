@@ -1,0 +1,56 @@
+[server]
+DOMAIN           = {{ FORGEJO_DOMAIN }}
+ROOT_URL         = {{ FORGEJO_EXTERNAL_URL }}
+SSH_DOMAIN       = {{ FORGEJO_DOMAIN }}
+SSH_PORT         = {{ PORT_FORGEJO_SSH }}
+HTTP_PORT        = 3000
+PROTOCOL         = http
+LFS_START_SERVER = true
+LFS_JWT_SECRET   = {{ FORGEJO_LFS_JWT_SECRET }}
+
+[database]
+DB_TYPE = postgres
+HOST    = forgejo-postgres:5432
+NAME    = {{ POSTGRES_DB_FORGEJO }}
+USER    = {{ POSTGRES_USER_FORGEJO }}
+PASSWD  = {{ POSTGRES_PASSWORD_FORGEJO }}
+SCHEMA  = public
+LOG_SQL = false
+
+[security]
+INTERNAL_TOKEN = {{ FORGEJO_APP_SECRET }}
+SECRET_KEY     = {{ FORGEJO_APP_SECRET }}
+
+[metrics]
+ENABLED = true
+TOKEN   = {{ FORGEJO_METRICS_TOKEN }}
+
+[service]
+DISABLE_REGISTRATION     = true
+REQUIRE_SIGNIN_VIEW      = false
+ALLOW_ONLY_EXTERNAL_REGISTRATION = false
+DEFAULT_KEEP_EMAIL_PRIVATE = true
+
+[actions]
+ENABLED = false
+
+[packages]
+ENABLED = true
+
+[packages.registry]
+ENABLED = true
+LOG_PACKAGE_ACCESS = true
+
+[mailer]
+ENABLED        = {{ 'true' if SMTP_ADDRESS else 'false' }}
+MAILER_TYPE    = smtp
+FROM           = {{ SMTP_FROM if SMTP_FROM else 'noreply@' ~ DOMAIN }}
+HOST           = {{ (SMTP_ADDRESS ~ ':' ~ SMTP_PORT) if SMTP_ADDRESS else '' }}
+IS_TLS_ENABLED = {{ 'true' if SMTP_TLS == 'true' else 'false' }}
+USER           = {{ SMTP_USERNAME if SMTP_USERNAME else '' }}
+PASSWD         = {{ SMTP_PASSWORD if SMTP_PASSWORD else '' }}
+
+[log]
+MODE  = console
+LEVEL = info
+

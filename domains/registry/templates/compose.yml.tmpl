@@ -1,7 +1,7 @@
 services:
   registry:
     image: {{ REGISTRY_IMAGE }}
-    container_name: gitlab-registry
+    container_name: forgejo-registry
     restart: always
     ports:
       - "{{ PORT_REGISTRY_HTTP }}:5000"
@@ -13,11 +13,11 @@ services:
       - ./config.yml:/etc/docker/registry/config.yml:ro
     networks:
       - registry-network
-      - gitlab-shared
+      - forgejo-network
 
 networks:
   registry-network:
     driver: bridge
-  gitlab-shared:
+  forgejo-network:
     external: true
-    name: gitlab-shared
+    name: forgejo-network

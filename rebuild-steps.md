@@ -97,7 +97,7 @@ Each should be self-contained.
   openssl rand -base64 48 > .vault_pass
   chmod 600 .vault_pass
   ansible-vault create config-registry/env/secrets.env.vault
-  # Add: GITLAB_ROOT_PASSWORD, GRAFANA_ADMIN_PASSWORD, SMTP_PASSWORD, etc.
+  # Add: FORGEJO_ADMIN_PASSWORD, POSTGRES_* passwords, WOODPECKER_* secrets, SMTP_PASSWORD, etc.
   ```
 - [x] Create `config-registry/env/overrides/` directory:
   - [ ] `dev.env` - Development environment overrides
@@ -108,10 +108,11 @@ Each should be self-contained.
 
 - [x] Create `config-registry/env/ports.yml` with port assignments:
   ```yaml
-  gitlab:
-    http: 8080
-    https: 443
+  forgejo:
+    http: 3000
     ssh: 2222
+  postgres:
+    postgres: 5432
   monitoring:
     prometheus: 9090
     grafana: 3000
@@ -123,18 +124,18 @@ Each should be self-contained.
 - [x] Create `config-registry/env/domains.yml`:
   ```yaml
   domains:
-    - name: gitlab
+    - name: forgejo
       placement: tunnel
       standalone: false
-      requires: []
+      requires: [postgres]
       exposes_to: [tunnel, monitoring]
-      consumes: []
+      consumes: [postgres]
     - name: monitoring
       placement: local
       standalone: true
       requires: []
       exposes_to: []
-      consumes: [gitlab]
+      consumes: [forgejo]
   ```
 
 ### 2.4 – Schema Validation
@@ -228,8 +229,8 @@ Each should be self-contained.
 
 - [ ] Smoke-test render (after Phase 3 domain templates exist):
   ```bash
-  make render DOMAIN=gitlab ENV=dev
-  ls generated/gitlab/
+  make render DOMAIN=forgejo ENV=dev
+  ls generated/forgejo/
   ```
 
 ### 2.11 – Documentation
@@ -271,31 +272,27 @@ Migrate one domain at a time. Each must render → validate → deploy → healt
 
 ---
 
-### Stage 3.1 – GitLab Domain
+### Stage 3.1 – Forgejo Domain
 
-- [x] Create `domains/gitlab/metadata.yml` with ports, relationships, and network strategy:
+- [x] Create `domains/forgejo/metadata.yml` with ports, relationships, and network strategy:
   ```yaml
-  domain: gitlab
-  requires: []
+  domain: forgejo
+  requires: [postgres]
   exports:
     ports:
-      http: 8080
-      https: 443
+      http: 3001
       ssh: 2222
-      metrics: 9152
     endpoints:
-      web: https://gitlab.{DOMAIN}
-      metrics: http://gitlab:9152/metrics
+      web: https://forgejo.{DOMAIN}
+      metrics: http://forgejo:{{ PORT_FORGEJO_HTTP }}/metrics
   networks:
-    internal: true
-    external: false
+    forgejo-network: true
   ```
-- [x] Convert `pi-forge/legacy/compose/gitlab.yml` → `domains/gitlab/templates/compose.yml.tmpl`.
-- [x] Move tuned `pi-forge/legacy/config/gitlab.rb.template` → `domains/gitlab/templates/gitlab.rb.tmpl`.
+- [x] Create Forgejo templates under `domains/forgejo/templates/` (`compose.yml.tmpl`, `app.ini.tmpl`).
 - [ ] Add `.required.env` listing required variables.
 - [ ] Render + deploy:
   ```bash
-  make render DOMAIN=gitlab
+  make render DOMAIN=forgejo
   make validate
-  make deploy DOMAIN=gitlab
+  make deploy DOMAIN=forgejo
   ```

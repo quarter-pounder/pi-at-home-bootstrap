@@ -2,21 +2,23 @@ _meta:
   generated_at: '2025-11-10T11:39:29Z'
   git_commit: c9d5269
   source_hash: 1b143d2cae45c5391f870a852b07a4589c6112f514857f62e97b432c533cb51c
-  domain: registry
-  template_hash: 32eccf93fa258ac57dea794c47709e392d60d4c155e34ed368d452fe9df4226b
-name: registry
+  domain: forgejo
+  template_hash: 4034da67d08de321650632e76da8bb15b7b4560b27fb53d2231fcf4646df2b04
+name: forgejo
 placement: tunnel
 standalone: false
 requires:
-- forgejo
+- postgres
 exposes_to:
 - tunnel
-- forgejo
+- monitoring
+- woodpecker
+- registry
 consumes:
-- forgejo
+- postgres
 networks:
-- registry-network
 - forgejo-network
-description: Container registry exposed via Forgejo
+description: Forgejo code hosting service
 ports:
-  http: 5050
+  http: 3001
+  ssh: 2222

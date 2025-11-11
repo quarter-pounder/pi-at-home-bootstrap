@@ -55,7 +55,7 @@ receivers:
   - name: 'email'
     email_configs:
       - to: '{{ ALERT_EMAIL }}'
-        subject: '{% raw %}GitLab Pi Alert: {{ .GroupLabels.alertname }}{% endraw %}'
+        subject: '{% raw %}Forgejo Pi Alert: {{ .GroupLabels.alertname }}{% endraw %}'
         body: |
 {% raw %}          {{ range .Alerts }}
           Alert: {{ .Annotations.summary }}

@@ -109,7 +109,7 @@ services:
     volumes:
       - ./alloy.river:/etc/alloy/config.river:ro
       - /var/log:/var/log:ro
-      - /srv/gitlab/logs:/srv/gitlab/logs:ro
+      - /srv/forgejo/log:/srv/forgejo/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     command: run --config.file=/etc/alloy/config.river --server.http.listen-addr=0.0.0.0:12345

@@ -1,0 +1,20 @@
+_meta:
+  generated_at: '2025-11-10T11:39:29Z'
+  git_commit: c9d5269
+  source_hash: 1b143d2cae45c5391f870a852b07a4589c6112f514857f62e97b432c533cb51c
+  domain: postgres
+  template_hash: b0d682cedb967f3084e307d4e6bf132f5b2b4741fd3bbc922675e66d455a6bb3
+name: postgres
+placement: local
+standalone: true
+requires: []
+exposes_to:
+- forgejo
+- woodpecker
+consumes: []
+networks:
+- postgres-network
+- forgejo-network
+description: PostgreSQL backing database for Forgejo and Woodpecker
+ports:
+  postgres: 5432

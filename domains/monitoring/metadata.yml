@@ -1,9 +1,9 @@
 _meta:
-  generated_at: '2025-11-10T09:01:55Z'
-  git_commit: 49a873b
-  source_hash: 2630e38f80e8474c09cdd54ec48ece9e7bfd02a2be0536eb1e7da6c0edaee56b
+  generated_at: '2025-11-10T11:39:29Z'
+  git_commit: c9d5269
+  source_hash: 1b143d2cae45c5391f870a852b07a4589c6112f514857f62e97b432c533cb51c
   domain: monitoring
-  template_hash: df8699febf2147cf56336223eb012363cd8e215acc99e7268f045415f266693b
+  template_hash: 9ce90c469ecf88e444b71d1a176660a04180cece7a82e4ac98a4ab928e7dcaf4
 name: monitoring
 placement: local
 standalone: true
@@ -11,7 +11,8 @@ requires: []
 exposes_to:
 - tunnel
 consumes:
-- gitlab
+- forgejo
+- woodpecker
 networks:
 - monitoring-network
 description: Prometheus, Grafana, Loki

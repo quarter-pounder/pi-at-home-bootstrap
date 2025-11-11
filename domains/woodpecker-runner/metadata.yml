@@ -1,0 +1,20 @@
+_meta:
+  generated_at: '2025-11-10T11:39:29Z'
+  git_commit: c9d5269
+  source_hash: 1b143d2cae45c5391f870a852b07a4589c6112f514857f62e97b432c533cb51c
+  domain: woodpecker-runner
+  template_hash: 1866189530b10fc656254057705873247ca920d798c6dfb528e723ce2fea3833
+name: woodpecker-runner
+placement: local
+standalone: false
+requires:
+- woodpecker
+- forgejo
+exposes_to: []
+consumes:
+- woodpecker
+- forgejo
+networks:
+- woodpecker-runner-network
+- forgejo-network
+description: Woodpecker Docker runner

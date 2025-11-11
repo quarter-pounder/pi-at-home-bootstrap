@@ -26,9 +26,15 @@
    This invokes `ansible-vault edit`, which decrypts the file to a temporary buffer and launches the editor defined by `$EDITOR` (defaults to `vi`).
 3. Add or update key/value pairs in `KEY=value` form, e.g.:
    ```
-   GITLAB_ROOT_PASSWORD=change-me
+   FORGEJO_ADMIN_PASSWORD=change-me
+   FORGEJO_APP_SECRET=$(openssl rand -hex 32)
+   POSTGRES_SUPERUSER_PASSWORD=very-secret
+   POSTGRES_PASSWORD_FORGEJO=super-secret
+   POSTGRES_PASSWORD_WOODPECKER=extrodinary-secret
    SMTP_PASSWORD=super-secret
    REGISTRY_HTTP_SECRET=long-random-string
+   WOODPECKER_FORGEJO_CLIENT_SECRET=oauth-secret
+   WOODPECKER_AGENT_SECRET=$(openssl rand -hex 32)
    ```
 4. Save and exit; `ansible-vault` re-encrypts the file automatically.
 
@@ -38,8 +44,15 @@ The renderer automatically decrypts `secrets.env.vault` when both files exist. M
 
 ## Recommended Keys
 Store the following sensitive values inside the vault (non-exhaustive):
-- `GITLAB_ROOT_PASSWORD`
-- `GITLAB_RUNNER_TOKEN`
+- `FORGEJO_ADMIN_PASSWORD`
+- `FORGEJO_APP_SECRET`
+- `FORGEJO_LFS_JWT_SECRET`
+- `FORGEJO_METRICS_TOKEN`
+- `POSTGRES_SUPERUSER_PASSWORD`
+- `POSTGRES_PASSWORD_FORGEJO`
+- `POSTGRES_PASSWORD_WOODPECKER`
+- `WOODPECKER_FORGEJO_CLIENT_SECRET`
+- `WOODPECKER_AGENT_SECRET`
 - `REGISTRY_HTTP_SECRET`
 - `SMTP_PASSWORD`
 - `CLOUDFLARE_TUNNEL_TOKEN`
