@@ -14,13 +14,13 @@ from string import Template
 from typing import Dict, Iterable
 
 try:
-    import yaml
+    import yaml  # type: ignore[import]
 except ImportError as exc:  # pragma: no cover - dependency hint
     print("[render] PyYAML not installed. Install with 'pip install -r requirements/render.txt'", file=sys.stderr)
     raise
 
 try:
-    from jinja2 import Environment, FileSystemLoader, StrictUndefined
+    from jinja2 import Environment, FileSystemLoader, StrictUndefined  # type: ignore[import]
 except ImportError as exc:  # pragma: no cover - dependency hint
     print("[render] Jinja2 not installed. Install with 'pip install -r requirements/render.txt'", file=sys.stderr)
     raise
@@ -129,11 +129,13 @@ def resolve_variables(env: Dict[str, str]) -> Dict[str, str]:
 
 def load_env_layers(root: Path, env_name: str) -> Dict[str, str]:
     base = parse_env_file(root / "config-registry" / "env" / "base.env")
+    host = parse_env_file(root / ".env")
     overrides = parse_env_file(root / "config-registry" / "env" / "overrides" / f"{env_name}.env")
     secrets = decrypt_secrets(root)
     combined: Dict[str, str] = {}
     combined.update(base)
     combined.update(overrides)
+    combined.update(host)
     combined.update(secrets)
     return resolve_variables(combined)
 
