@@ -92,6 +92,11 @@ Each should be self-contained.
 - [x] Create `config-registry/env/base.env` (from legacy `.env`):
   - Universal settings (DOMAIN, TIMEZONE, etc.)
   - Non-sensitive configuration
+- [ ] Initialize root-level `.env` from template:
+  ```bash
+  cp config-registry/env/base.env .env
+  # edit .env for host-specific values (DOMAIN, SMTP, etc.)
+  ```
 - [ ] Create `config-registry/env/secrets.env.vault` with ansible-vault (`docs/operations/secrets.md`):
   ```bash
   openssl rand -base64 48 > .vault_pass

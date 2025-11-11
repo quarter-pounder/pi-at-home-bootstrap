@@ -34,7 +34,11 @@ help:
 
 env:
 	@echo "[Env] Loading environment $(ENV)"
-	@cd $(ROOT_DIR) && set -a && source config-registry/env/base.env && set +a
+	@if [ ! -f "$(ROOT_DIR)/.env" ]; then \
+		echo "[Env][info] .env not found; copy config-registry/env/base.env to .env and customize it"; \
+		exit 1; \
+	fi
+	@cd $(ROOT_DIR) && set -a && source config-registry/env/base.env && source .env && set +a
 
 generate-metadata:
 	@cd $(ROOT_DIR) && $(PYTHON) $(METADATA_SCRIPT) generate
@@ -74,6 +78,10 @@ validate-schema:
 
 render: validate
 	@echo "[Render] $(DOMAIN) for $(ENV)"
+	@if [ ! -f "$(ROOT_DIR)/.env" ]; then \
+		echo "[Render][err] .env not found; copy config-registry/env/base.env to .env and customize it"; \
+		exit 1; \
+	fi
 	@cd $(ROOT_DIR) && $(PYTHON) common/render_config.py --domain $(DOMAIN) --env $(ENV) $(if $(DRY_RUN),--dry-run)
 
 deploy: render
