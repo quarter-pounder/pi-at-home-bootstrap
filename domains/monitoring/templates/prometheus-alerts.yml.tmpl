@@ -8,8 +8,10 @@ groups:
         labels:
           severity: warning
         annotations:
+        {% raw %}
           summary: "High CPU usage on {{ $labels.instance }}"
           description: "CPU usage is above 80% (current value: {{ $value }}%)"
+        {% endraw %}
 
       - alert: HighMemoryUsage
         expr: 100 * (1 - ((node_memory_MemAvailable_bytes) / (node_memory_MemTotal_bytes))) > 85
@@ -17,8 +19,10 @@ groups:
         labels:
           severity: warning
         annotations:
+        {% raw %}
           summary: "High memory usage on {{ $labels.instance }}"
           description: "Memory usage is above 85% (current value: {{ $value }}%)"
+        {% endraw %}
 
       - alert: LowDiskSpace
         expr: 100 - ((node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"}) > 85
@@ -26,8 +30,10 @@ groups:
         labels:
           severity: warning
         annotations:
+        {% raw %}
           summary: "Low disk space on {{ $labels.instance }}"
           description: "Disk usage is above 85% (current value: {{ $value }}%)"
+        {% endraw %}
 
       - alert: CriticalDiskSpace
         expr: 100 - ((node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"}) > 95
@@ -35,8 +41,10 @@ groups:
         labels:
           severity: critical
         annotations:
+        {% raw %}
           summary: "CRITICAL: Very low disk space on {{ $labels.instance }}"
           description: "Disk usage is above 95% (current value: {{ $value }}%)"
+        {% endraw %}
 
       - alert: HighTemperature
         expr: node_hwmon_temp_celsius > 80
@@ -44,8 +52,10 @@ groups:
         labels:
           severity: warning
         annotations:
+        {% raw %}
           summary: "High CPU temperature on {{ $labels.instance }}"
           description: "CPU temperature is above 80°C (current value: {{ $value }}°C)"
+        {% endraw %}
 
       - alert: CriticalTemperature
         expr: node_hwmon_temp_celsius > 85
@@ -53,8 +63,10 @@ groups:
         labels:
           severity: critical
         annotations:
+        {% raw %}
           summary: "CRITICAL: CPU temperature very high on {{ $labels.instance }}"
           description: "CPU temperature is above 85°C (current value: {{ $value }}°C)"
+        {% endraw %}
 
   - name: forgejo_alerts
     interval: 30s
@@ -74,8 +86,10 @@ groups:
         labels:
           severity: warning
         annotations:
+        {% raw %}
           summary: "Forgejo using high memory"
           description: "Forgejo memory usage is above 2GB (current: {{ $value | humanize }}B)"
+        {% endraw %}
 
   - name: woodpecker_alerts
     interval: 30s
@@ -98,8 +112,10 @@ groups:
         labels:
           severity: warning
         annotations:
+        {% raw %}
           summary: "Container {{ $labels.job }} is down"
           description: "Container has been down for more than 2 minutes"
+        {% endraw %}
 
       - alert: HighContainerMemory
         expr: container_memory_usage_bytes{name!=""} > 1000000000
@@ -107,8 +123,10 @@ groups:
         labels:
           severity: info
         annotations:
+        {% raw %}
           summary: "Container {{ $labels.name }} using high memory"
           description: "Memory usage: {{ $value | humanize }}B"
+        {% endraw %}
 
   - name: dr_alerts
     interval: 30s
