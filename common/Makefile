@@ -2,8 +2,10 @@
 .SILENT:
 .DEFAULT_GOAL := help
 
+.PHONY: help env generate-metadata commit-metadata diff-metadata metadata-check drift-check validate lint validate-schema render deploy destroy manifest vault-create vault-edit vault-view check-secrets status
+
 ENV ?= dev
-DOMAIN ?= gitlab
+DOMAIN ?= forgejo
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))/..
 export ROOT_DIR
 PYTHON ?= python3
@@ -65,7 +67,7 @@ validate-schema:
 		echo "Install: npm install -g ajv-cli"; \
 		exit 0; \
 	fi; \
-	for schema in domains ports; do \
+	for schema in $(basename $(wildcard config-registry/schema/*.schema.yml)); do \
 		yq -o=json config-registry/env/$${schema}.yml | \
 		ajv validate -s config-registry/schema/$${schema}.schema.yml || exit 1; \
 	done
@@ -76,15 +78,27 @@ render: validate
 
 deploy: render
 	@echo "[Deploy] $(DOMAIN)"
+	@[ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ] || { echo "[Deploy][err] compose.yml not found for $(DOMAIN)"; exit 1; }
 	@cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml up -d
 
 destroy:
 	@echo "[Destroy] $(DOMAIN)"
+	@[ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ] || { echo "[Destroy][err] compose.yml not found for $(DOMAIN)"; exit 1; }
 	@cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml down -v
 
 manifest:
 	@echo "[Manifest] Generating manifest..."
 	@cd $(ROOT_DIR) && bash common/generate-manifest.sh || echo "Manifest generation not yet implemented"
+
+define VAULT_CMD
+	@cd $(ROOT_DIR) && \
+	if ! command -v ansible-vault >/dev/null 2>&1; then \
+		echo "[Vault][err] ansible-vault not installed"; exit 1; \
+	fi; \
+	if [ ! -f config-registry/env/secrets.env.vault ]; then \
+		echo "[Vault][err] secrets.env.vault missing"; exit 1; \
+	fi
+endef
 
 vault-create:
 	@cd $(ROOT_DIR) && \
@@ -101,13 +115,8 @@ vault-create:
 	fi
 
 vault-edit:
+	$(VAULT_CMD)
 	@cd $(ROOT_DIR) && \
-	if ! command -v ansible-vault >/dev/null 2>&1; then \
-		echo "[Vault][err] ansible-vault not installed"; exit 1; \
-	fi; \
-	if [ ! -f config-registry/env/secrets.env.vault ]; then \
-		echo "[Vault][err] secrets.env.vault missing"; exit 1; \
-	fi; \
 	if [ -f .vault_pass ]; then \
 		ansible-vault edit config-registry/env/secrets.env.vault --vault-password-file .vault_pass; \
 	else \
@@ -115,13 +124,8 @@ vault-edit:
 	fi
 
 vault-view:
+	$(VAULT_CMD)
 	@cd $(ROOT_DIR) && \
-	if ! command -v ansible-vault >/dev/null 2>&1; then \
-		echo "[Vault][err] ansible-vault not installed"; exit 1; \
-	fi; \
-	if [ ! -f config-registry/env/secrets.env.vault ]; then \
-		echo "[Vault][err] secrets.env.vault missing"; exit 1; \
-	fi; \
 	if [ -f .vault_pass ]; then \
 		ansible-vault view config-registry/env/secrets.env.vault --vault-password-file .vault_pass; \
 	else \
@@ -130,9 +134,26 @@ vault-view:
 
 check-secrets:
 	@cd $(ROOT_DIR) && \
+	missing=0; \
 	if [ ! -f "$(VAULT_FILE)" ]; then \
 		echo "[Vault][warn] $(VAULT_FILE) missing — templates may lack secrets"; \
+		missing=1; \
 	fi; \
-	if [ ! -s "$(VAULT_PASS)" ]; then \
-		echo "[Vault][warn] $(VAULT_PASS) missing or empty"; \
+	if [ -f "$(VAULT_PASS)" ]; then \
+		if [ ! -s "$(VAULT_PASS)" ]; then \
+			echo "[Vault][warn] $(VAULT_PASS) exists but is empty"; \
+			missing=1; \
+		fi; \
+	else \
+		echo "[Vault][info] .vault_pass not found — ansible-vault will prompt interactively"; \
+	fi; \
+	if [ $$missing -eq 0 ]; then \
+		echo "[Vault][ok] secrets vault ready"; \
 	fi
+
+status:
+	@echo "[Status] Metadata diff:"
+	@$(MAKE) -s diff-metadata || true
+	@$(MAKE) -s check-secrets || true
+	@echo "[Status] Rendered domains:"
+	@ls -1 $(ROOT_DIR)/generated 2>/dev/null || echo "(none)"
