@@ -5,17 +5,17 @@ cd "$(dirname "$0")/.."
 
 source "$(dirname "$0")/utils.sh"
 
-# Verify sudo access
+# --- Privilege check ----------------------------------------------------------
 if ! sudo -n true 2>/dev/null && ! sudo -v 2>/dev/null; then
   log_error "This script requires sudo access. Please ensure you have sudo privileges."
   exit 1
 fi
 
+# --- Core packages ------------------------------------------------------------
 log_info "Installing core dependencies..."
 
 sudo apt-get update -qq
 
-# Core tools
 sudo apt-get install -y \
   curl \
   wget \
@@ -39,7 +39,7 @@ sudo apt-get install -y \
   unattended-upgrades \
   restic
 
-# Raspberry Pi specific tools
+# --- Raspberry Pi tooling -----------------------------------------------------
 sudo apt-get install -y \
   rpi-eeprom \
   nvme-cli \
@@ -49,6 +49,7 @@ sudo apt-get install -y \
   parted \
   pv
 
+# --- yq (Go binary) -----------------------------------------------------------
 if command -v yq >/dev/null 2>&1; then
   log_info "Removing Python yq package (switching to Go binary build)"
   sudo apt-get remove -y yq || log_warn "Unable to remove apt yq (continuing)"
@@ -69,6 +70,20 @@ fi
 if ! yq --version 2>/dev/null | grep -qi "mikefarah"; then
   log_error "yq installation failed (expected mikefarah/yq build)"
   exit 1
+fi
+
+# --- Logrotate for backups ----------------------------------------------------
+if [[ ! -f /etc/logrotate.d/pi-forge-backup ]]; then
+  sudo tee /etc/logrotate.d/pi-forge-backup >/dev/null <<'EOF'
+/var/log/pi-forge-backup.log {
+    daily
+    rotate 7
+    compress
+    missingok
+    notifempty
+    create 640 root adm
+}
+EOF
 fi
 
 log_success "Core dependencies installed successfully"
