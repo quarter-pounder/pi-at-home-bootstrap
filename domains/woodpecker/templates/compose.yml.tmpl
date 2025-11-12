@@ -20,6 +20,7 @@ services:
     ports:
       - "{{ PORT_WOODPECKER_HTTP }}:8000"
       - "{{ PORT_WOODPECKER_METRICS }}:{{ PORT_WOODPECKER_METRICS }}"
+      - "{{ PORT_WOODPECKER_GRPC }}:9000"
     volumes:
       - /srv/woodpecker/server:/var/lib/woodpecker
     networks:
@@ -29,4 +30,6 @@ networks:
   forgejo-network:
     external: true
     name: forgejo-network
+    aliases:
+      - woodpecker
 
