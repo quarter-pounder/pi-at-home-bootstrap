@@ -171,10 +171,10 @@ status:
 
 .PHONY: backup backup-cloud
 backup:
-	@$(SHELL) $(BACKUP_SCRIPT)
+	@bash $(BACKUP_SCRIPT)
 
 backup-cloud:
 	@if [ -z "$(RESTIC_REMOTE)" ]; then \
 		echo "RESTIC_REMOTE not set"; exit 1; \
 	fi
-	@RESTIC_REPOSITORY="$(RESTIC_REMOTE)" $(SHELL) $(BACKUP_SCRIPT)
+	@RESTIC_REPOSITORY="$(RESTIC_REMOTE)" bash $(BACKUP_SCRIPT)
