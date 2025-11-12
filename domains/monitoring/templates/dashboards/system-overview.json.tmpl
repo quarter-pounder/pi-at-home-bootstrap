@@ -17,27 +17,33 @@
     {
       "type": "row",
       "title": "System Utilisation",
+      "id": 10,
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
     },
     {
       "type": "timeseries",
       "title": "CPU Utilisation (%)",
       "id": 1,
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 1},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 1},
       "targets": [
         {
           "expr": "100 - avg by (instance) (sum by (instance, cpu) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m]))) * 100",
-          "refId": "A",
-          "legendFormat": "CPU"
+          "legendFormat": "CPU",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
           "decimals": 1,
-          "color": {"mode": "palette-classic"},
-          "thresholds": {"mode": "absolute", "steps": [{"color": "#444"}, {"color": "#99b4a4", "value": 60}, {"color": "#d17f7f", "value": 85}]}
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "axisSoftMin": 0,
+            "axisSoftMax": 100,
+            "axisLabel": "Percent"
+          }
         },
         "overrides": []
       },
@@ -50,21 +56,26 @@
       "type": "timeseries",
       "title": "Memory Usage (%)",
       "id": 2,
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 1},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 1},
       "targets": [
         {
           "expr": "(1 - avg by (instance) (node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"})) * 100",
-          "refId": "A",
-          "legendFormat": "Memory"
+          "legendFormat": "Memory",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
           "decimals": 1,
-          "color": {"mode": "continuous-GrYlRd"},
-          "thresholds": {"mode": "absolute", "steps": [{"color": "#444"}, {"color": "#c2b280", "value": 70}, {"color": "#b25b5b", "value": 85}]}
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "axisSoftMin": 0,
+            "axisSoftMax": 100,
+            "axisLabel": "Percent"
+          }
         },
         "overrides": []
       },
@@ -76,51 +87,59 @@
     {
       "type": "row",
       "title": "Thermals & Power",
+      "id": 11,
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9}
     },
     {
       "type": "gauge",
       "title": "CPU Temperature (°C)",
       "id": 3,
-      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 10},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"expr": "pi_cpu_temperature_celsius", "refId": "A"}],
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 10},
+      "targets": [
+        {
+          "expr": "pi_cpu_temperature_celsius",
+          "refId": "A"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "celsius",
           "min": 0,
           "max": 100,
-          "color": {"mode": "thresholds"},
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "#777", "value": null},
-              {"color": "#a0b89c", "value": 60},
-              {"color": "#d08080", "value": 80}
+              {"color": "#7eb26d", "value": null},
+              {"color": "#eab839", "value": 60},
+              {"color": "#d44a3a", "value": 80}
             ]
           }
         },
         "overrides": []
       },
       "options": {
-        "orientation": "vertical",
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "reduceOptions": {"calcs": ["lastNotNull"]}
+        "reduceOptions": {"calcs": ["lastNotNull"], "values": false},
+        "orientation": "vertical"
       }
     },
     {
       "type": "timeseries",
       "title": "Core Voltage (V)",
       "id": 4,
-      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 10},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"expr": "pi_core_voltage_volts", "refId": "A"}],
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 10},
+      "targets": [
+        {
+          "expr": "pi_core_voltage_volts",
+          "legendFormat": "Voltage",
+          "refId": "A"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "volt",
-          "decimals": 2,
-          "thresholds": {"mode": "absolute", "steps": [{"color": "#888"}, {"color": "#b0b080", "value": 4.8}, {"color": "#d08080", "value": 4.7}]}
+          "decimals": 2
         },
         "overrides": []
       },
@@ -130,54 +149,69 @@
       }
     },
     {
-      "type": "stat",
+      "type": "table",
       "title": "Throttling Flags (Now)",
       "id": 5,
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 10},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 10},
       "targets": [
         {
           "expr": "pi_throttled_flag{condition=~\"undervoltage_now|frequency_capped_now|throttled_now|soft_temp_limit_now\"}",
           "refId": "A"
         }
       ],
+      "transformations": [
+        {"id": "labelsToFields", "options": {"mode": "columns"}},
+        {"id": "reduce", "options": {"reducers": ["lastNotNull"]}}
+      ],
       "fieldConfig": {
         "defaults": {
-          "color": {"mode": "thresholds"},
+          "custom": {"align": "left"},
           "mappings": [
             {
               "type": "value",
               "options": {
-                "0": {"text": "OK", "color": "#8fc78f"},
-                "1": {"text": "Active", "color": "#c27777"}
+                "0": {"text": "OK", "color": "#7eb26d"},
+                "1": {"text": "Active", "color": "#d44a3a"}
               }
             }
           ]
         },
         "overrides": []
       },
-      "options": {"textMode": "value", "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"]}}
+      "options": {
+        "showHeader": true
+      }
     },
     {
       "type": "row",
       "title": "Storage",
+      "id": 12,
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 18}
     },
     {
       "type": "timeseries",
       "title": "Filesystem Usage (bytes)",
       "id": 6,
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 19},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 19},
       "targets": [
         {
           "expr": "sum by (mountpoint) (node_filesystem_size_bytes{job=\"node-exporter\",fstype!~\"tmpfs|overlay\"} - node_filesystem_free_bytes{job=\"node-exporter\",fstype!~\"tmpfs|overlay\"})",
-          "refId": "A",
-          "legendFormat": "{% raw %}{{mountpoint}}{% endraw %}"
+          "legendFormat": "{% raw %}{{mountpoint}}{% endraw %}",
+          "refId": "A"
         }
       ],
-      "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {"displayMode": "table", "placement": "bottom"},
+        "tooltip": {"mode": "multi"}
+      }
     }
   ],
   "refresh": "30s",
@@ -187,5 +221,5 @@
   "time": {"from": "now-6h", "to": "now"},
   "title": "Pi System Overview",
   "uid": "pi-system-overview",
-  "version": 2
+  "version": 3
 }
