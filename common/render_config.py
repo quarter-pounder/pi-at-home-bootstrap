@@ -169,11 +169,12 @@ def build_port_env_vars(ports: Dict[str, Dict[str, int]]) -> Dict[str, int]:
 TEMPLATE_SUFFIXES = {".tmpl", ".jinja", ".j2", ".jinja2"}
 
 
-def derive_output_name(path: Path) -> str:
-    candidate = path
+def derive_output_path(path: Path, root: Path) -> Path:
+    relative = path.relative_to(root)
+    candidate = relative
     while candidate.suffix in TEMPLATE_SUFFIXES:
         candidate = candidate.with_suffix("")
-    return candidate.name
+    return candidate
 
 
 def render(domain: str, env_name: str, dry_run: bool = False) -> None:
@@ -226,15 +227,18 @@ def render(domain: str, env_name: str, dry_run: bool = False) -> None:
     )
 
     rendered_any = False
-    template_files = sorted({p for suffix in TEMPLATE_SUFFIXES for p in src.glob(f"*{suffix}")})
+    template_files = sorted({p for suffix in TEMPLATE_SUFFIXES for p in src.rglob(f"*{suffix}")})
     for template_path in template_files:
-        template = jinja_env.get_template(template_path.name)
+        template_name = template_path.relative_to(src).as_posix()
+        template = jinja_env.get_template(template_name)
         try:
             output_text = template.render(**context)
         except Exception as exc:  # pragma: no cover - rendering failures
-            log_warn(f"Render failed for {template_path.name}: {exc}")
+            log_warn(f"Render failed for {template_name}: {exc}")
             continue
-        out_file = dst / derive_output_name(template_path)
+        relative_output = derive_output_path(template_path, src)
+        out_file = dst / relative_output
+        out_file.parent.mkdir(parents=True, exist_ok=True)
         out_file.write_text(output_text)
         log_info(f"wrote {out_file.relative_to(root)}")
         rendered_any = True
