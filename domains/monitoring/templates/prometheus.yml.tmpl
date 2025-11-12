@@ -39,4 +39,4 @@ scrape_configs:
     metrics_path: '/metrics'
     static_configs:
       - targets:
-          - 'woodpecker:9000'
+          - 'woodpecker:{{ PORT_WOODPECKER_METRICS }}'
