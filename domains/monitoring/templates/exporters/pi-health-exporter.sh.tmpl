@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+OUTPUT_DIR="{{ NODE_EXPORTER_TEXTFILE_DIR }}"
+OUTPUT_FILE="${OUTPUT_DIR}/pi_power.prom"
+TMP_FILE="${OUTPUT_FILE}.tmp"
+
+mkdir -p "${OUTPUT_DIR}"
+
+write_header() {
+  printf '# HELP pi_throttled_flag Raspberry Pi throttling flags (1 indicates active)
+' > "${TMP_FILE}"
+  printf '# TYPE pi_throttled_flag gauge
+' >> "${TMP_FILE}"
+  printf '# HELP pi_throttled_raw Raspberry Pi throttled register as integer
+' >> "${TMP_FILE}"
+  printf '# TYPE pi_throttled_raw gauge
+' >> "${TMP_FILE}"
+  printf '# HELP pi_core_voltage_volts Core voltage reported by vcgencmd
+' >> "${TMP_FILE}"
+  printf '# TYPE pi_core_voltage_volts gauge
+' >> "${TMP_FILE}"
+}
+
+append_flag_metric() {
+  local condition="$1"
+  local value="$2"
+  printf 'pi_throttled_flag{condition="%s"} %s
+' "${condition}" "${value}" >> "${TMP_FILE}"
+}
+
+parse_throttled() {
+  local throttled_raw=""
+  if command -v vcgencmd >/dev/null 2>&1; then
+    local throttled_output
+    throttled_output=$(vcgencmd get_throttled 2>/dev/null || true)
+    if [[ "${throttled_output}" =~ throttled=0[xX]([0-9a-fA-F]+) ]]; then
+      local hex_value="${BASH_REMATCH[1]}"
+      throttled_raw=$((16#${hex_value}))
+    fi
+  fi
+
+  if [[ -z "${throttled_raw}" ]]; then
+    printf 'pi_throttled_raw NaN
+' >> "${TMP_FILE}"
+    append_flag_metric "undervoltage_now" "NaN"
+    append_flag_metric "frequency_capped_now" "NaN"
+    append_flag_metric "throttled_now" "NaN"
+    append_flag_metric "soft_temp_limit_now" "NaN"
+    append_flag_metric "undervoltage_occurred" "NaN"
+    append_flag_metric "frequency_capped_occurred" "NaN"
+    append_flag_metric "throttled_occurred" "NaN"
+    append_flag_metric "soft_temp_limit_occurred" "NaN"
+    return
+  fi
+
+  printf 'pi_throttled_raw %s
+' "${throttled_raw}" >> "${TMP_FILE}"
+
+  local -a flags=(
+    "undervoltage_now:0"
+    "frequency_capped_now:1"
+    "throttled_now:2"
+    "soft_temp_limit_now:3"
+    "undervoltage_occurred:16"
+    "frequency_capped_occurred:17"
+    "throttled_occurred:18"
+    "soft_temp_limit_occurred:19"
+  )
+
+  for entry in "${flags[@]}"; do
+    local name="${entry%%:*}"
+    local bit="${entry##*:}"
+    local mask=$((1 << bit))
+    local flag_value=$(( (throttled_raw & mask) > 0 ? 1 : 0 ))
+    append_flag_metric "${name}" "${flag_value}"
+  done
+}
+
+parse_voltage() {
+  local voltage_value=""
+  if command -v vcgencmd >/dev/null 2>&1; then
+    local voltage_output
+    voltage_output=$(vcgencmd measure_volts 2>/dev/null || true)
+    if [[ "${voltage_output}" =~ volt=([0-9]+\.[0-9]+)V ]]; then
+      voltage_value="${BASH_REMATCH[1]}"
+    fi
+    if [[ -z "${voltage_value}" ]]; then
+      voltage_output=$(vcgencmd measure_volts core 2>/dev/null || true)
+      if [[ "${voltage_output}" =~ volt=([0-9]+\.[0-9]+)V ]]; then
+        voltage_value="${BASH_REMATCH[1]}"
+      fi
+    fi
+  fi
+
+  if [[ -z "${voltage_value}" ]]; then
+    printf 'pi_core_voltage_volts NaN
+' >> "${TMP_FILE}"
+  else
+    printf 'pi_core_voltage_volts %s
+' "${voltage_value}" >> "${TMP_FILE}"
+  fi
+}
+
+write_header
+parse_throttled
+parse_voltage
+
+mv "${TMP_FILE}" "${OUTPUT_FILE}"

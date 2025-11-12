@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+OUTPUT_DIR="{{ NODE_EXPORTER_TEXTFILE_DIR }}"
+OUTPUT_FILE="${OUTPUT_DIR}/pi_dmesg.prom"
+TMP_FILE="${OUTPUT_FILE}.tmp"
+
+mkdir -p "${OUTPUT_DIR}"
+
+write_header() {
+  printf '# HELP pi_dmesg_error_total Count of kernel error messages observed via dmesg
+' > "${TMP_FILE}"
+  printf '# TYPE pi_dmesg_error_total gauge
+' >> "${TMP_FILE}"
+  printf '# HELP pi_dmesg_last_error_timestamp_seconds Timestamp of the latest kernel error message
+' >> "${TMP_FILE}"
+  printf '# TYPE pi_dmesg_last_error_timestamp_seconds gauge
+' >> "${TMP_FILE}"
+}
+
+get_error_lines() {
+  if command -v dmesg >/dev/null 2>&1; then
+    dmesg --level=err,crit,alert,emerg --time-format=iso 2>/dev/null || true
+  else
+    printf ''
+  fi
+}
+
+write_metrics() {
+  local log_output
+  log_output=$(get_error_lines)
+  local error_count
+  error_count=$(printf '%s' "${log_output}" | grep -cv '^$' || true)
+
+  if [[ -z "${log_output}" ]]; then
+    error_count=0
+  fi
+
+  printf 'pi_dmesg_error_total %s
+' "${error_count}" >> "${TMP_FILE}"
+
+  if (( error_count > 0 )); then
+    local last_line
+    last_line=$(printf '%s' "${log_output}" | tail -n 1)
+    local iso_ts
+    iso_ts=$(printf '%s' "${last_line}" | sed -E 's/^\[([^]]+)\].*/\1/' || true)
+    if [[ -n "${iso_ts}" ]]; then
+      local epoch
+      epoch=$(date -d "${iso_ts}" +%s 2>/dev/null || true)
+      if [[ -n "${epoch}" ]]; then
+        printf 'pi_dmesg_last_error_timestamp_seconds %s
+' "${epoch}" >> "${TMP_FILE}"
+        return
+      fi
+    fi
+  fi
+
+  printf 'pi_dmesg_last_error_timestamp_seconds 0
+' >> "${TMP_FILE}"
+}
+
+write_header
+write_metrics
+
+mv "${TMP_FILE}" "${OUTPUT_FILE}"
