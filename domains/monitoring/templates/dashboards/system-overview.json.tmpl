@@ -50,7 +50,7 @@
       },
       "targets": [
         {
-          "expr": "(1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))) * 100",
+          "expr": "(1 - avg(rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m])) ) * 100",
           "legendFormat": "CPU utilisation",
           "refId": "A"
         }
@@ -85,7 +85,7 @@
       },
       "targets": [
         {
-          "expr": "(1 - (avg(node_memory_MemAvailable_bytes) / avg(node_memory_MemTotal_bytes))) * 100",
+          "expr": "(1 - avg(node_memory_MemAvailable_bytes{job=\"node-exporter\"}) / avg(node_memory_MemTotal_bytes{job=\"node-exporter\"})) * 100",
           "legendFormat": "Memory usage",
           "refId": "A"
         }
