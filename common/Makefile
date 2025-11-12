@@ -169,12 +169,15 @@ status:
 	@echo "[Status] Rendered domains:"
 	@ls -1 $(ROOT_DIR)/generated 2>/dev/null || echo "(none)"
 
-.PHONY: backup backup-cloud
+.PHONY: backup backup-cloud backup-prune
 backup:
-	@bash $(BACKUP_SCRIPT)
+	@BACKUP_MODE=${BACKUP_MODE:-manual} bash $(BACKUP_SCRIPT)
+
+backup-prune:
+	@BACKUP_MODE=prune BACKUP_PRUNE=1 bash $(BACKUP_SCRIPT)
 
 backup-cloud:
 	@if [ -z "$(RESTIC_REMOTE)" ]; then \
 		echo "RESTIC_REMOTE not set"; exit 1; \
 	fi
-	@RESTIC_REPOSITORY="$(RESTIC_REMOTE)" bash $(BACKUP_SCRIPT)
+	@BACKUP_MODE=cloud RESTIC_REPOSITORY="$(RESTIC_REMOTE)" bash $(BACKUP_SCRIPT)
