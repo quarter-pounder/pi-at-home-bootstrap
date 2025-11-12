@@ -30,6 +30,7 @@ adblocker:
   dns: 53
   web: 8081
   unbound: 5053
+  exporter: 9617
 
 tunnel: {}
   # Cloudflare Tunnel uses no exposed ports (runs in userland)
