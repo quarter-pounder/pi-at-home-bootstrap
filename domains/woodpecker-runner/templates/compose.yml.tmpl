@@ -4,7 +4,7 @@ services:
     container_name: woodpecker-runner
     restart: unless-stopped
     environment:
-      WOODPECKER_SERVER: woodpecker:8000
+      WOODPECKER_SERVER: woodpecker:9000
       WOODPECKER_AGENT_SECRET: {{ WOODPECKER_AGENT_SECRET }}
       WOODPECKER_RUNNER_NAME: forgejo-runner
       WOODPECKER_RUNNER_CAPACITY: "2"
