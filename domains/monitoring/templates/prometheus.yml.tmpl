@@ -37,10 +37,6 @@ scrape_configs:
   - job_name: 'woodpecker'
     scheme: http
     metrics_path: '/metrics'
-    dns_sd_configs:
-      - names:
-          - 'woodpecker'
-        type: A
-        port: {{ PORT_WOODPECKER_METRICS }}
     static_configs:
-      - targets: []
+      - targets:
+          - 'woodpecker:{{ PORT_WOODPECKER_METRICS }}'
