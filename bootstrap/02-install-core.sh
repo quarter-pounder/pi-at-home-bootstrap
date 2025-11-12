@@ -36,7 +36,8 @@ sudo apt-get install -y \
   lsb-release \
   software-properties-common \
   fail2ban \
-  unattended-upgrades
+  unattended-upgrades \
+  restic
 
 # Raspberry Pi specific tools
 sudo apt-get install -y \
