@@ -32,11 +32,11 @@ scrape_configs:
     bearer_token: "{{ FORGEJO_METRICS_TOKEN }}"
     static_configs:
       - targets:
-          - "host.docker.internal:{{ PORT_FORGEJO_HTTP }}"
+          - 'forgejo:3000'
 
   - job_name: 'woodpecker'
     scheme: http
     metrics_path: '/metrics'
     static_configs:
       - targets:
-          - "host.docker.internal:{{ PORT_WOODPECKER_METRICS }}"
+          - 'woodpecker:9000'
