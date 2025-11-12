@@ -15,6 +15,11 @@ if ! command -v restic >/dev/null 2>&1; then
   exit 1
 fi
 
+if [[ ! -f "${RESTIC_PASSWORD_FILE}" ]]; then
+  echo "Restic password file not found: ${RESTIC_PASSWORD_FILE}" >&2
+  exit 1
+fi
+
 mkdir -p "${RESTIC_REPOSITORY}" "${BACKUP_TMP}"
 
 tmp_files=()
@@ -34,11 +39,6 @@ tmp_dump() {
 if docker ps --format '{{.Names}}' | grep -q '^forgejo-postgres$'; then
   tmp_dump forgejo
   tmp_dump woodpecker
-fi
-
-if [[ ! -f "${RESTIC_PASSWORD_FILE}" ]]; then
-  echo "Restic password file not found: ${RESTIC_PASSWORD_FILE}" >&2
-  exit 1
 fi
 
 if ! restic -r "${RESTIC_REPOSITORY}" snapshots >/dev/null 2>&1; then
