@@ -173,7 +173,7 @@
         {
           "expr": "sum by (mountpoint) (node_filesystem_size_bytes{job=\"node-exporter\",fstype!~\"tmpfs|overlay\"} - node_filesystem_free_bytes{job=\"node-exporter\",fstype!~\"tmpfs|overlay\"})",
           "refId": "A",
-          "legendFormat": "{{ '{{mountpoint}}' }}"
+          "legendFormat": "{% raw %}{{mountpoint}}{% endraw %}"
         }
       ],
       "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
@@ -185,7 +185,7 @@
   "style": "dark",
   "tags": ["pi-forge"],
   "time": {"from": "now-6h", "to": "now"},
-  "title": "Pi System Overview (Refined)",
-  "uid": "pi-system-overview-v2",
+  "title": "Pi System Overview",
+  "uid": "pi-system-overview",
   "version": 2
 }
