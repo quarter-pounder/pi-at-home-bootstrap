@@ -45,7 +45,7 @@ services:
       - adblocker-network
 
   pihole-exporter:
-    image: ekofr/pihole-exporter:latest
+    image: ekofr/pihole-exporter:v0.2.1
     container_name: adblocker-pihole-exporter
     restart: unless-stopped
     environment:
