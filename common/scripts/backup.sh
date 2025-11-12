@@ -2,15 +2,16 @@
 set -euo pipefail
 
 # --- Privilege escalation ----------------------------------------------------
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)"
+RESTIC_REPOSITORY="${RESTIC_REPOSITORY:-/srv/backups/local}"
+RESTIC_PASSWORD_FILE="${RESTIC_PASSWORD_FILE:-${ROOT}/config-registry/env/restic.password}"
+BACKUP_TMP="${BACKUP_TMP:-/srv/backups/tmp}"
+
 if [[ $EUID -ne 0 ]]; then
   exec sudo RESTIC_REPOSITORY="$RESTIC_REPOSITORY" RESTIC_PASSWORD_FILE="$RESTIC_PASSWORD_FILE" bash "$0" "$@"
 fi
 
 # --- Paths -------------------------------------------------------------------
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)"
-BACKUP_TMP="/srv/backups/tmp"
-RESTIC_PASSWORD_FILE="${RESTIC_PASSWORD_FILE:-${ROOT}/config-registry/env/restic.password}"
-RESTIC_REPOSITORY="${RESTIC_REPOSITORY:-/srv/backups/local}"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 # --- Prerequisites -----------------------------------------------------------
