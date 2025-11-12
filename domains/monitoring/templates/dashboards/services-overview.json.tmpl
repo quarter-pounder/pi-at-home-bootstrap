@@ -3,197 +3,171 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "grafana"
-        },
+        "datasource": {"type": "grafana", "uid": "grafana"},
         "enable": true,
         "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
         "type": "dashboard"
       }
     ]
   },
   "editable": true,
+  "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "links": [],
   "panels": [
     {
+      "type": "row",
+      "title": "Service Health",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+    },
+    {
       "type": "stat",
-      "title": "Forgejo Availability",
+      "title": "Forgejo",
       "id": 1,
-      "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0},
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [
-        {"expr": "max(up{job=\"forgejo\"})", "refId": "A"}
-      ],
+      "targets": [{"expr": "max(up{job=\"forgejo\"})", "refId": "A"}],
       "fieldConfig": {
         "defaults": {
           "mappings": [
             {
               "type": "value",
               "options": {
-                "0": {"text": "Down", "color": "red"},
-                "1": {"text": "Up", "color": "green"}
+                "0": {"text": "Down", "color": "#c27777"},
+                "1": {"text": "Up", "color": "#8fc78f"}
               }
             }
           ],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0.5}]},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#777", "value": null}, {"color": "#8fc78f", "value": 1}]},
           "unit": "none"
         },
         "overrides": []
       },
-      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "orientation": "horizontal", "textMode": "value_and_name"}
+      "options": {
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "reduceOptions": {"calcs": ["lastNotNull"]}
+      }
     },
     {
       "type": "stat",
-      "title": "Woodpecker Availability",
+      "title": "Woodpecker",
       "id": 2,
-      "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [
-        {"expr": "max(up{job=\"woodpecker\"})", "refId": "A"}
-      ],
+      "targets": [{"expr": "max(up{job=\"woodpecker\"})", "refId": "A"}],
       "fieldConfig": {
         "defaults": {
           "mappings": [
             {
               "type": "value",
               "options": {
-                "0": {"text": "Down", "color": "red"},
-                "1": {"text": "Up", "color": "green"}
+                "0": {"text": "Down", "color": "#c27777"},
+                "1": {"text": "Up", "color": "#8fc78f"}
               }
             }
-          ],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0.5}]}
-        },
-        "overrides": []
+          ]
+        }
       },
-      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "orientation": "horizontal", "textMode": "value_and_name"}
+      "options": {"orientation": "horizontal", "textMode": "value_and_name", "reduceOptions": {"calcs": ["lastNotNull"]}}
     },
     {
       "type": "stat",
-      "title": "Prometheus Availability",
+      "title": "Prometheus",
       "id": 3,
-      "gridPos": {"h": 5, "w": 6, "x": 12, "y": 0},
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 1},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [
-        {"expr": "max(up{job=\"prometheus\"})", "refId": "A"}
-      ],
+      "targets": [{"expr": "max(up{job=\"prometheus\"})", "refId": "A"}],
       "fieldConfig": {
         "defaults": {
           "mappings": [
             {
               "type": "value",
               "options": {
-                "0": {"text": "Down", "color": "red"},
-                "1": {"text": "Up", "color": "green"}
+                "0": {"text": "Down", "color": "#c27777"},
+                "1": {"text": "Up", "color": "#8fc78f"}
               }
             }
-          ],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0.5}]}
-        },
-        "overrides": []
+          ]
+        }
       },
-      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "orientation": "horizontal", "textMode": "value_and_name"}
+      "options": {"orientation": "horizontal", "textMode": "value_and_name", "reduceOptions": {"calcs": ["lastNotNull"]}}
     },
     {
       "type": "stat",
-      "title": "Loki Availability",
+      "title": "Loki",
       "id": 4,
-      "gridPos": {"h": 5, "w": 6, "x": 18, "y": 0},
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 1},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [
-        {"expr": "max(up{job=\"loki\"})", "refId": "A"}
-      ],
+      "targets": [{"expr": "max_over_time(up{job=\"loki\"}[5m])", "refId": "A"}],
       "fieldConfig": {
         "defaults": {
           "mappings": [
             {
               "type": "value",
               "options": {
-                "0": {"text": "Down", "color": "red"},
-                "1": {"text": "Up", "color": "green"}
+                "0": {"text": "Down", "color": "#c27777"},
+                "1": {"text": "Up", "color": "#8fc78f"}
               }
             }
-          ],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0.5}]}
-        },
-        "overrides": []
+          ]
+        }
       },
-      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "orientation": "horizontal", "textMode": "value_and_name"}
+      "options": {"orientation": "horizontal", "textMode": "value_and_name", "reduceOptions": {"calcs": ["lastNotNull"]}}
+    },
+    {
+      "type": "row",
+      "title": "Resource Usage",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5}
     },
     {
       "type": "timeseries",
-      "title": "Forgejo CPU Usage (cores)",
+      "title": "Forgejo CPU (cores)",
       "id": 5,
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 5},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"forgejo\"}[5m]))",
-          "legendFormat": "Forgejo",
-          "refId": "A"
-        }
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"forgejo\"}[5m]))", "refId": "A", "legendFormat": "Forgejo"}
       ],
-      "fieldConfig": {"defaults": {"unit": "cores"}, "overrides": []},
-      "options": {"legend": {"displayMode": "list", "placement": "bottom"}}
+      "fieldConfig": {"defaults": {"unit": "cores"}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
     },
     {
       "type": "timeseries",
-      "title": "Woodpecker CPU Usage (cores)",
+      "title": "Woodpecker CPU (cores)",
       "id": 6,
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 5},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker\"}[5m]))",
-          "legendFormat": "woodpecker",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker-runner\"}[5m]))",
-          "legendFormat": "runner",
-          "refId": "B"
-        }
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker\"}[5m]))", "refId": "A", "legendFormat": "Server"},
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker-runner\"}[5m]))", "refId": "B", "legendFormat": "Runner"}
       ],
-      "fieldConfig": {"defaults": {"unit": "cores"}, "overrides": []},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}}
+      "fieldConfig": {"defaults": {"unit": "cores"}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+    },
+    {
+      "type": "row",
+      "title": "Recent Events",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 14}
     },
     {
       "type": "table",
-      "title": "Recent Error Logs (15m)",
+      "title": "Error Logs (15m)",
       "id": 7,
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 13},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 15},
       "datasource": {"type": "loki", "uid": "loki"},
-      "targets": [
-        {
-          "expr": "topk(10, count_over_time({compose_service=~\"forgejo|woodpecker|adblocker\"} |= \"error\" [15m]))",
-          "refId": "A"
-        }
-      ],
-      "transformations": [
-        {
-          "id": "labelsToFields",
-          "options": {"mode": "columns"}
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {"custom": {"align": "auto"}},
-        "overrides": []
-      },
+      "targets": [{"expr": "topk(10, count_over_time({compose_service=~\"forgejo|woodpecker|adblocker\"} |= \"error\" [15m]))", "refId": "A"}],
+      "fieldConfig": {"defaults": {"custom": {"align": "left"}}},
       "options": {"showHeader": true}
     }
   ],
+  "refresh": "1m",
   "schemaVersion": 39,
   "style": "dark",
   "tags": ["pi-forge"],
-  "templating": {"list": []},
   "time": {"from": "now-6h", "to": "now"},
-  "timepicker": {},
   "timezone": "",
   "title": "Forgejo & Woodpecker Overview",
-  "uid": "pi-services-overview",
-  "version": 1
+  "uid": "pi-services-overview-v2",
+  "version": 2
 }

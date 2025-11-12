@@ -3,208 +3,189 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "grafana"
-        },
+        "datasource": {"type": "grafana", "uid": "grafana"},
         "enable": true,
         "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
         "type": "dashboard"
       }
     ]
   },
-  "description": "Raspberry Pi system metrics collected via node-exporter and textfile collectors.",
   "editable": true,
-  "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "iteration": 1710000000000,
-  "links": [],
-  "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
+      "type": "row",
+      "title": "System Utilisation",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU Utilisation (%)",
       "id": 1,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "hidden",
-          "placement": "bottom"
-        }
-      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {
-          "expr": "(1 - avg(rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m])) ) * 100",
-          "legendFormat": "CPU utilisation",
-          "refId": "A"
+          "expr": "100 - avg by (instance) (sum by (instance, cpu) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m]))) * 100",
+          "refId": "A",
+          "legendFormat": "CPU"
         }
       ],
-      "title": "CPU Utilisation",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit"
+          "unit": "percent",
+          "decimals": 1,
+          "color": {"mode": "palette-classic"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#444"}, {"color": "#99b4a4", "value": 60}, {"color": "#d17f7f", "value": 85}]}
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "id": 2,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "hidden",
-          "placement": "bottom"
-        }
-      },
-      "targets": [
-        {
-          "expr": "(1 - avg(node_memory_MemAvailable_bytes{job=\"node-exporter\"}) / avg(node_memory_MemTotal_bytes{job=\"node-exporter\"})) * 100",
-          "legendFormat": "Memory usage",
-          "refId": "A"
-        }
-      ],
-      "title": "Memory Usage",
-      "type": "timeseries"
+        "legend": {"displayMode": "hidden"},
+        "tooltip": {"mode": "multi"}
+      }
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "type": "timeseries",
+      "title": "Memory Usage (%)",
+      "id": 2,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "(1 - avg by (instance) (node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"})) * 100",
+          "refId": "A",
+          "legendFormat": "Memory"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
+          "unit": "percent",
+          "decimals": 1,
+          "color": {"mode": "continuous-GrYlRd"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#444"}, {"color": "#c2b280", "value": 70}, {"color": "#b25b5b", "value": 85}]}
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {"displayMode": "hidden"},
+        "tooltip": {"mode": "multi"}
+      }
+    },
+    {
+      "type": "row",
+      "title": "Thermals & Power",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9}
+    },
+    {
+      "type": "gauge",
+      "title": "CPU Temperature (°C)",
+      "id": 3,
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 10},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "pi_cpu_temperature_celsius", "refId": "A"}],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "min": 0,
+          "max": 100,
+          "color": {"mode": "thresholds"},
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 60
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
+              {"color": "#777", "value": null},
+              {"color": "#a0b89c", "value": 60},
+              {"color": "#d08080", "value": 80}
             ]
-          },
-          "unit": "celsius"
+          }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 0,
-        "y": 8
-      },
-      "id": 3,
       "options": {
         "orientation": "vertical",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
         "showThresholdLabels": false,
-        "showThresholdMarkers": true
-      },
-      "targets": [
-        {
-          "expr": "pi_cpu_temperature_celsius",
-          "refId": "A"
-        }
-      ],
-      "title": "CPU Temperature",
-      "type": "gauge"
+        "showThresholdMarkers": true,
+        "reduceOptions": {"calcs": ["lastNotNull"]}
+      }
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "type": "timeseries",
+      "title": "Core Voltage (V)",
+      "id": 4,
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 10},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "pi_core_voltage_volts", "refId": "A"}],
       "fieldConfig": {
         "defaults": {
-          "unit": "bytes"
+          "unit": "volt",
+          "decimals": 2,
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#888"}, {"color": "#b0b080", "value": 4.8}, {"color": "#d08080", "value": 4.7}]}
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 18,
-        "x": 6,
-        "y": 8
-      },
-      "id": 4,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "table",
-          "placement": "bottom"
-        }
-      },
+        "legend": {"displayMode": "hidden"},
+        "tooltip": {"mode": "single"}
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Throttling Flags (Now)",
+      "id": 5,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 10},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {
-          "expr": "sum by (mountpoint) (node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\"} - node_filesystem_free_bytes{fstype!~\"tmpfs|overlay\"})",
-          "legendFormat": "{% raw %}{{mountpoint}}{% endraw %}",
+          "expr": "pi_throttled_flag{condition=~\"undervoltage_now|frequency_capped_now|throttled_now|soft_temp_limit_now\"}",
           "refId": "A"
         }
       ],
-      "title": "Filesystem Usage",
-      "type": "timeseries"
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {"text": "OK", "color": "#8fc78f"},
+                "1": {"text": "Active", "color": "#c27777"}
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {"textMode": "value", "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"]}}
+    },
+    {
+      "type": "row",
+      "title": "Storage",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 18}
+    },
+    {
+      "type": "timeseries",
+      "title": "Filesystem Usage (bytes)",
+      "id": 6,
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 19},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum by (mountpoint) (node_filesystem_size_bytes{job=\"node-exporter\",fstype!~\"tmpfs|overlay\"} - node_filesystem_free_bytes{job=\"node-exporter\",fstype!~\"tmpfs|overlay\"})",
+          "refId": "A",
+          "legendFormat": "{{mountpoint}}"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
     }
   ],
   "refresh": "30s",
   "schemaVersion": 39,
   "style": "dark",
-  "tags": [
-    "pi-forge"
-  ],
-  "templating": {
-    "list": []
-  },
-  "time": {
-    "from": "now-6h",
-    "to": "now"
-  },
-  "timepicker": {},
-  "timezone": "",
-  "title": "Pi System Overview",
-  "uid": "pi-system-overview",
-  "version": 1
+  "tags": ["pi-forge"],
+  "time": {"from": "now-6h", "to": "now"},
+  "title": "Pi System Overview (Refined)",
+  "uid": "pi-system-overview-v2",
+  "version": 2
 }
