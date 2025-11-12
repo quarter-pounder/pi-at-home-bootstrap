@@ -19,6 +19,7 @@ services:
       - ./prometheus-alerts.yml:/etc/prometheus/alerts.yml:ro
     networks:
       - monitoring-network
+      - forgejo-network
 
   alertmanager:
     image: {{ ALERTMANAGER_IMAGE }}
@@ -53,6 +54,8 @@ services:
     volumes:
       - /srv/monitoring/grafana:/var/lib/grafana
       - ./grafana-datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/pi-forge.yaml:ro
+      - ./dashboards:/etc/grafana/provisioning/dashboards/pi-forge:ro
     networks:
       - monitoring-network
     depends_on:
@@ -67,8 +70,10 @@ services:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.textfile.directory=/textfile_collector'
     volumes:
       - /:/host:ro,rslave
+      - {{ NODE_EXPORTER_TEXTFILE_DIR }}:/textfile_collector
     networks:
       - monitoring-network
     pid: host
@@ -127,3 +132,7 @@ services:
 networks:
   monitoring-network:
     driver: bridge
+
+  forgejo-network:
+    external: true
+    name: forgejo-network
