@@ -173,7 +173,7 @@
         {
           "expr": "sum by (mountpoint) (node_filesystem_size_bytes{job=\"node-exporter\",fstype!~\"tmpfs|overlay\"} - node_filesystem_free_bytes{job=\"node-exporter\",fstype!~\"tmpfs|overlay\"})",
           "refId": "A",
-          "legendFormat": "{{mountpoint}}"
+          "legendFormat": "{{ '{{mountpoint}}' }}"
         }
       ],
       "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
