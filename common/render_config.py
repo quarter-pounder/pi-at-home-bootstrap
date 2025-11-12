@@ -187,12 +187,8 @@ def render(domain: str, env_name: str, dry_run: bool = False) -> None:
     dst = root / "generated" / domain
     dst.mkdir(parents=True, exist_ok=True)
 
-    # ensure old outputs are removed so we don't collide with directories
-    for child in dst.iterdir():
-        if child.is_file() or child.is_symlink():
-            child.unlink()
-        elif child.is_dir():
-            shutil.rmtree(child)
+    existing_files = {p for p in dst.rglob("*") if p.is_file()}
+    generated_files: set[Path] = set()
 
     env_vars = load_env_layers(root, env_name)
     ports = load_ports(root)
@@ -226,8 +222,14 @@ def render(domain: str, env_name: str, dry_run: bool = False) -> None:
         lstrip_blocks=True,
     )
 
-    rendered_any = False
     template_files = sorted({p for suffix in TEMPLATE_SUFFIXES for p in src.rglob(f"*{suffix}")})
+    if not template_files:
+        log_warn(f"No templates matched (*.tmpl) in {src}")
+        return
+
+    changed = 0
+    removed = 0
+    unchanged = 0
     for template_path in template_files:
         template_name = template_path.relative_to(src).as_posix()
         template = jinja_env.get_template(template_name)
@@ -238,13 +240,39 @@ def render(domain: str, env_name: str, dry_run: bool = False) -> None:
             continue
         relative_output = derive_output_path(template_path, src)
         out_file = dst / relative_output
+        generated_files.add(out_file)
         out_file.parent.mkdir(parents=True, exist_ok=True)
+        if out_file.exists():
+            existing_text = out_file.read_text()
+            if existing_text == output_text:
+                unchanged += 1
+                continue
         out_file.write_text(output_text)
-        log_info(f"wrote {out_file.relative_to(root)}")
-        rendered_any = True
+        if out_file in existing_files:
+            log_info(f"updated {out_file.relative_to(root)}")
+        else:
+            log_info(f"created {out_file.relative_to(root)}")
+        changed += 1
 
-    if not rendered_any:
-        log_warn(f"No templates matched (*.tmpl) in {src}")
+    stale_files = existing_files - generated_files
+    for stale_file in sorted(stale_files):
+        stale_file.unlink()
+        log_info(f"removed {stale_file.relative_to(root)}")
+        removed += 1
+
+    # clean up empty directories left behind after removing stale files
+    empty_dirs = sorted({p for p in dst.rglob("*") if p.is_dir()}, reverse=True)
+    for directory in empty_dirs:
+        try:
+            next(directory.iterdir())
+        except StopIteration:
+            directory.rmdir()
+
+    if changed == 0 and removed == 0:
+        log_info(f"No changes for {domain}")
+    else:
+        if unchanged:
+            log_info(f"{unchanged} files unchanged for {domain}")
 
 
 def main() -> None:
