@@ -42,8 +42,10 @@ Forgejo delivers the core features I need (Git hosting, web UI, container regist
   - Publishes HTTP (`PORT_FORGEJO_HTTP`) and SSH (`PORT_FORGEJO_SSH`) endpoints
   - Attaches to the shared `forgejo-network` bridge used by PostgreSQL, Woodpecker, and the registry
   - Seeds configuration (database, mailer, metrics, admin bootstrap) through environment variables with `FORGEJO__...` prefixes
+  - Exposes HTTP internally; TLS is terminated by Cloudflare Tunnel at the edge. Set `FORGEJO_EXTERNAL_URL` to the HTTPS tunnel hostname so generated links use HTTPS.
 - `domains/forgejo/templates/app.ini.tmpl`
   - (Optional) reference configuration; runtime settings are driven by environment variables
+  - `FORGEJO__security__INSTALL_LOCK=true` must remain in the environment. Writing `INSTALL_LOCK` directly in `app.ini` causes Forgejo to skip the first-run bootstrap on some releases.
 
 ## CI Integration
 - Woodpecker CI runs as a separate domain against the same PostgreSQL instance.
@@ -51,7 +53,7 @@ Forgejo delivers the core features I need (Git hosting, web UI, container regist
 - Runner(s) authenticate via a shared agent secret (`WOODPECKER_AGENT_SECRET`).
 
 ## Metrics & Logs
-- Prometheus scrapes `http://forgejo:${PORT_FORGEJO_HTTP}/metrics` with the bearer token defined in `FORGEJO_METRICS_TOKEN`.
+- Prometheus scrapes the container directly on `http://forgejo:3000/metrics` using the bearer token defined in `FORGEJO_METRICS_TOKEN` (see monitoring domain).
 - Alloy tails `/srv/forgejo/logs` for application events.
 
 ## Backups
