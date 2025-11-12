@@ -47,7 +47,7 @@ groups:
         {% endraw %}
 
       - alert: HighTemperature
-        expr: node_hwmon_temp_celsius > 80
+        expr: pi_cpu_temperature_celsius > 80
         for: 2m
         labels:
           severity: warning
@@ -58,7 +58,7 @@ groups:
         {% endraw %}
 
       - alert: CriticalTemperature
-        expr: node_hwmon_temp_celsius > 85
+        expr: pi_cpu_temperature_celsius > 85
         for: 1m
         labels:
           severity: critical
@@ -66,6 +66,61 @@ groups:
         {% raw %}
           summary: "CRITICAL: CPU temperature very high on {{ $labels.instance }}"
           description: "CPU temperature is above 85°C (current value: {{ $value }}°C)"
+        {% endraw %}
+
+      - alert: PiThrottlingDetected
+        expr: pi_throttled_flag{condition="throttled_now"} == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+        {% raw %}
+          summary: "CRITICAL: CPU throttling detected on {{ $labels.instance }}"
+          description: "The SoC is actively throttling due to thermal or power limits. Investigate cooling and power delivery."
+        {% endraw %}
+
+      - alert: PiUndervoltageDetected
+        expr: pi_throttled_flag{condition="undervoltage_now"} == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+        {% raw %}
+          summary: "CRITICAL: Under-voltage reported on {{ $labels.instance }}"
+          description: "Under-voltage is currently asserted. Check the PSU, cabling, and power budget."
+        {% endraw %}
+
+      - alert: PiLowVoltage
+        expr: pi_core_voltage_volts < 4.8
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+        {% raw %}
+          summary: "Low core voltage on {{ $labels.instance }}"
+          description: "Core voltage dropped below 4.8V (current value: {{ $value }}V)."
+        {% endraw %}
+
+      - alert: PiCriticalVoltage
+        expr: pi_core_voltage_volts < 4.7
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+        {% raw %}
+          summary: "CRITICAL: Core voltage critically low on {{ $labels.instance }}"
+          description: "Core voltage dropped below 4.7V (current value: {{ $value }}V). Immediate action required."
+        {% endraw %}
+
+      - alert: PiKernelErrorsDetected
+        expr: increase(pi_dmesg_error_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+        {% raw %}
+          summary: "Kernel errors detected on {{ $labels.instance }}"
+          description: "Kernel reported new error-level log entries within the last 5 minutes. Inspect dmesg for details."
         {% endraw %}
 
   - name: forgejo_alerts
