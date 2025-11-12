@@ -13,12 +13,12 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      - forgejo-network
+      forgejo-network:
+        aliases:
+          - woodpecker-runner
 
 networks:
   forgejo-network:
     external: true
     name: forgejo-network
-    aliases:
-      - woodpecker-runner
 

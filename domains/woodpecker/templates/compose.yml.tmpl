@@ -24,12 +24,12 @@ services:
     volumes:
       - /srv/woodpecker/server:/var/lib/woodpecker
     networks:
-      - forgejo-network
+      forgejo-network:
+        aliases:
+          - woodpecker
 
 networks:
   forgejo-network:
     external: true
     name: forgejo-network
-    aliases:
-      - woodpecker
 
