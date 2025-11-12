@@ -28,27 +28,20 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 1},
       "targets": [
         {
-          "expr": "100 - avg by (instance) (sum by (instance, cpu) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m]))) * 100",
-          "legendFormat": "CPU",
+          "expr": "100 - (avg by (instance) (sum by (instance, cpu) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m])))) * 100",
+          "legendFormat": "{% raw %}{{instance}}{% endraw %}",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
-          "min": 0,
-          "max": 100,
-          "custom": {
-            "axisSoftMin": 0,
-            "axisSoftMax": 100,
-            "axisLabel": "Percent"
-          }
+          "decimals": 1
         },
         "overrides": []
       },
       "options": {
-        "legend": {"displayMode": "hidden"},
+        "legend": {"displayMode": "table", "placement": "bottom"},
         "tooltip": {"mode": "multi"}
       }
     },
@@ -61,26 +54,19 @@
       "targets": [
         {
           "expr": "(1 - avg by (instance) (node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"})) * 100",
-          "legendFormat": "Memory",
+          "legendFormat": "{% raw %}{{instance}}{% endraw %}",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
-          "min": 0,
-          "max": 100,
-          "custom": {
-            "axisSoftMin": 0,
-            "axisSoftMax": 100,
-            "axisLabel": "Percent"
-          }
+          "decimals": 1
         },
         "overrides": []
       },
       "options": {
-        "legend": {"displayMode": "hidden"},
+        "legend": {"displayMode": "table", "placement": "bottom"},
         "tooltip": {"mode": "multi"}
       }
     },
@@ -114,7 +100,16 @@
               {"color": "#eab839", "value": 60},
               {"color": "#d44a3a", "value": 80}
             ]
-          }
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": {"text": "Unknown", "color": "#c1c7cd"}
+              }
+            }
+          ]
         },
         "overrides": []
       },
@@ -132,14 +127,23 @@
       "targets": [
         {
           "expr": "pi_core_voltage_volts",
-          "legendFormat": "Voltage",
+          "legendFormat": "{% raw %}{{instance}}{% endraw %}",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "volt",
-          "decimals": 2
+          "decimals": 2,
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": {"text": "Unknown", "color": "#c1c7cd"}
+              }
+            }
+          ]
         },
         "overrides": []
       },
@@ -173,6 +177,13 @@
               "options": {
                 "0": {"text": "OK", "color": "#7eb26d"},
                 "1": {"text": "Active", "color": "#d44a3a"}
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": {"text": "Unknown", "color": "#c1c7cd"}
               }
             }
           ]
