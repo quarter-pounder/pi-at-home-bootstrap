@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ $EUID -ne 0 ]]; then
+  exec sudo -E bash "$0" "$@"
+fi
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)"
 BACKUP_TMP="/srv/backups/tmp"
 RESTIC_PASSWORD_FILE="${ROOT}/config-registry/env/restic.password"
