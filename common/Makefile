@@ -13,6 +13,9 @@ METADATA_SCRIPT := $(ROOT_DIR)/common/metadata.py
 VAULT_FILE := $(ROOT_DIR)/config-registry/env/secrets.env.vault
 VAULT_PASS := $(ROOT_DIR)/.vault_pass
 
+BACKUP_SCRIPT := $(ROOT_DIR)/common/scripts/backup.sh
+BACKUP_ENV := PIHOLE_API_TOKEN
+
 help:
 	@echo "Available targets:"
 	@echo "  make env ENV=<env>              - Load environment variables"
@@ -165,3 +168,13 @@ status:
 	@$(MAKE) -s check-secrets || true
 	@echo "[Status] Rendered domains:"
 	@ls -1 $(ROOT_DIR)/generated 2>/dev/null || echo "(none)"
+
+.PHONY: backup backup-cloud
+backup:
+	@$(SHELL) $(BACKUP_SCRIPT)
+
+backup-cloud:
+	@if [ -z "$(RESTIC_REMOTE)" ]; then \
+		echo "RESTIC_REMOTE not set"; exit 1; \
+	fi
+	@RESTIC_REPOSITORY="$(RESTIC_REMOTE)" $(SHELL) $(BACKUP_SCRIPT)
