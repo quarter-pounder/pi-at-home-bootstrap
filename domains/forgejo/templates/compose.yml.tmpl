@@ -6,6 +6,7 @@ services:
     environment:
       USER_UID: "{{ FORGEJO_UID }}"
       USER_GID: "{{ FORGEJO_GID }}"
+{% set mailer_protocol = 'smtp+starttls' if SMTP_STARTTLS == 'true' else ('smtps' if SMTP_TLS == 'true' else 'smtp') %}
       FORGEJO__server__DOMAIN: "{{ FORGEJO_DOMAIN }}"
       FORGEJO__server__ROOT_URL: "{{ FORGEJO_EXTERNAL_URL }}"
       FORGEJO__server__SSH_DOMAIN: "{{ FORGEJO_DOMAIN }}"
@@ -35,13 +36,14 @@ services:
       FORGEJO__packages__REGISTRY__ENABLED: "true"
       FORGEJO__packages__REGISTRY__LOG_PACKAGE_ACCESS: "true"
       FORGEJO__mailer__ENABLED: "{{ 'true' if SMTP_ADDRESS else 'false' }}"
-      FORGEJO__mailer__PROTOCOL: "smtp"
+      FORGEJO__mailer__PROTOCOL: "{{ mailer_protocol }}"
       FORGEJO__mailer__SMTP_ADDR: "{{ SMTP_ADDRESS if SMTP_ADDRESS else '' }}"
       FORGEJO__mailer__SMTP_PORT: "{{ SMTP_PORT if SMTP_PORT else '' }}"
       FORGEJO__mailer__USER: "{{ SMTP_USERNAME if SMTP_USERNAME else '' }}"
       FORGEJO__mailer__PASSWD: "{{ SMTP_PASSWORD if SMTP_PASSWORD else '' }}"
       FORGEJO__mailer__FROM: "{{ SMTP_FROM if SMTP_FROM else 'noreply@' ~ DOMAIN }}"
-      FORGEJO__mailer__SKIP_TLS_VERIFY: "{{ 'false' if SMTP_SSL_VERIFY_MODE != 'none' else 'true' }}"
+      FORGEJO__mailer__SMTP_AUTH: "{{ SMTP_AUTH if SMTP_AUTH else '' }}"
+      FORGEJO__mailer__SKIP_VERIFY: "{{ 'false' if SMTP_SSL_VERIFY_MODE != 'none' else 'true' }}"
       FORGEJO__mailer__USE_CERTIFICATE: "false"
       FORGEJO__mailer__USE_CLIENT_CERTIFICATE: "false"
 {% if FORGEJO_ADMIN_USERNAME and FORGEJO_ADMIN_PASSWORD and FORGEJO_ADMIN_EMAIL %}
