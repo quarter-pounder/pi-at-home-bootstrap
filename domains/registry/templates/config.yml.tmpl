@@ -10,12 +10,6 @@ http:
   headers:
     X-Content-Type-Options:
       - nosniff
-auth:
-  token:
-    realm: {{ REGISTRY_TOKEN_REALM }}
-    service: container_registry
-    issuer: {{ REGISTRY_ISSUER }}
-    use_basic_auth: false
 compatibility:
   schema1:
     enabled: false
