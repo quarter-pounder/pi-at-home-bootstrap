@@ -72,7 +72,7 @@
     },
     {
       "type": "row",
-      "title": "Thermals & Power",
+      "title": "Thermals",
       "id": 11,
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9}
     },
@@ -91,16 +91,6 @@
       "fieldConfig": {
         "defaults": {
           "unit": "celsius",
-          "min": 0,
-          "max": 100,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {"color": "#7eb26d", "value": null},
-              {"color": "#eab839", "value": 60},
-              {"color": "#d44a3a", "value": 80}
-            ]
-          },
           "mappings": [
             {
               "type": "special",
@@ -109,7 +99,15 @@
                 "result": {"text": "Unknown", "color": "#c1c7cd"}
               }
             }
-          ]
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#7eb26d", "value": null},
+              {"color": "#eab839", "value": 60},
+              {"color": "#d44a3a", "value": 80}
+            ]
+          }
         },
         "overrides": []
       },
@@ -119,79 +117,13 @@
       }
     },
     {
-      "type": "timeseries",
-      "title": "Core Voltage (V)",
-      "id": 4,
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 10},
-      "targets": [
-        {
-          "expr": "pi_core_voltage_volts",
-          "legendFormat": "{% raw %}{{instance}}{% endraw %}",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "volt",
-          "decimals": 2,
-          "mappings": [
-            {
-              "type": "special",
-              "options": {
-                "match": "nan",
-                "result": {"text": "Unknown", "color": "#c1c7cd"}
-              }
-            }
-          ]
-        },
-        "overrides": []
-      },
+      "type": "text",
+      "title": "Kernel Limitation",
+      "id": 7,
+      "gridPos": {"h": 8, "w": 18, "x": 6, "y": 10},
       "options": {
-        "legend": {"displayMode": "hidden"},
-        "tooltip": {"mode": "single"}
-      }
-    },
-    {
-      "type": "table",
-      "title": "Throttling Flags (Now)",
-      "id": 5,
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 10},
-      "targets": [
-        {
-          "expr": "pi_throttled_flag{condition=~\"undervoltage_now|frequency_capped_now|throttled_now|soft_temp_limit_now\"}",
-          "refId": "A"
-        }
-      ],
-      "transformations": [
-        {"id": "labelsToFields", "options": {"mode": "columns"}},
-        {"id": "reduce", "options": {"reducers": ["lastNotNull"]}}
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "custom": {"align": "left"},
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {"text": "OK", "color": "#7eb26d"},
-                "1": {"text": "Active", "color": "#d44a3a"}
-              }
-            },
-            {
-              "type": "special",
-              "options": {
-                "match": "nan",
-                "result": {"text": "Unknown", "color": "#c1c7cd"}
-              }
-            }
-          ]
-        },
-        "overrides": []
-      },
-      "options": {
-        "showHeader": true
+        "mode": "markdown",
+        "content": "Voltage and throttling metrics are hidden because the current Ubuntu kernel (`6.17.0-1003-raspi`) omits the bcm2835_vcio mailbox driver. The Pi health exporter emits `NaN`, so Grafana shows no data until that driver returns. Switch to a `linux-raspi` kernel or Raspberry Pi OS to re-enable those panels."
       }
     },
     {
