@@ -22,6 +22,7 @@ monitoring:
 woodpecker:
   http: 8000
   metrics: 9001
+  grpc: 9000
 
 woodpecker-runner: {}
 
