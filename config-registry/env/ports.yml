@@ -21,7 +21,7 @@ monitoring:
 
 woodpecker:
   http: 8000
-  metrics: 9000
+  metrics: 9001
 
 woodpecker-runner: {}
 
