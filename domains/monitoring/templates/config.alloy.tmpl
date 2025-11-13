@@ -137,10 +137,10 @@ loki.process "docker" {
 {% raw %}
     values = {
       job = "docker",
-      level = "{{- if .level -}}{{ .level }}{{- else -}}info{{- end }}",
-      container_name = "{{- if .container -}}{{ trimPrefix .container \"/\" }}{{- else -}}unknown{{- end }}",
-      compose_service = "{{- if .service -}}{{ .service }}{{- else -}}unknown{{- end }}",
-      compose_stack = "{{- if .stack -}}{{ .stack }}{{- else -}}unknown{{- end }}",
+      level = "{{ if .level }}{{ .level }}{{ else }}info{{ end }}",
+      container_name = "{{ if .container }}{{ .container }}{{ else }}unknown{{ end }}",
+      compose_service = "{{ if .service }}{{ .service }}{{ else }}unknown{{ end }}",
+      compose_stack = "{{ if .stack }}{{ .stack }}{{ else }}unknown{{ end }}",
     }
 {% endraw %}
   }
