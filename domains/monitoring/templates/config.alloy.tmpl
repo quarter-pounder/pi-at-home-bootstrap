@@ -112,34 +112,6 @@ loki.process "forgejo" {
   }
 }
 
-// ---------- PIPELINE: DOCKER -------------------------------------------------
-
-loki.process "docker" {
-  forward_to = [loki.write.default.receiver]
-
-  stage.json {
-    expressions = {
-      timestamp = "time",
-      message   = "log",
-      level     = "level",
-      container = "attrs.name",
-      service   = "attrs.labels.\"com.docker.compose.service\"",
-      stack     = "attrs.labels.\"com.docker.compose.project\"",
-    },
-  }
-
-  stage.timestamp {
-    source = "timestamp",
-    format = "2006-01-02T15:04:05.000000000Z",
-  }
-
-  stage.labels {
-    values = {
-      job = "docker",
-    },
-  }
-}
-
 // ---------- LOKI WRITER ------------------------------------------------------
 
 loki.write "default" {
