@@ -37,7 +37,9 @@ sudo apt-get install -y \
   software-properties-common \
   fail2ban \
   unattended-upgrades \
-  restic
+  restic \
+  ldnsutils \
+  net-tools
 
 # --- Raspberry Pi tooling -----------------------------------------------------
 sudo apt-get install -y \
