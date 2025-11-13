@@ -29,12 +29,7 @@
       "targets": [
         {"expr": "sum(max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole\"}[5m]))", "refId": "A"}
       ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "links": [{"title": "Alerting", "url": "/alerting/list"}]
-        }
-      },
+      "fieldConfig": {"defaults": {"unit": "none", "links": [{"title": "Alerting", "url": "/alerting/list"}]}},
       "options": {"orientation": "horizontal", "textMode": "value"}
     },
     {
@@ -44,7 +39,7 @@
       "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum((max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole\"}[5m]) == bool 0))", "refId": "A"}
+        {"expr": "sum(1 - clamp_max(max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole\"}[5m]), 1))", "refId": "A"}
       ],
       "fieldConfig": {
         "defaults": {
@@ -108,33 +103,26 @@
       "gridPos": {"h": 4, "w": 6, "x": 0, "y": 6},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max(up{job=\"forgejo\"})", "refId": "A"},
-        {"expr": "avg_over_time(up{job=\"forgejo\"}[6h]) * 100", "refId": "B", "legendFormat": "6h"}
+        {"expr": "max(up{job=\"forgejo\"})", "refId": "A", "legendFormat": "Status"},
+        {"expr": "avg_over_time(up{job=\"forgejo\"}[6h]) * 100", "refId": "B", "legendFormat": "6h Availability"}
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "Status",
           "mappings": [
             {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
           ],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "#777", "value": null}, {"color": "#8fc78f", "value": 1}]},
-          "links": [
-            {"title": "Forgejo Logs", "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22%7Bcompose_service%3D%5C%5C\"forgejo%5C%5C\"%7D%22%7D%5D%7D%5D"}
-          ]
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#c27777", "value": null}, {"color": "#8fc78f", "value": 1}]}
         },
         "overrides": [
           {
-            "matcher": {"id": "byName", "options": "6h"},
+            "matcher": {"id": "byName", "options": "6h Availability"},
             "properties": [
-              {"id": "displayName", "value": "6h Availability"},
-              {"id": "unit", "value": "percent"},
-              {"id": "decimals", "value": 1},
-              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#8fc78f"}}
+              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8fc78f", "value": null}, {"color": "#f2cc0c", "value": 99}, {"color": "#c27777", "value": 97}]}}
             ]
           }
         ]
       },
-      "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}, "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"]}}
+      "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}, "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "values": true}}
     },
     {
       "type": "stat",
@@ -143,32 +131,26 @@
       "gridPos": {"h": 4, "w": 6, "x": 6, "y": 6},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max(up{job=\"woodpecker\"})", "refId": "A"},
-        {"expr": "avg_over_time(up{job=\"woodpecker\"}[6h]) * 100", "refId": "B", "legendFormat": "6h"}
+        {"expr": "max(up{job=\"woodpecker\"})", "refId": "A", "legendFormat": "Status"},
+        {"expr": "avg_over_time(up{job=\"woodpecker\"}[6h]) * 100", "refId": "B", "legendFormat": "6h Availability"}
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "Status",
           "mappings": [
             {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
           ],
-          "links": [
-            {"title": "Woodpecker Logs", "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22%7Bcompose_service%3D%5C%5C\"woodpecker%5C%5C\"%7D%22%7D%5D%7D%5D"}
-          ]
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#c27777", "value": null}, {"color": "#8fc78f", "value": 1}]}
         },
         "overrides": [
           {
-            "matcher": {"id": "byName", "options": "6h"},
+            "matcher": {"id": "byName", "options": "6h Availability"},
             "properties": [
-              {"id": "displayName", "value": "6h Availability"},
-              {"id": "unit", "value": "percent"},
-              {"id": "decimals", "value": 1},
-              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#8fc78f"}}
+              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8fc78f", "value": null}, {"color": "#f2cc0c", "value": 99}, {"color": "#c27777", "value": 97}]}}
             ]
           }
         ]
       },
-      "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}}
+      "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}, "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "values": true}}
     },
     {
       "type": "stat",
@@ -177,32 +159,26 @@
       "gridPos": {"h": 4, "w": 6, "x": 12, "y": 6},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max(up{job=\"prometheus\"})", "refId": "A"},
-        {"expr": "avg_over_time(up{job=\"prometheus\"}[6h]) * 100", "refId": "B", "legendFormat": "6h"}
+        {"expr": "max(up{job=\"prometheus\"})", "refId": "A", "legendFormat": "Status"},
+        {"expr": "avg_over_time(up{job=\"prometheus\"}[6h]) * 100", "refId": "B", "legendFormat": "6h Availability"}
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "Status",
           "mappings": [
             {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
           ],
-          "links": [
-            {"title": "Prometheus Targets", "url": "/d/prometheus/prometheus?viewPanel=1"}
-          ]
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#c27777", "value": null}, {"color": "#8fc78f", "value": 1}]}
         },
         "overrides": [
           {
-            "matcher": {"id": "byName", "options": "6h"},
+            "matcher": {"id": "byName", "options": "6h Availability"},
             "properties": [
-              {"id": "displayName", "value": "6h Availability"},
-              {"id": "unit", "value": "percent"},
-              {"id": "decimals", "value": 1},
-              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#8fc78f"}}
+              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8fc78f", "value": null}, {"color": "#f2cc0c", "value": 99}, {"color": "#c27777", "value": 97}]}}
             ]
           }
         ]
       },
-      "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}}
+      "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}, "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "values": true}}
     },
     {
       "type": "stat",
@@ -211,32 +187,26 @@
       "gridPos": {"h": 4, "w": 6, "x": 18, "y": 6},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max_over_time(up{job=\"loki\"}[5m])", "refId": "A"},
-        {"expr": "avg_over_time(up{job=\"loki\"}[6h]) * 100", "refId": "B", "legendFormat": "6h"}
+        {"expr": "max_over_time(up{job=\"loki\"}[5m])", "refId": "A", "legendFormat": "Status"},
+        {"expr": "avg_over_time(up{job=\"loki\"}[6h]) * 100", "refId": "B", "legendFormat": "6h Availability"}
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "Status",
           "mappings": [
             {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
           ],
-          "links": [
-            {"title": "Loki Logs", "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22%7Bjob%3D%5C%5C\"loki%5C%5C\"%7D%22%7D%5D%7D%5D"}
-          ]
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#c27777", "value": null}, {"color": "#8fc78f", "value": 1}]}
         },
         "overrides": [
           {
-            "matcher": {"id": "byName", "options": "6h"},
+            "matcher": {"id": "byName", "options": "6h Availability"},
             "properties": [
-              {"id": "displayName", "value": "6h Availability"},
-              {"id": "unit", "value": "percent"},
-              {"id": "decimals", "value": 1},
-              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#8fc78f"}}
+              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8fc78f", "value": null}, {"color": "#f2cc0c", "value": 99}, {"color": "#c27777", "value": 97}]}}
             ]
           }
         ]
       },
-      "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}}
+      "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}, "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "values": true}}
     },
     {"type": "row", "title": "Resource Usage", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 10}},
     {
@@ -312,7 +282,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"})", "refId": "A", "legendFormat": "Prometheus"}
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}[5m]))", "refId": "A", "legendFormat": "Prometheus"}
       ],
       "fieldConfig": {"defaults": {"unit": "cores"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -324,7 +294,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max(container_memory_usage_bytes{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Prometheus"}
+        {"expr": "max(container_memory_working_set_bytes{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Prometheus"}
       ],
       "fieldConfig": {"defaults": {"unit": "MB"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -336,7 +306,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-loki|loki\"})", "refId": "A", "legendFormat": "Loki"}
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}[5m]))", "refId": "A", "legendFormat": "Loki"}
       ],
       "fieldConfig": {"defaults": {"unit": "cores"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -348,7 +318,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max(container_memory_usage_bytes{container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Loki"}
+        {"expr": "max(container_memory_working_set_bytes{container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Loki"}
       ],
       "fieldConfig": {"defaults": {"unit": "MB"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -361,7 +331,7 @@
       "gridPos": {"h": 4, "w": 6, "x": 0, "y": 41},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max(up{job=\"pihole\"})", "refId": "A"},
+        {"expr": "max(up{job=\"pihole\"})", "refId": "A", "legendFormat": "Status"},
         {"expr": "avg_over_time(up{job=\"pihole\"}[6h]) * 100", "refId": "B", "legendFormat": "6h Availability"}
       ],
       "fieldConfig": {
@@ -369,15 +339,18 @@
           "mappings": [
             {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
           ],
-          "links": [
-            {"title": "Pi-hole Dashboard", "url": "http://pihole."}
-          ]
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#c27777", "value": null}, {"color": "#8fc78f", "value": 1}]}
         },
         "overrides": [
-          {"matcher": {"id": "byName", "options": "6h"}, "properties": [{"id": "displayName", "value": "6h Availability"}, {"id": "unit", "value": "percent"}, {"id": "decimals", "value": 1}]}
+          {
+            "matcher": {"id": "byName", "options": "6h Availability"},
+            "properties": [
+              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8fc78f", "value": null}, {"color": "#f2cc0c", "value": 99}, {"color": "#c27777", "value": 97}]}}
+            ]
+          }
         ]
       },
-      "options": {"orientation": "horizontal", "sparkline": {"show": true}}
+      "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}, "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"], "values": true}}
     },
     {
       "type": "stat",
@@ -386,17 +359,17 @@
       "gridPos": {"h": 4, "w": 6, "x": 6, "y": 41},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max(container_start_time_seconds{container_label_com_docker_compose_service=~\"adblocker-unbound|unbound\"})", "refId": "A"}
+        {"expr": "max(container_memory_working_set_bytes{container_label_com_docker_compose_service=~\"adblocker-unbound|unbound\"}) > bool 0", "refId": "A", "legendFormat": "Status"}
       ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}}},
-            {"type": "range", "options": {"from": 1, "to": 99999999999, "result": {"text": "Up", "color": "#8fc78f"}}}
-          ]
+            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
+          ],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#c27777", "value": null}, {"color": "#8fc78f", "value": 1}]}
         }
       },
-      "options": {"orientation": "horizontal", "sparkline": {"show": true}}
+      "options": {"orientation": "horizontal", "textMode": "value", "sparkline": {"show": false}, "reduceOptions": {"calcs": ["lastNotNull"], "values": true}}
     },
     {"type": "row", "title": "Pi System", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 45}},
     {
@@ -435,16 +408,30 @@
       "type": "gauge",
       "title": "CPU Temperature (°C)",
       "id": 303,
-      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 58},
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 46},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [{"expr": "pi_cpu_temperature_celsius", "refId": "A"}],
       "fieldConfig": {
         "defaults": {
           "unit": "celsius",
+          "color": {"mode": "thresholds"},
           "mappings": [
-            {"type": "special", "options": {"match": "nan", "result": {"text": "Unknown", "color": "#c1c7cd"}}}
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": {"text": "Unknown", "color": "#c1c7cd"}
+              }
+            }
           ],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "#7eb26d", "value": null}, {"color": "#eab839", "value": 60}, {"color": "#d44a3a", "value": 80}]}
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#7eb26d", "value": null},
+              {"color": "#eab839", "value": 60},
+              {"color": "#d44a3a", "value": 80}
+            ]
+          }
         }
       },
       "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "orientation": "vertical"}
