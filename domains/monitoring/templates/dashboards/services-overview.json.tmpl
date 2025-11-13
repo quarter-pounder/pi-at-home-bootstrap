@@ -17,16 +17,100 @@
   "panels": [
     {
       "type": "row",
-      "title": "Service Health",
+      "title": "Summary",
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
     },
     {
       "type": "stat",
-      "title": "Forgejo",
-      "id": 1,
+      "title": "Domains Healthy",
+      "id": 100,
       "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"expr": "max(up{job=\"forgejo\"})", "refId": "A"}],
+      "targets": [
+        {"expr": "sum(max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole|unbound\"}[5m]) > 0)", "refId": "A"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "links": [{"title": "Alerting", "url": "/alerting/list"}]
+        }
+      },
+      "options": {"orientation": "horizontal", "textMode": "value"}
+    },
+    {
+      "type": "stat",
+      "title": "Attention Required",
+      "id": 101,
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole|unbound\"}[5m]) == 0)", "refId": "A"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "All Clear", "color": "#8fc78f"}}},
+            {"type": "range", "options": {"from": 1, "to": 100, "result": {"text": "Check Services", "color": "#c27777"}}}
+          ]
+        }
+      },
+      "options": {"orientation": "horizontal", "textMode": "value"}
+    },
+    {
+      "type": "stat",
+      "title": "Active Alerts",
+      "id": 102,
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(alerts{alertstate=\"firing\"})", "refId": "A"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "No Alerts", "color": "#8fc78f"}}},
+            {"type": "range", "options": {"from": 1, "to": 100, "result": {"text": "Alerts Firing", "color": "#c27777"}}}
+          ],
+          "links": [{"title": "View Alerts", "url": "/alerting/list"}]
+        }
+      },
+      "options": {"orientation": "horizontal", "textMode": "value"}
+    },
+    {
+      "type": "stat",
+      "title": "Pi System Status",
+      "id": 103,
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "max(pi_throttled_flag{condition=~\"undervoltage_now|throttled_now\"})", "refId": "A"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "Stable", "color": "#8fc78f"}}},
+            {"type": "range", "options": {"from": 1, "to": 100, "result": {"text": "Throttling", "color": "#f2cc0c"}}}
+          ],
+          "links": [{"title": "Pi System Overview", "url": "/d/pi-system-overview/pi-system-overview"}]
+        }
+      },
+      "options": {"orientation": "horizontal", "textMode": "value"}
+    },
+    {
+      "type": "row",
+      "title": "Core Domains",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5}
+    },
+    {
+      "type": "stat",
+      "title": "Forgejo Availability",
+      "id": 1,
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "max(up{job=\"forgejo\"})", "refId": "A"},
+        {"expr": "avg_over_time(up{job=\"forgejo\"}[6h]) * 100", "refId": "B", "legendFormat": "6h"}
+      ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
@@ -39,23 +123,40 @@
             }
           ],
           "thresholds": {"mode": "absolute", "steps": [{"color": "#777", "value": null}, {"color": "#8fc78f", "value": 1}]},
-          "unit": "none"
+          "links": [
+            {"title": "Forgejo Logs", "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22%7Bcompose_service%3D%5C%5C\"forgejo%5C%5C\"%7D%22%7D%5D%7D%5D"}
+          ]
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "6h"},
+            "properties": [
+              {"id": "displayName", "value": "6h Availability"},
+              {"id": "unit", "value": "percent"},
+              {"id": "decimals", "value": 1},
+              {"id": "color", "value": {"mode": "thresholds"}}
+            ]
+          }
+        ]
       },
       "options": {
         "orientation": "horizontal",
         "textMode": "value_and_name",
+        "sparkline": {"show": true},
+        "graphMode": "area",
         "reduceOptions": {"calcs": ["lastNotNull"]}
       }
     },
     {
       "type": "stat",
-      "title": "Woodpecker",
+      "title": "Woodpecker Availability",
       "id": 2,
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 6},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"expr": "max(up{job=\"woodpecker\"})", "refId": "A"}],
+      "targets": [
+        {"expr": "max(up{job=\"woodpecker\"})", "refId": "A"},
+        {"expr": "avg_over_time(up{job=\"woodpecker\"}[6h]) * 100", "refId": "B", "legendFormat": "6h"}
+      ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
@@ -66,18 +167,34 @@
                 "1": {"text": "Up", "color": "#8fc78f"}
               }
             }
+          ],
+          "links": [
+            {"title": "Woodpecker Logs", "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22%7Bcompose_service%3D%5C%5C\"woodpecker%5C%5C\"%7D%22%7D%5D%7D%5D"}
           ]
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "6h"},
+            "properties": [
+              {"id": "displayName", "value": "6h Availability"},
+              {"id": "unit", "value": "percent"},
+              {"id": "decimals", "value": 1}
+            ]
+          }
+        ]
       },
-      "options": {"orientation": "horizontal", "textMode": "value_and_name", "reduceOptions": {"calcs": ["lastNotNull"]}}
+      "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}}
     },
     {
       "type": "stat",
-      "title": "Prometheus",
+      "title": "Prometheus Availability",
       "id": 3,
-      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 1},
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 6},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"expr": "max(up{job=\"prometheus\"})", "refId": "A"}],
+      "targets": [
+        {"expr": "max(up{job=\"prometheus\"})", "refId": "A"},
+        {"expr": "avg_over_time(up{job=\"prometheus\"}[6h]) * 100", "refId": "B", "legendFormat": "6h"}
+      ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
@@ -88,18 +205,24 @@
                 "1": {"text": "Up", "color": "#8fc78f"}
               }
             }
+          ],
+          "links": [
+            {"title": "Prometheus Targets", "url": "/d/prometheus/prometheus?viewPanel=1"}
           ]
         }
       },
-      "options": {"orientation": "horizontal", "textMode": "value_and_name", "reduceOptions": {"calcs": ["lastNotNull"]}}
+      "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}}
     },
     {
       "type": "stat",
-      "title": "Loki",
+      "title": "Loki Availability",
       "id": 4,
-      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 1},
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 6},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"expr": "max_over_time(up{job=\"loki\"}[5m])", "refId": "A"}],
+      "targets": [
+        {"expr": "max_over_time(up{job=\"loki\"}[5m])", "refId": "A"},
+        {"expr": "avg_over_time(up{job=\"loki\"}[6h]) * 100", "refId": "B", "legendFormat": "6h"}
+      ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
@@ -110,33 +233,36 @@
                 "1": {"text": "Up", "color": "#8fc78f"}
               }
             }
+          ],
+          "links": [
+            {"title": "Loki Logs", "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22%7Bjob%3D%5C%5C\"loki%5C%5C\"%7D%22%7D%5D%7D%5D"}
           ]
         }
       },
-      "options": {"orientation": "horizontal", "textMode": "value_and_name", "reduceOptions": {"calcs": ["lastNotNull"]}}
+      "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}}
     },
     {
       "type": "row",
       "title": "Resource Usage",
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5}
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 10}
     },
     {
       "type": "timeseries",
       "title": "Forgejo CPU (cores)",
       "id": 5,
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 11},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"forgejo\"}[5m]))", "refId": "A", "legendFormat": "Forgejo"}
       ],
-      "fieldConfig": {"defaults": {"unit": "cores"}},
+      "fieldConfig": {"defaults": {"unit": "cores", "links": [{"title": "Grafana Explore", "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22prometheus%22%2C%22uid%22%3A%22prometheus%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22sum(rate(container_cpu_usage_seconds_total%7Bcontainer_label_com_docker_compose_service%3D\\\"forgejo\\\"%7D%5B5m%5D))%22%7D%5D%7D%5D"}]}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
     },
     {
       "type": "timeseries",
       "title": "Woodpecker CPU (cores)",
       "id": 6,
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 11},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker\"}[5m]))", "refId": "A", "legendFormat": "Server"},
@@ -146,19 +272,154 @@
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
     },
     {
-      "type": "row",
-      "title": "Recent Events",
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 14}
+      "type": "stat",
+      "title": "Queue Depth",
+      "id": 9,
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 14},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "max(woodpecker_server_queue_count)", "refId": "A"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "options": {"null": {"text": "No data", "color": "#f2cc0c"}}}
+          ],
+          "links": [{"title": "Woodpecker Queue", "url": "/d/woodpecker/woodpecker?viewPanel=2"}]
+        }
+      },
+      "options": {"orientation": "horizontal", "textMode": "value"}
+    },
+    {
+      "type": "stat",
+      "title": "Forgejo API Latency",
+      "id": 10,
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 14},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"forgejo\"}[5m])) by (le))", "refId": "A", "legendFormat": "p95"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s", "decimals": 2}},
+      "options": {"orientation": "horizontal", "textMode": "value"}
     },
     {
       "type": "table",
       "title": "Error Logs (15m)",
       "id": 7,
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 15},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 18},
       "datasource": {"type": "loki", "uid": "loki"},
       "targets": [{"expr": "topk(10, count_over_time({compose_service=~\"forgejo|woodpecker|adblocker\"} |= \"error\" [15m]))", "refId": "A"}],
       "fieldConfig": {"defaults": {"custom": {"align": "left"}}},
       "options": {"showHeader": true}
+    },
+    {
+      "type": "row",
+      "title": "Adblocker",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 19}
+    },
+    {
+      "type": "stat",
+      "title": "Pi-hole",
+      "id": 201,
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 11},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "max(up{job=\"pihole-exporter\"})", "refId": "A"},
+        {"expr": "avg_over_time(pihole_status{job=\"pihole-exporter\"}[6h])", "refId": "B", "legendFormat": "6h"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
+          ],
+          "links": [{"title": "Pi-hole Dashboard", "url": "http://pihole."}]
+        }
+      },
+      "options": {"orientation": "horizontal", "sparkline": {"show": true}}
+    },
+    {
+      "type": "stat",
+      "title": "Unbound",
+      "id": 202,
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 11},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "max(up{job=\"unbound\"})", "refId": "A"},
+        {"expr": "avg_over_time(up{job=\"unbound\"}[6h]) * 100", "refId": "B", "legendFormat": "6h"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
+          ]
+        }
+      },
+      "options": {"orientation": "horizontal", "sparkline": {"show": true}}
+    },
+    {
+      "type": "timeseries",
+      "title": "DNS Query Volume",
+      "id": 203,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 11},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(pihole_queries_total[5m]))", "refId": "A", "legendFormat": "Pi-hole"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "req/s"}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}}
+    },
+    {
+      "type": "row",
+      "title": "Observability",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 29}
+    },
+    {
+      "type": "timeseries",
+      "title": "Prometheus CPU (cores)",
+      "id": 11,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 30},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"prometheus\"}[5m]))", "refId": "A", "legendFormat": "Prometheus"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "cores"}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Prometheus Memory (MB)",
+      "id": 12,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 30},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(container_memory_usage_bytes{container_label_com_docker_compose_service=\"prometheus\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Prometheus"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "MB"}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Loki CPU (cores)",
+      "id": 13,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 39},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"loki\"}[5m]))", "refId": "A", "legendFormat": "Loki"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "cores"}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Loki Memory (MB)",
+      "id": 14,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 39},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(container_memory_usage_bytes{container_label_com_docker_compose_service=\"loki\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Loki"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "MB"}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
     }
   ],
   "refresh": "1m",
@@ -167,7 +428,7 @@
   "tags": ["pi-forge"],
   "time": {"from": "now-6h", "to": "now"},
   "timezone": "",
-  "title": "Forgejo & Woodpecker Overview",
-  "uid": "pi-services-overview",
-  "version": 2
+  "title": "Domain Overview",
+  "uid": "pi-domain-overview",
+  "version": 3
 }
