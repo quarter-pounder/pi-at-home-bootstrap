@@ -1,45 +1,45 @@
 // -----------------------------------------------------------------------------
-// FILE TARGETS
+// FILE MATCHERS
 // -----------------------------------------------------------------------------
 
 local.file_match "system_logs" {
   path_targets = [
     {
-      __path__ = "/var/log/syslog",
+      __path__ = "/var/log/syslog"
     },
     {
-      __path__ = "/var/log/auth.log",
+      __path__ = "/var/log/auth.log"
     },
     {
-      __path__ = "/var/log/kern.log",
-    },
+      __path__ = "/var/log/kern.log"
+    }
   ]
 }
 
 local.file_match "forgejo_logs" {
   path_targets = [
     {
-      __path__ = "/srv/forgejo/log/forgejo.log",
+      __path__ = "/srv/forgejo/log/forgejo.log"
     },
     {
-      __path__ = "/srv/forgejo/log/hooks.log",
+      __path__ = "/srv/forgejo/log/hooks.log"
     },
     {
-      __path__ = "/srv/forgejo/log/http.log",
-    },
+      __path__ = "/srv/forgejo/log/http.log"
+    }
   ]
 }
 
 local.file_match "docker_logs" {
   path_targets = [
     {
-      __path__ = "/var/lib/docker/containers/*/*.log",
-    },
+      __path__ = "/var/lib/docker/containers/*/*.log"
+    }
   ]
 }
 
 // -----------------------------------------------------------------------------
-// DISCOVERY (DOCKER)
+// DISCOVERY
 // -----------------------------------------------------------------------------
 
 discovery.docker "containers" {
@@ -51,153 +51,143 @@ discovery.docker "containers" {
 // -----------------------------------------------------------------------------
 
 loki.source.file "system_files" {
-  targets    = local.file_match.system_logs.targets,
-  forward_to = [loki.process.system.receiver],
+  targets    = local.file_match.system_logs.targets
+  forward_to = [loki.process.system.receiver]
 }
 
 loki.source.file "forgejo_files" {
-  targets    = local.file_match.forgejo_logs.targets,
-  forward_to = [loki.process.forgejo.receiver],
+  targets    = local.file_match.forgejo_logs.targets
+  forward_to = [loki.process.forgejo.receiver]
 }
 
 loki.source.file "docker_files" {
-  targets    = local.file_match.docker_logs.targets,
-  forward_to = [loki.process.docker_files.receiver],
+  targets    = local.file_match.docker_logs.targets
+  forward_to = [loki.process.docker_files.receiver]
 }
 
 loki.source.docker "docker_containers" {
-  host       = "unix:///var/run/docker.sock",
-  targets    = discovery.docker.containers.targets,
-  forward_to = [loki.process.docker_containers.receiver],
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.containers.targets
+  forward_to = [loki.process.docker_containers.receiver]
 }
 
 // -----------------------------------------------------------------------------
-// LOKI PROCESS PIPELINES
+// PROCESSORS
 // -----------------------------------------------------------------------------
-
-// --- System logs -------------------------------------------------------------
 
 loki.process "system" {
-  forward_to = [loki.write.default.receiver],
+  forward_to = [loki.write.default.receiver]
 
   stage.regex {
-    expression = "^(?P<timestamp>\\S+\\s+\\S+)\\s+(?P<hostname>\\S+)\\s+(?P<service>\\S+):\\s+(?P<message>.*)$",
+    expression = "^(?P<timestamp>\\S+\\s+\\S+)\\s+(?P<hostname>\\S+)\\s+(?P<service>\\S+):\\s+(?P<message>.*)$"
   }
 
   stage.labels {
     values = {
-      job     = "system",
-      service = "syslog",
-      level   = "info",
-    },
+      job = "system"
+      level = "info"
+    }
   }
 
   stage.timestamp {
-    source = "timestamp",
-    format = "Jan 02 15:04:05",
+    source = "timestamp"
+    format = "Jan 02 15:04:05"
   }
 }
-
-// --- Forgejo logs ------------------------------------------------------------
 
 loki.process "forgejo" {
-  forward_to = [loki.write.default.receiver],
+  forward_to = [loki.write.default.receiver]
 
   stage.json {
     expressions = {
-      timestamp = "time",
-      message   = "message",
-      level     = "severity",
-    },
+      timestamp = "time"
+      level = "severity"
+      message = "message"
+    }
   }
 
   stage.labels {
     values = {
-      job   = "forgejo",
-      app   = "forgejo",
-      level = "info",
-    },
+      job = "forgejo"
+      app = "forgejo"
+      level = "info"
+    }
   }
 
   stage.timestamp {
-    source = "timestamp",
-    format = "2006-01-02T15:04:05.000Z",
+    source = "timestamp"
+    format = "2006-01-02T15:04:05.000Z"
   }
 }
-
-// --- Docker logs from files --------------------------------------------------
 
 loki.process "docker_files" {
-  forward_to = [loki.write.default.receiver],
+  forward_to = [loki.write.default.receiver]
 
   stage.json {
     expressions = {
-      timestamp = "time",
-      message   = "log",
-      level     = "level",
-    },
+      timestamp = "time"
+      message   = "log"
+    }
   }
 
   stage.labels {
     values = {
-      job = "docker-files",
-    },
+      job = "docker-files"
+    }
   }
 
   stage.timestamp {
-    source = "timestamp",
-    format = "2006-01-02T15:04:05.000000000Z",
+    source = "timestamp"
+    format = "2006-01-02T15:04:05.000000000Z"
   }
 }
 
-// --- Docker logs via docker.sock ---------------------------------------------
-
 loki.process "docker_containers" {
-  forward_to = [loki.write.default.receiver],
+  forward_to = [loki.write.default.receiver]
 
   stage.json {
     expressions = {
-      timestamp = "time",
-      message   = "log",
-    },
+      timestamp = "time"
+      message = "log"
+    }
   }
 
   stage.labels {
     values = {
-      job = "docker",
-    },
+      job = "docker"
+    }
   }
 
   stage.timestamp {
-    source = "timestamp",
-    format = "2006-01-02T15:04:05.000000000Z",
+    source = "timestamp"
+    format = "2006-01-02T15:04:05.000000000Z"
   }
 }
 
 // -----------------------------------------------------------------------------
-// LOKI WRITE
+// WRITE
 // -----------------------------------------------------------------------------
 
 loki.write "default" {
   endpoint {
-    url = "http://monitoring-loki:3100/loki/api/v1/push",
+    url = "http://monitoring-loki:3100/loki/api/v1/push"
   }
 }
 
 // -----------------------------------------------------------------------------
-// PROMETHEUS SELF-SCRAPE
+// PROMETHEUS
 // -----------------------------------------------------------------------------
 
 prometheus.exporter.self "alloy" {}
 
 prometheus.scrape "alloy" {
-  targets         = prometheus.exporter.self.alloy.targets,
-  scrape_interval = "30s",
-  forward_to      = [prometheus.remote_write.default.receiver],
+  targets = prometheus.exporter.self.alloy.targets
+  scrape_interval = "30s"
+  forward_to = [prometheus.remote_write.default.receiver]
 }
 
 prometheus.remote_write "default" {
   endpoint {
-    url = "http://monitoring-prometheus:9090/api/v1/write",
+    url = "http://monitoring-prometheus:9090/api/v1/write"
   }
 }
