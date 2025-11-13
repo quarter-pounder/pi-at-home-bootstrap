@@ -3,36 +3,36 @@
 local.file_match "system_logs" {
   path_targets = [
     {
-      __path__ = "/var/log/syslog"
+      __path__ = "/var/log/syslog",
     },
     {
-      __path__ = "/var/log/auth.log"
+      __path__ = "/var/log/auth.log",
     },
     {
-      __path__ = "/var/log/kern.log"
-    }
+      __path__ = "/var/log/kern.log",
+    },
   ]
 }
 
 local.file_match "forgejo_logs" {
   path_targets = [
     {
-      __path__ = "/srv/forgejo/log/forgejo.log"
+      __path__ = "/srv/forgejo/log/forgejo.log",
     },
     {
-      __path__ = "/srv/forgejo/log/hooks.log"
+      __path__ = "/srv/forgejo/log/hooks.log",
     },
     {
-      __path__ = "/srv/forgejo/log/http.log"
-    }
+      __path__ = "/srv/forgejo/log/http.log",
+    },
   ]
 }
 
 local.file_match "docker_logs" {
   path_targets = [
     {
-      __path__ = "/var/lib/docker/containers/*/*.log"
-    }
+      __path__ = "/var/lib/docker/containers/*/*.log",
+    },
   ]
 }
 
@@ -56,13 +56,6 @@ loki.source.file "forgejo" {
   forward_to = [loki.process.forgejo.receiver]
 }
 
-// ---------- SOURCE: DOCKER FILES ---------------------------------------------
-
-loki.source.file "docker_file" {
-  targets    = local.file_match.docker_logs.targets
-  forward_to = [loki.process.docker.receiver]
-}
-
 // ---------- SOURCE: DOCKER API ----------------------------------------------
 
 loki.source.docker "containers" {
@@ -77,19 +70,19 @@ loki.process "system" {
   forward_to = [loki.write.default.receiver]
 
   stage.regex {
-    expression = "^(?P<timestamp>\\S+\\s+\\S+)\\s+(?P<hostname>\\S+)\\s+(?P<service>[^:]+):\\s+(?P<message>.*)$"
+    expression = "^(?P<timestamp>\\S+\\s+\\S+)\\s+(?P<hostname>\\S+)\\s+(?P<service>[^:]+):\\s+(?P<message>.*)$",
   }
 
   stage.timestamp {
-    source = "timestamp"
-    format = "Jan 02 15:04:05"
+    source = "timestamp",
+    format = "Jan 02 15:04:05",
   }
 
   stage.labels {
     values = {
-      job = "system"
-      source = "syslog"
-    }
+      job    = "system",
+      source = "syslog",
+    },
   }
 }
 
@@ -100,22 +93,22 @@ loki.process "forgejo" {
 
   stage.json {
     expressions = {
-      timestamp = "time"
-      level     = "severity"
-      message   = "message"
-    }
+      timestamp = "time",
+      level     = "severity",
+      message   = "message",
+    },
   }
 
   stage.timestamp {
-    source = "timestamp"
-    format = "2006-01-02T15:04:05.000Z"
+    source = "timestamp",
+    format = "2006-01-02T15:04:05.000Z",
   }
 
   stage.labels {
     values = {
-      job     = "forgejo"
-      service = "forgejo"
-    }
+      job     = "forgejo",
+      service = "forgejo",
+    },
   }
 }
 
@@ -126,31 +119,24 @@ loki.process "docker" {
 
   stage.json {
     expressions = {
-      timestamp = "time"
-      message   = "log"
-      level     = "level"
-      container = "attrs.name"
-      service   = "attrs.labels.\"com.docker.compose.service\""
-      stack     = "attrs.labels.\"com.docker.compose.project\""
-    }
+      timestamp = "time",
+      message   = "log",
+      level     = "level",
+      container = "attrs.name",
+      service   = "attrs.labels.\"com.docker.compose.service\"",
+      stack     = "attrs.labels.\"com.docker.compose.project\"",
+    },
   }
 
   stage.timestamp {
-    source = "timestamp"
-    format = "2006-01-02T15:04:05.000000000Z"
+    source = "timestamp",
+    format = "2006-01-02T15:04:05.000000000Z",
   }
 
   stage.labels {
     values = {
-      job = "docker"
-    }
-  }
-
-  // fallback if Docker log lacks labels entirely
-  stage.static_labels {
-    values = {
-      service = "unknown"
-    }
+      job = "docker",
+    },
   }
 }
 
