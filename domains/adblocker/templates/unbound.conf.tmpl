@@ -65,6 +65,7 @@ server:
     access-control: fd00::/8 allow
     access-control: fe80::/10 allow
     auto-trust-anchor-file: "/var/lib/unbound/root.key"
+    tls-cert-bundle: "/etc/ssl/certs/ca-certificates.crt"
     chroot: ""
     username: "unbound"
     directory: "/etc/unbound"
