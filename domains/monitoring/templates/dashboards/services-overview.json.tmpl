@@ -27,14 +27,12 @@
       "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(max_over_time((up{job=~\"forgejo|woodpecker|prometheus|loki|pihole\"} or vector(0))[5m]))", "refId": "A"}
+        {"expr": "sum(max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole\"}[5m]))", "refId": "A"}
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "none",
-          "links": [
-            {"title": "Alerting", "url": "/alerting/list"}
-          ]
+          "links": [{"title": "Alerting", "url": "/alerting/list"}]
         }
       },
       "options": {"orientation": "horizontal", "textMode": "value"}
@@ -46,7 +44,7 @@
       "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(1 - max_over_time((up{job=~\"forgejo|woodpecker|prometheus|loki|pihole\"} or vector(0))[5m]))", "refId": "A"}
+        {"expr": "sum((max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole\"}[5m]) == bool 0))", "refId": "A"}
       ],
       "fieldConfig": {
         "defaults": {
@@ -314,7 +312,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"prometheus\"}[5m]))", "refId": "A", "legendFormat": "Prometheus"}
+        {"expr": "max(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"})", "refId": "A", "legendFormat": "Prometheus"}
       ],
       "fieldConfig": {"defaults": {"unit": "cores"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -326,7 +324,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max(container_memory_usage_bytes{container_label_com_docker_compose_service=\"prometheus\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Prometheus"}
+        {"expr": "max(container_memory_usage_bytes{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Prometheus"}
       ],
       "fieldConfig": {"defaults": {"unit": "MB"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -338,7 +336,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"loki\"}[5m]))", "refId": "A", "legendFormat": "Loki"}
+        {"expr": "max(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-loki|loki\"})", "refId": "A", "legendFormat": "Loki"}
       ],
       "fieldConfig": {"defaults": {"unit": "cores"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -350,7 +348,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max(container_memory_usage_bytes{container_label_com_docker_compose_service=\"loki\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Loki"}
+        {"expr": "max(container_memory_usage_bytes{container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Loki"}
       ],
       "fieldConfig": {"defaults": {"unit": "MB"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -358,13 +356,13 @@
     {"type": "row", "title": "Adblocker", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 40}},
     {
       "type": "stat",
-      "title": "Pi-hole",
+      "title": "Pi-hole Container",
       "id": 201,
       "gridPos": {"h": 4, "w": 6, "x": 0, "y": 41},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max(up{job=\"pihole\"}) or vector(0)", "refId": "A"},
-        {"expr": "avg_over_time((up{job=\"pihole\"} or vector(0))[6h]) * 100", "refId": "B", "legendFormat": "6h"}
+        {"expr": "max(up{job=\"pihole\"})", "refId": "A"},
+        {"expr": "avg_over_time(up{job=\"pihole\"}[6h]) * 100", "refId": "B", "legendFormat": "6h Availability"}
       ],
       "fieldConfig": {
         "defaults": {
@@ -383,12 +381,12 @@
     },
     {
       "type": "stat",
-      "title": "Unbound",
+      "title": "Unbound Container",
       "id": 202,
       "gridPos": {"h": 4, "w": 6, "x": 6, "y": 41},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "max(container_memory_usage_bytes{container_label_com_docker_compose_service=\"unbound\"}) or vector(0)", "refId": "A"}
+        {"expr": "max(container_start_time_seconds{container_label_com_docker_compose_service=~\"adblocker-unbound|unbound\"})", "refId": "A"}
       ],
       "fieldConfig": {
         "defaults": {
@@ -400,24 +398,12 @@
       },
       "options": {"orientation": "horizontal", "sparkline": {"show": true}}
     },
-    {
-      "type": "timeseries",
-      "title": "DNS Query Volume",
-      "id": 203,
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 41},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [
-        {"expr": "sum(rate(pihole_queries_total[5m]))", "refId": "A", "legendFormat": "Pi-hole"}
-      ],
-      "fieldConfig": {"defaults": {"unit": "req/s"}},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}}
-    },
-    {"type": "row", "title": "Pi System", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 49}},
+    {"type": "row", "title": "Pi System", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 45}},
     {
       "type": "timeseries",
       "title": "CPU Utilisation (%)",
       "id": 301,
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 50},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 46},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {
@@ -467,10 +453,10 @@
       "type": "timeseries",
       "title": "CPU Temperature Trend",
       "id": 306,
-      "gridPos": {"h": 8, "w": 18, "x": 6, "y": 58},
+      "gridPos": {"h": 8, "w": 18, "x": 6, "y": 46},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "pi_cpu_temperature_celsius", "refId": "A", "legendFormat": "Temperature"}
+        {"expr": "avg_over_time(pi_cpu_temperature_celsius[5m])", "refId": "A", "legendFormat": "Temperature"}
       ],
       "fieldConfig": {"defaults": {"unit": "celsius"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -479,17 +465,17 @@
       "type": "text",
       "title": "Kernel Limitation",
       "id": 304,
-      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 66},
+      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 54},
       "options": {
         "mode": "markdown",
-        "content": "Voltage and throttling metrics are hidden because the current Ubuntu kernel (`6.17.0-1003-raspi`) omits the bcm2835_vcio mailbox driver and this Pi now boots from NVMe. Install the `linux-raspi` kernel family or move to Raspberry Pi OS to restore those panels."
+        "content": "Voltage and throttling metrics remain disabled because the Ubuntu 6.17 raspi kernel omits the bcm2835_vcio mailbox driver. This Pi now boots from NVMe; install the `linux-raspi` kernel family or move to Raspberry Pi OS to restore those panels."
       }
     },
     {
       "type": "timeseries",
       "title": "Filesystem Usage (bytes)",
       "id": 305,
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 70},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 58},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {
@@ -501,7 +487,7 @@
       "fieldConfig": {"defaults": {"unit": "bytes"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
     },
-    {"type": "row", "title": "Recent Events", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 74}},
+    {"type": "row", "title": "Recent Events", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 66}},
     {
       "type": "table",
       "title": "Error Logs (15m)",
