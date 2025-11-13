@@ -87,7 +87,7 @@ loki.process "system" {
 
   stage.labels {
     values = {
-      job = "system"
+      job    = "system",
       source = "syslog"
     }
   }
@@ -100,8 +100,8 @@ loki.process "forgejo" {
 
   stage.json {
     expressions = {
-      timestamp = "time"
-      level     = "severity"
+      timestamp = "time",
+      level     = "severity",
       message   = "message"
     }
   }
@@ -113,7 +113,7 @@ loki.process "forgejo" {
 
   stage.labels {
     values = {
-      job     = "forgejo"
+      job     = "forgejo",
       service = "forgejo"
     }
   }
@@ -126,11 +126,11 @@ loki.process "docker" {
 
   stage.json {
     expressions = {
-      timestamp = "time"
-      message   = "log"
-      level     = "level"
-      container = "attrs.name"
-      service   = "attrs.labels.\"com.docker.compose.service\""
+      timestamp = "time",
+      message   = "log",
+      level     = "level",
+      container = "attrs.name",
+      service   = "attrs.labels.\"com.docker.compose.service\"",
       stack     = "attrs.labels.\"com.docker.compose.project\""
     }
   }
