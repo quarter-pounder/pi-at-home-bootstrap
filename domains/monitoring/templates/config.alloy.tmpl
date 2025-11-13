@@ -127,19 +127,21 @@ loki.process "docker" {
       timestamp = "time",
       level     = "level",
       message   = "log",
-      container = "Attrs.name",
-      service   = "Attrs.labels.\"com.docker.compose.service\"",
-      stack     = "Attrs.labels.\"com.docker.compose.project\"",
+      container = "attrs.name",
+      service   = "attrs.labels.\"com.docker.compose.service\"",
+      stack     = "attrs.labels.\"com.docker.compose.project\"",
     }
   }
 
   stage.labels {
+{% raw %}
     values = {
       level = "info",
-      container_name = "{{ if .container }}{{ .container }}{{ else }}unknown{{ end }}",
-      compose_service = "{{ if .service }}{{ .service }}{{ else }}unknown{{ end }}",
-      compose_stack = "{{ if .stack }}{{ .stack }}{{ else }}unknown{{ end }}",
+      container_name = "{{- if .container -}}{{ trimPrefix .container \"/\" }}{{- else -}}unknown{{- end }}",
+      compose_service = "{{- if .service -}}{{ .service }}{{- else -}}unknown{{- end }}",
+      compose_stack = "{{- if .stack -}}{{ .stack }}{{- else -}}unknown{{- end }}",
     }
+{% endraw %}
   }
 
   stage.timestamp {
