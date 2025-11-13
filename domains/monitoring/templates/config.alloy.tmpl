@@ -1,91 +1,41 @@
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
 local.file_match "system_logs" {
   path_targets = [
-    {
-      __path__ = "/var/log/syslog",
-      job      = "system",
-      level    = "info",
-    },
-    {
-      __path__ = "/var/log/auth.log",
-      job      = "system",
-      level    = "info",
-    },
-    {
-      __path__ = "/var/log/kern.log",
-      job      = "system",
-      level    = "info",
-    },
+    { __path__ = "/var/log/syslog",   job = "system", service = "syslog" },
+    { __path__ = "/var/log/auth.log", job = "system", service = "auth"   },
+    { __path__ = "/var/log/kern.log", job = "system", service = "kernel" },
   ]
 }
 
 local.file_match "forgejo_logs" {
   path_targets = [
-    {
-      __path__ = "/srv/forgejo/log/forgejo.log",
-      job      = "forgejo",
-      service  = "web",
-      level    = "info",
-    },
-    {
-      __path__ = "/srv/forgejo/log/hooks.log",
-      job      = "forgejo",
-      service  = "hooks",
-      level    = "info",
-    },
-    {
-      __path__ = "/srv/forgejo/log/http.log",
-      job      = "forgejo",
-      service  = "http",
-      level    = "info",
-    },
+    { __path__ = "/srv/forgejo/log/forgejo.log", job = "forgejo", service = "web"   },
+    { __path__ = "/srv/forgejo/log/hooks.log",   job = "forgejo", service = "hooks" },
+    { __path__ = "/srv/forgejo/log/http.log",    job = "forgejo", service = "http"  },
   ]
 }
 
-local.file_match "docker_logs" {
-  path_targets = [
-    {
-      __path__ = "/var/lib/docker/containers/*/*.log",
-      job      = "docker",
-      level    = "info",
-    },
-  ]
-}
-
-discovery.docker "containers" {
-  host = "unix:///var/run/docker.sock"
-}
-
+/* ----- SYSTEM LOGS ----- */
 loki.source.file "system" {
   targets    = local.file_match.system_logs.targets
   forward_to = [loki.process.system.receiver]
-}
-
-loki.source.file "forgejo" {
-  targets    = local.file_match.forgejo_logs.targets
-  forward_to = [loki.process.forgejo.receiver]
-}
-
-loki.source.file "docker_file" {
-  targets    = local.file_match.docker_logs.targets
-  forward_to = [loki.process.docker.receiver]
-}
-
-loki.source.docker "containers" {
-  host       = "unix:///var/run/docker.sock"
-  targets    = discovery.docker.containers.targets
-  forward_to = [loki.process.docker.receiver]
 }
 
 loki.process "system" {
   forward_to = [loki.write.default.receiver]
 
   stage.regex {
-    expression = "^(?P<timestamp>\\S+\\s+\\S+)\\s+(?P<hostname>\\S+)\\s+(?P<service>\\S+):\\s+(?P<message>.*)$"
+    expression = "^(?P<timestamp>[^ ]+ [^ ]+) (?P<hostname>[^ ]+) (?P<service>[^:]+): (?P<message>.*)$"
   }
 
   stage.labels {
     values = {
-      level = "info",
+      job     = "{{ .job }}",
+      service = "{{ .service }}",
+      source  = "system",
     }
   }
 
@@ -95,21 +45,28 @@ loki.process "system" {
   }
 }
 
+/* ----- FORGEJO ----- */
+loki.source.file "forgejo" {
+  targets    = local.file_match.forgejo_logs.targets
+  forward_to = [loki.process.forgejo.receiver]
+}
+
 loki.process "forgejo" {
   forward_to = [loki.write.default.receiver]
 
   stage.json {
     expressions = {
       timestamp = "time",
-      level     = "severity",
       message   = "message",
+      level     = "severity",
     }
   }
 
   stage.labels {
     values = {
-      level = "info",
-      job   = "forgejo",
+      job     = "{{ .job }}",
+      service = "{{ .service }}",
+      source  = "forgejo",
     }
   }
 
@@ -119,26 +76,32 @@ loki.process "forgejo" {
   }
 }
 
+/* ----- DOCKER CONTAINERS (SAFE VERSION) ----- */
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.containers.targets
+  forward_to = [loki.process.docker.receiver]
+}
+
 loki.process "docker" {
   forward_to = [loki.write.default.receiver]
+
+  stage.labels {
+    values = {
+      job     = "docker",
+      source  = "containers",
+    }
+  }
 
   stage.json {
     expressions = {
       timestamp = "time",
-      level     = "level",
       message   = "log",
+      level     = "level",
       container = "attrs.name",
       service   = "attrs.labels.\"com.docker.compose.service\"",
       stack     = "attrs.labels.\"com.docker.compose.project\"",
     }
-  }
-
-  stage.labels {
-{% raw %}
-    values = {
-      job = "docker",
-    }
-{% endraw %}
   }
 
   stage.timestamp {
@@ -147,22 +110,9 @@ loki.process "docker" {
   }
 }
 
+/* ----- LOKI WRITE ----- */
 loki.write "default" {
   endpoint {
     url = "http://monitoring-loki:3100/loki/api/v1/push"
-  }
-}
-
-prometheus.exporter.self "alloy" {}
-
-prometheus.scrape "alloy" {
-  targets         = prometheus.exporter.self.alloy.targets
-  scrape_interval = "30s"
-  forward_to      = [prometheus.remote_write.default.receiver]
-}
-
-prometheus.remote_write "default" {
-  endpoint {
-    url = "http://monitoring-prometheus:9090/api/v1/write"
   }
 }
