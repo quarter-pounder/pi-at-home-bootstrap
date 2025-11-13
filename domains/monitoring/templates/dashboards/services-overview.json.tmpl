@@ -34,28 +34,32 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {
-                  "text": "Everything is in its right place",
-                  "color": "#5fb3b3"
-                }
-              }
-            },
-            {
-              "type": "range",
-              "options": {
-                "from": 1,
-                "to": 100,
-                "result": {
-                  "text": "Attention required",
-                  "color": "#d66060"
-                }
-              }
-            }
-          ]
+          "thresholds": {
+  "mode": "absolute",
+  "steps": [
+    { "value": null, "color": "#5fb3b3" },
+    { "value": 1,    "color": "#d66060" }
+  ]
+},
+"mappings": [
+  {
+    "type": "value",
+    "options": {
+      "0": {
+        "text": "Everything is in its right place",
+        "color": "#5fb3b3"
+      }
+    }
+  },
+  {
+    "type": "range",
+    "options": {
+      "from": 1,
+      "to": 100,
+      "result": { "text": "Attention required" }
+    }
+  }
+]
         }
       },
       "options": { "orientation": "horizontal", "textMode": "value" }
@@ -74,22 +78,29 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": { "text": "No alerts", "color": "#5fb3b3" }
-              }
-            },
-            {
-              "type": "range",
-              "options": {
-                "from": 1,
-                "to": 100,
-                "result": { "text": "Alerts firing", "color": "#d66060" }
-              }
-            }
-          ],
+          "thresholds": {
+  "mode": "absolute",
+  "steps": [
+    { "value": null, "color": "#5fb3b3" },
+    { "value": 1,    "color": "#d66060" }
+  ]
+},
+"mappings": [
+  {
+    "type": "value",
+    "options": {
+      "0": { "text": "No alerts" }
+    }
+  },
+  {
+    "type": "range",
+    "options": {
+      "from": 1,
+      "to": 100,
+      "result": { "text": "Alerts firing" }
+    }
+  }
+],
           "links": [
             {
               "title": "View Alerts",
@@ -114,23 +125,29 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "mappings": [
-            {
-              "type": "value",
-              "options": { "0": { "text": "Nominal", "color": "#5fb3b3" } }
-            },
-            {
-              "type": "range",
-              "options": {
-                "from": 1,
-                "to": 100,
-                "result": {
-                  "text": "Throttling detected",
-                  "color": "#e7c787"
-                }
-              }
-            }
-          ],
+          "thresholds": {
+  "mode": "absolute",
+  "steps": [
+    { "value": null, "color": "#5fb3b3" },
+    { "value": 1,    "color": "#e7c787" }
+  ]
+},
+"mappings": [
+  {
+    "type": "value",
+    "options": {
+      "0": { "text": "Nominal" }
+    }
+  },
+  {
+    "type": "range",
+    "options": {
+      "from": 1,
+      "to": 100,
+      "result": { "text": "Throttling detected" }
+    }
+  }
+],
           "links": [
             {
               "title": "Pi system details",
