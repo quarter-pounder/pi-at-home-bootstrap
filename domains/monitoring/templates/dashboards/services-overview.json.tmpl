@@ -155,6 +155,12 @@
           "expr": "avg_over_time(up{job=\"forgejo\"}[6h]) * 100",
           "refId": "A",
           "legendFormat": "6h Availability"
+        },
+        {
+          "expr": "max(up{job=\"forgejo\"})",
+          "refId": "B",
+          "legendFormat": "Status",
+          "hide": true
         }
       ],
       "fieldConfig": {
@@ -200,6 +206,12 @@
           "expr": "avg_over_time(up{job=\"woodpecker\"}[6h]) * 100",
           "refId": "A",
           "legendFormat": "6h Availability"
+        },
+        {
+          "expr": "max(up{job=\"woodpecker\"})",
+          "refId": "B",
+          "legendFormat": "Status",
+          "hide": true
         }
       ],
       "fieldConfig": {
@@ -245,6 +257,12 @@
           "expr": "avg_over_time(up{job=\"prometheus\"}[6h]) * 100",
           "refId": "A",
           "legendFormat": "6h Availability"
+        },
+        {
+          "expr": "max(up{job=\"prometheus\"})",
+          "refId": "B",
+          "legendFormat": "Status",
+          "hide": true
         }
       ],
       "fieldConfig": {
@@ -290,6 +308,12 @@
           "expr": "avg_over_time(up{job=\"loki\"}[6h]) * 100",
           "refId": "A",
           "legendFormat": "6h Availability"
+        },
+        {
+          "expr": "max(up{job=\"loki\"})",
+          "refId": "B",
+          "legendFormat": "Status",
+          "hide": true
         }
       ],
       "fieldConfig": {
@@ -335,7 +359,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"forgejo\"}[5m]))",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo\"}[5m]))",
           "refId": "A",
           "legendFormat": "Forgejo"
         }
@@ -347,7 +371,7 @@
           "links": [
             {
               "title": "Grafana Explore",
-              "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22prometheus%22%2C%22uid%22%3A%22prometheus%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22sum(rate(container_cpu_usage_seconds_total%7Bcontainer_label_com_docker_compose_service%3D\\\"forgejo\\\"%7D%5B5m%5D))%22%7D%5D%7D%5D"
+              "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22prometheus%22%2C%22uid%22%3A%22prometheus%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22sum(rate(container_cpu_usage_seconds_total%7Bjob%3D\\\"cadvisor\\\",container_label_com_docker_compose_service%3D\\\"forgejo\\\"%7D%5B5m%5D))%22%7D%5D%7D%5D"
             }
           ]
         }
@@ -368,12 +392,12 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker\"}[5m]))",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker\"}[5m]))",
           "refId": "A",
           "legendFormat": "Server"
         },
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker-runner\"}[5m]))",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"}[5m]))",
           "refId": "B",
           "legendFormat": "Runner"
         }
@@ -453,7 +477,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}[5m]))",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}[5m]))",
           "refId": "A",
           "legendFormat": "Prometheus"
         }
@@ -480,7 +504,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}) / 1024 / 1024",
+          "expr": "sum(container_memory_working_set_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}) / 1024 / 1024",
           "refId": "A",
           "legendFormat": "Prometheus"
         }
@@ -507,7 +531,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}[5m]))",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}[5m]))",
           "refId": "A",
           "legendFormat": "Loki"
         }
@@ -534,7 +558,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}) / 1024 / 1024",
+          "expr": "sum(container_memory_working_set_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}) / 1024 / 1024",
           "refId": "A",
           "legendFormat": "Loki"
         }
@@ -567,6 +591,12 @@
           "expr": "avg_over_time(up{job=\"pihole\"}[6h]) * 100",
           "refId": "A",
           "legendFormat": "6h Availability"
+        },
+        {
+          "expr": "max(up{job=\"pihole\"})",
+          "refId": "B",
+          "legendFormat": "Status",
+          "hide": true
         }
       ],
       "fieldConfig": {
