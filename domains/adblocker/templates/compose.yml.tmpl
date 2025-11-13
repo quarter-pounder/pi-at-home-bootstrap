@@ -40,6 +40,17 @@ services:
       - "{{ PORT_ADBLOCKER_UNBOUND }}:53/udp"
     volumes:
       - ./unbound.conf:/etc/unbound/unbound.conf:ro
+      - /srv/adblocker/unbound:/var/lib/unbound
+    command:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /var/lib/unbound \
+          && chown -R unbound:unbound /var/lib/unbound \
+          && if [ ! -f /var/lib/unbound/root.key ]; then
+               unbound-anchor -a /var/lib/unbound/root.key || exit 1;
+             fi \
+          && exec unbound -d -v
     networks:
       - adblocker-network
 
