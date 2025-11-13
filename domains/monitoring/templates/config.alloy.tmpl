@@ -101,7 +101,7 @@ loki.process "forgejo" {
   stage.json {
     expressions = {
       timestamp = "time"
-      level = "severity"
+      level   = "severity"
       message = "message"
     }
   }
@@ -148,7 +148,7 @@ loki.process "docker_containers" {
   stage.json {
     expressions = {
       timestamp = "time"
-      message = "log"
+      message   = "log"
     }
   }
 
