@@ -1,72 +1,130 @@
-discovery.docker "containers" {
-  host = "unix:///var/run/docker.sock"
-}
+// -----------------------------------------------------------------------------
+// FILE TARGETS
+// -----------------------------------------------------------------------------
 
 local.file_match "system_logs" {
   path_targets = [
-    { __path__ = "/var/log/syslog",   job = "system", service = "syslog" },
-    { __path__ = "/var/log/auth.log", job = "system", service = "auth"   },
-    { __path__ = "/var/log/kern.log", job = "system", service = "kernel" },
+    {
+      __path__ = "/var/log/syslog"
+    },
+    {
+      __path__ = "/var/log/auth.log"
+    },
+    {
+      __path__ = "/var/log/kern.log"
+    },
   ]
 }
 
 local.file_match "forgejo_logs" {
   path_targets = [
-    { __path__ = "/srv/forgejo/log/forgejo.log", job = "forgejo", service = "web"   },
-    { __path__ = "/srv/forgejo/log/hooks.log",   job = "forgejo", service = "hooks" },
-    { __path__ = "/srv/forgejo/log/http.log",    job = "forgejo", service = "http"  },
+    {
+      __path__ = "/srv/forgejo/log/forgejo.log"
+    },
+    {
+      __path__ = "/srv/forgejo/log/hooks.log"
+    },
+    {
+      __path__ = "/srv/forgejo/log/http.log"
+    },
   ]
 }
 
-/* ----- SYSTEM LOGS ----- */
-loki.source.file "system" {
+local.file_match "docker_logs" {
+  path_targets = [
+    {
+      __path__ = "/var/lib/docker/containers/*/*.log"
+    },
+  ]
+}
+
+// -----------------------------------------------------------------------------
+// DISCOVERY (DOCKER)
+// -----------------------------------------------------------------------------
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// -----------------------------------------------------------------------------
+// LOKI SOURCES
+// -----------------------------------------------------------------------------
+
+// System log files
+loki.source.file "system_files" {
   targets    = local.file_match.system_logs.targets
   forward_to = [loki.process.system.receiver]
 }
 
+// Forgejo log files
+loki.source.file "forgejo_files" {
+  targets    = local.file_match.forgejo_logs.targets
+  forward_to = [loki.process.forgejo.receiver]
+}
+
+// Docker JSON log files (fallback)
+loki.source.file "docker_files" {
+  targets    = local.file_match.docker_logs.targets
+  forward_to = [loki.process.docker_files.receiver]
+}
+
+// Docker via docker.sock (preferred)
+loki.source.docker "docker_containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.containers.targets
+  forward_to = [loki.process.docker_containers.receiver]
+}
+
+// -----------------------------------------------------------------------------
+// LOKI PROCESS PIPELINES
+// -----------------------------------------------------------------------------
+
+// --- System logs -------------------------------------------------------------
+
 loki.process "system" {
   forward_to = [loki.write.default.receiver]
 
+  // Parse classic syslog-style lines:
+  // "<timestamp> <hostname> <service>: <message>"
   stage.regex {
-    expression = "^(?P<timestamp>[^ ]+ [^ ]+) (?P<hostname>[^ ]+) (?P<service>[^:]+): (?P<message>.*)$"
+    expression = "^(?P<timestamp>\\S+\\s+\\S+)\\s+(?P<hostname>\\S+)\\s+(?P<service>\\S+):\\s+(?P<message>.*)$"
   }
 
+  // Attach labels. This guarantees at least "job" and "service".
   stage.labels {
     values = {
-      job     = "{{ .job }}",
-      service = "{{ .service }}",
-      source  = "system",
+      job     = "system"
+      service = "syslog"
     }
   }
 
+  // Set timestamp (Grafana/Loki will also accept source time)
   stage.timestamp {
     source = "timestamp"
     format = "Jan 02 15:04:05"
   }
 }
 
-/* ----- FORGEJO ----- */
-loki.source.file "forgejo" {
-  targets    = local.file_match.forgejo_logs.targets
-  forward_to = [loki.process.forgejo.receiver]
-}
+// --- Forgejo logs ------------------------------------------------------------
 
 loki.process "forgejo" {
   forward_to = [loki.write.default.receiver]
 
+  // Forgejo can emit JSON logs; adjust expressions if your format differs
   stage.json {
     expressions = {
-      timestamp = "time",
-      message   = "message",
-      level     = "severity",
+      timestamp = "time"
+      message   = "message"
+      level     = "severity"
     }
   }
 
+  // Static labels; no template/brace games, but enough for querying
   stage.labels {
     values = {
-      job     = "{{ .job }}",
-      service = "{{ .service }}",
-      source  = "forgejo",
+      job   = "forgejo"
+      app   = "forgejo"
+      level = "info"
     }
   }
 
@@ -76,31 +134,25 @@ loki.process "forgejo" {
   }
 }
 
-/* ----- DOCKER CONTAINERS (SAFE VERSION) ----- */
-loki.source.docker "containers" {
-  host       = "unix:///var/run/docker.sock"
-  targets    = discovery.docker.containers.targets
-  forward_to = [loki.process.docker.receiver]
-}
+// --- Docker logs from files --------------------------------------------------
 
-loki.process "docker" {
+loki.process "docker_files" {
   forward_to = [loki.write.default.receiver]
 
-  stage.labels {
-    values = {
-      job     = "docker",
-      source  = "containers",
+  // Docker JSON log format from container log files
+  stage.json {
+    expressions = {
+      timestamp = "time"
+      message   = "log"
+      // These stay as attributes; we don't try to get clever here
+      level     = "level"
     }
   }
 
-  stage.json {
-    expressions = {
-      timestamp = "time",
-      message   = "log",
-      level     = "level",
-      container = "attrs.name",
-      service   = "attrs.labels.\"com.docker.compose.service\"",
-      stack     = "attrs.labels.\"com.docker.compose.project\"",
+  // Hard guarantee: every stream has at least one label
+  stage.labels {
+    values = {
+      job = "docker-files"
     }
   }
 
@@ -110,9 +162,62 @@ loki.process "docker" {
   }
 }
 
-/* ----- LOKI WRITE ----- */
+// --- Docker logs via docker.sock ---------------------------------------------
+
+loki.process "docker_containers" {
+  forward_to = [loki.write.default.receiver]
+
+  // Alloy's docker source already decorates with attrs.*; we only care about message + time
+  stage.json {
+    expressions = {
+      timestamp = "time"
+      message   = "log"
+    }
+  }
+
+  // Again, dumb but safe: fixed job label
+  stage.labels {
+    values = {
+      job = "docker"
+    }
+  }
+
+  stage.timestamp {
+    source = "timestamp"
+    format = "2006-01-02T15:04:05.000000000Z"
+  }
+}
+
+// -----------------------------------------------------------------------------
+// LOKI WRITE
+// -----------------------------------------------------------------------------
+
 loki.write "default" {
   endpoint {
     url = "http://monitoring-loki:3100/loki/api/v1/push"
+  }
+
+  // Optional, but keeps Loki happier under load
+  // batch {
+  //   max_bytes = 1048576
+  //   max_wait  = "2s"
+  // }
+}
+
+// -----------------------------------------------------------------------------
+// PROMETHEUS: SELF-SCRAPE + REMOTE WRITE
+// -----------------------------------------------------------------------------
+
+prometheus.exporter.self "alloy" {}
+
+prometheus.scrape "alloy" {
+  targets         = prometheus.exporter.self.alloy.targets
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.default.receiver]
+}
+
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://monitoring-prometheus:9090/api/v1/write"
   }
 }
