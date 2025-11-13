@@ -109,15 +109,15 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
+            {"type": "value", "options": {"0": {"text": "Down", "color": "#d66666"}, "1": {"text": "Up", "color": "#8cbf88"}}}
           ],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "#c27777", "value": null}, {"color": "#8fc78f", "value": 1}]}
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#d66666", "value": null}, {"color": "#8cbf88", "value": 1}]}
         },
         "overrides": [
           {
             "matcher": {"id": "byName", "options": "6h Availability"},
             "properties": [
-              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8fc78f", "value": null}, {"color": "#f2cc0c", "value": 99}, {"color": "#c27777", "value": 97}]}}
+              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8cbf88", "value": null}, {"color": "#e7b04a", "value": 99}, {"color": "#d66666", "value": 97}]}}
             ]
           }
         ]
@@ -137,15 +137,15 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
+            {"type": "value", "options": {"0": {"text": "Down", "color": "#d66666"}, "1": {"text": "Up", "color": "#8cbf88"}}}
           ],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "#c27777", "value": null}, {"color": "#8fc78f", "value": 1}]}
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#d66666", "value": null}, {"color": "#8cbf88", "value": 1}]}
         },
         "overrides": [
           {
             "matcher": {"id": "byName", "options": "6h Availability"},
             "properties": [
-              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8fc78f", "value": null}, {"color": "#f2cc0c", "value": 99}, {"color": "#c27777", "value": 97}]}}
+              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8cbf88", "value": null}, {"color": "#e7b04a", "value": 99}, {"color": "#d66666", "value": 97}]}}
             ]
           }
         ]
@@ -165,15 +165,15 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
+            {"type": "value", "options": {"0": {"text": "Down", "color": "#d66666"}, "1": {"text": "Up", "color": "#8cbf88"}}}
           ],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "#c27777", "value": null}, {"color": "#8fc78f", "value": 1}]}
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#d66666", "value": null}, {"color": "#8cbf88", "value": 1}]}
         },
         "overrides": [
           {
             "matcher": {"id": "byName", "options": "6h Availability"},
             "properties": [
-              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8fc78f", "value": null}, {"color": "#f2cc0c", "value": 99}, {"color": "#c27777", "value": 97}]}}
+              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8cbf88", "value": null}, {"color": "#e7b04a", "value": 99}, {"color": "#d66666", "value": 97}]}}
             ]
           }
         ]
@@ -193,15 +193,15 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
+            {"type": "value", "options": {"0": {"text": "Down", "color": "#d66666"}, "1": {"text": "Up", "color": "#8cbf88"}}}
           ],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "#c27777", "value": null}, {"color": "#8fc78f", "value": 1}]}
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#d66666", "value": null}, {"color": "#8cbf88", "value": 1}]}
         },
         "overrides": [
           {
             "matcher": {"id": "byName", "options": "6h Availability"},
             "properties": [
-              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8fc78f", "value": null}, {"color": "#f2cc0c", "value": 99}, {"color": "#c27777", "value": 97}]}}
+              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8cbf88", "value": null}, {"color": "#e7b04a", "value": 99}, {"color": "#d66666", "value": 97}]}}
             ]
           }
         ]
@@ -216,7 +216,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 11},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"forgejo\",container!\"\",image!\"\"}[5m]))", "refId": "A", "legendFormat": "Forgejo"}
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"forgejo\",container!='',image!=''}[5m]))", "refId": "A", "legendFormat": "Forgejo"}
       ],
       "fieldConfig": {
         "defaults": {
@@ -235,8 +235,8 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 11},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker\",container!\"\",image!\"\"}[5m]))", "refId": "A", "legendFormat": "Server"},
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker-runner\",container!\"\",image!\"\"}[5m]))", "refId": "B", "legendFormat": "Runner"}
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker\",container!='',image!=''}[5m]))", "refId": "A", "legendFormat": "Server"},
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker-runner\",container!='',image!=''}[5m]))", "refId": "B", "legendFormat": "Runner"}
       ],
       "fieldConfig": {"defaults": {"unit": "cores"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -282,7 +282,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\",container!\"\",image!\"\"}[5m]))", "refId": "A", "legendFormat": "Prometheus"}
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\",container!='',image!=''}[5m]))", "refId": "A", "legendFormat": "Prometheus"}
       ],
       "fieldConfig": {"defaults": {"unit": "cores"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -294,7 +294,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(container_memory_working_set_bytes{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\",container!\"\",image!\"\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Prometheus"}
+        {"expr": "sum(container_memory_working_set_bytes{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\",container!='',image!=''}) / 1024 / 1024", "refId": "A", "legendFormat": "Prometheus"}
       ],
       "fieldConfig": {"defaults": {"unit": "MB"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -306,7 +306,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-loki|loki\",container!\"\",image!\"\"}[5m]))", "refId": "A", "legendFormat": "Loki"}
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-loki|loki\",container!='',image!=''}[5m]))", "refId": "A", "legendFormat": "Loki"}
       ],
       "fieldConfig": {"defaults": {"unit": "cores"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -318,7 +318,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(container_memory_working_set_bytes{container_label_com_docker_compose_service=~\"monitoring-loki|loki\",container!\"\",image!\"\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Loki"}
+        {"expr": "sum(container_memory_working_set_bytes{container_label_com_docker_compose_service=~\"monitoring-loki|loki\",container!='',image!=''}) / 1024 / 1024", "refId": "A", "legendFormat": "Loki"}
       ],
       "fieldConfig": {"defaults": {"unit": "MB"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
@@ -337,15 +337,15 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
+            {"type": "value", "options": {"0": {"text": "Down", "color": "#d66666"}, "1": {"text": "Up", "color": "#8cbf88"}}}
           ],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "#c27777", "value": null}, {"color": "#8fc78f", "value": 1}]}
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#d66666", "value": null}, {"color": "#8cbf88", "value": 1}]}
         },
         "overrides": [
           {
             "matcher": {"id": "byName", "options": "6h Availability"},
             "properties": [
-              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8fc78f", "value": null}, {"color": "#f2cc0c", "value": 99}, {"color": "#c27777", "value": 97}]}}
+              {"id": "thresholds", "value": {"mode": "absolute", "steps": [{"color": "#8cbf88", "value": null}, {"color": "#e7b04a", "value": 99}, {"color": "#d66666", "value": 97}]}}
             ]
           }
         ]
@@ -364,9 +364,9 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
+            {"type": "value", "options": {"0": {"text": "Down", "color": "#d66666"}, "1": {"text": "Up", "color": "#8cbf88"}}}
           ],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "#c27777", "value": null}, {"color": "#8fc78f", "value": 1}]}
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#d66666", "value": null}, {"color": "#8cbf88", "value": 1}]}
         }
       },
       "options": {"orientation": "horizontal", "textMode": "value", "sparkline": {"show": false}, "reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
@@ -386,7 +386,7 @@
         }
       ],
       "fieldConfig": {"defaults": {"unit": "percent", "decimals": 1}},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}, "thresholdsStyle": {"mode": "line"}}
     },
     {
       "type": "timeseries",
@@ -420,16 +420,16 @@
               "type": "special",
               "options": {
                 "match": "nan",
-                "result": {"text": "Unknown", "color": "#c1c7cd"}
+                "result": {"text": "Unknown", "color": "#a5a5a5"}
               }
             }
           ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "#7eb26d", "value": null},
-              {"color": "#eab839", "value": 60},
-              {"color": "#d44a3a", "value": 80}
+              {"color": "#8cbf88", "value": null},
+              {"color": "#e7b04a", "value": 60},
+              {"color": "#d66666", "value": 80}
             ]
           }
         }
