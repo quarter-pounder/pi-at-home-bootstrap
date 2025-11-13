@@ -2,37 +2,23 @@
 
 local.file_match "system_logs" {
   path_targets = [
-    {
-      __path__ = "/var/log/syslog"
-    },
-    {
-      __path__ = "/var/log/auth.log"
-    },
-    {
-      __path__ = "/var/log/kern.log"
-    }
+    { __path__ = "/var/log/syslog" },
+    { __path__ = "/var/log/auth.log" },
+    { __path__ = "/var/log/kern.log" }
   ]
 }
 
 local.file_match "forgejo_logs" {
   path_targets = [
-    {
-      __path__ = "/srv/forgejo/log/forgejo.log"
-    },
-    {
-      __path__ = "/srv/forgejo/log/hooks.log"
-    },
-    {
-      __path__ = "/srv/forgejo/log/http.log"
-    }
+    { __path__ = "/srv/forgejo/log/forgejo.log" },
+    { __path__ = "/srv/forgejo/log/hooks.log" },
+    { __path__ = "/srv/forgejo/log/http.log" }
   ]
 }
 
 local.file_match "docker_logs" {
   path_targets = [
-    {
-      __path__ = "/var/lib/docker/containers/*/*.log"
-    }
+    { __path__ = "/var/lib/docker/containers/*/*.log" }
   ]
 }
 
@@ -86,10 +72,7 @@ loki.process "system" {
   }
 
   stage.labels {
-    values = {
-      job    = "system",
-      source = "syslog"
-    }
+    values = { job = "system", source = "syslog" }
   }
 }
 
@@ -99,11 +82,7 @@ loki.process "forgejo" {
   forward_to = [loki.write.default.receiver]
 
   stage.json {
-    expressions = {
-      timestamp = "time",
-      level     = "severity",
-      message   = "message"
-    }
+    expressions = { timestamp = "time", level = "severity", message = "message" }
   }
 
   stage.timestamp {
@@ -112,10 +91,7 @@ loki.process "forgejo" {
   }
 
   stage.labels {
-    values = {
-      job     = "forgejo",
-      service = "forgejo"
-    }
+    values = { job = "forgejo", service = "forgejo" }
   }
 }
 
@@ -141,16 +117,12 @@ loki.process "docker" {
   }
 
   stage.labels {
-    values = {
-      job = "docker"
-    }
+    values = { job = "docker" }
   }
 
   // fallback if Docker log lacks labels entirely
   stage.static_labels {
-    values = {
-      service = "unknown"
-    }
+    values = { service = "unknown" }
   }
 }
 
