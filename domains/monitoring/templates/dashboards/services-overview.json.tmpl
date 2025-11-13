@@ -3,7 +3,7 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": {"type": "grafana", "uid": "grafana"},
+        "datasource": { "type": "grafana", "uid": "grafana" },
         "enable": true,
         "hide": true,
         "name": "Annotations & Alerts",
@@ -18,456 +18,641 @@
     {
       "type": "row",
       "title": "Summary",
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
     },
     {
       "type": "stat",
       "title": "Attention Required",
       "id": 101,
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {"expr": "sum(1 - clamp_max(max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole\"}[5m]), 1))", "refId": "A"}
+        {
+          "expr": "sum(1 - clamp_max(max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole\"}[5m]), 1))",
+          "refId": "A"
+        }
       ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "Everything is in its right place", "color": "#8fc78f"}}},
-            {"type": "range", "options": {"from": 1, "to": 100, "result": {"text": "Attention required", "color": "#c27777"}}}
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Everything is in its right place",
+                  "color": "#5fb3b3"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 1,
+                "to": 100,
+                "result": {
+                  "text": "Attention required",
+                  "color": "#d66060"
+                }
+              }
+            }
           ]
         }
       },
-      "options": {"orientation": "horizontal", "textMode": "value"}
+      "options": { "orientation": "horizontal", "textMode": "value" }
     },
     {
       "type": "stat",
       "title": "Active Alerts",
       "id": 102,
-      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 1},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {"expr": "sum(alerts{alertstate=\"firing\"}) or vector(0)", "refId": "A"}
+        {
+          "expr": "sum(alerts{alertstate=\"firing\"}) or vector(0)",
+          "refId": "A"
+        }
       ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "No alerts", "color": "#8fc78f"}}},
-            {"type": "range", "options": {"from": 1, "to": 100, "result": {"text": "Alerts firing", "color": "#c27777"}}}
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "No alerts", "color": "#5fb3b3" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 1,
+                "to": 100,
+                "result": { "text": "Alerts firing", "color": "#d66060" }
+              }
+            }
           ],
           "links": [
-            {"title": "View Alerts", "url": "/alerting/list"}
+            {
+              "title": "View Alerts",
+              "url": "/alerting/list"
+            }
           ]
         }
       },
-      "options": {"orientation": "horizontal", "textMode": "value"}
+      "options": { "orientation": "horizontal", "textMode": "value" }
     },
     {
       "type": "stat",
       "title": "Pi System Status",
       "id": 103,
-      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 1},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {"expr": "max(pi_throttled_flag{condition=~\"undervoltage_now|throttled_now\"} or vector(0))", "refId": "A"}
+        {
+          "expr": "max(pi_throttled_flag{condition=~\"undervoltage_now|throttled_now\"} or vector(0))",
+          "refId": "A"
+        }
       ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "Nominal", "color": "#8fc78f"}}},
-            {"type": "range", "options": {"from": 1, "to": 100, "result": {"text": "Throttling detected", "color": "#f2cc0c"}}}
+            {
+              "type": "value",
+              "options": { "0": { "text": "Nominal", "color": "#5fb3b3" } }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 1,
+                "to": 100,
+                "result": {
+                  "text": "Throttling detected",
+                  "color": "#e7c787"
+                }
+              }
+            }
           ],
           "links": [
-            {"title": "Pi system details", "url": "/d/pi-services-overview/domain-overview?viewPanel=301"}
+            {
+              "title": "Pi system details",
+              "url": "/d/pi-services-overview/domain-overview?viewPanel=301"
+            }
           ]
         }
       },
-      "options": {"orientation": "horizontal", "textMode": "value"}
+      "options": { "orientation": "horizontal", "textMode": "value" }
     },
-    {"type": "row", "title": "Core Domains", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5}},
+
+    { "type": "row", "title": "Core Domains", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 } },
+
     {
-  "type": "stat",
-  "title": "Forgejo Availability (6h)",
-  "id": 1,
-  "gridPos": { "h": 4, "w": 6, "x": 0, "y": 6 },
-  "datasource": { "type": "prometheus", "uid": "prometheus" },
-  "targets": [
-    {
-      "expr": "avg_over_time(up{job=\"forgejo\"}[6h]) * 100",
-      "refId": "A",
-      "legendFormat": "6h Availability"
-    }
-  ],
-  "fieldConfig": {
-    "defaults": {
-      "unit": "percent",
-      "decimals": 1,
-      "color": { "mode": "thresholds" },
-      "thresholds": {
-        "mode": "absolute",
-        "steps": [
-          { "color": "#d66666", "value": null },
-          { "color": "#e7b04a", "value": 97 },
-          { "color": "#8cbf88", "value": 99 }
-        ]
-      },
-      "mappings": [
+      "type": "stat",
+      "title": "Forgejo Availability (6h)",
+      "id": 1,
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
         {
-          "type": "special",
-          "options": {
-            "match": "nan",
-            "result": { "text": "No data", "color": "#a5a5a5" }
-          }
+          "expr": "avg_over_time(up{job=\"forgejo\"}[6h]) * 100",
+          "refId": "A",
+          "legendFormat": "6h Availability"
         }
-      ]
-    },
-    "overrides": []
-  },
-  "options": {
-    "orientation": "horizontal",
-    "colorMode": "value",
-    "textMode": "value_and_name",
-    "reduceOptions": {
-      "calcs": ["lastNotNull"],
-      "values": false
-    }
-  }
-},
-{
-  "type": "stat",
-  "title": "Woodpecker Availability (6h)",
-  "id": 2,
-  "gridPos": { "h": 4, "w": 6, "x": 6, "y": 6 },
-  "datasource": { "type": "prometheus", "uid": "prometheus" },
-  "targets": [
-    {
-      "expr": "avg_over_time(up{job=\"woodpecker\"}[6h]) * 100",
-      "refId": "A",
-      "legendFormat": "6h Availability"
-    }
-  ],
-  "fieldConfig": {
-    "defaults": {
-      "unit": "percent",
-      "decimals": 1,
-      "color": { "mode": "thresholds" },
-      "thresholds": {
-        "mode": "absolute",
-        "steps": [
-          { "color": "#d66666", "value": null },
-          { "color": "#e7b04a", "value": 97 },
-          { "color": "#8cbf88", "value": 99 }
-        ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#d66060", "value": null },
+              { "color": "#e7c787", "value": 97 },
+              { "color": "#5fb3b3", "value": 99 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": { "text": "No data", "color": "#a5a5a5" }
+              }
+            }
+          ]
+        },
+        "overrides": []
       },
-      "mappings": [
-        {
-          "type": "special",
-          "options": {
-            "match": "nan",
-            "result": { "text": "No data", "color": "#a5a5a5" }
-          }
-        }
-      ]
+      "options": {
+        "orientation": "horizontal",
+        "colorMode": "value",
+        "textMode": "value_and_name",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      }
     },
-    "overrides": []
-  },
-  "options": {
-    "orientation": "horizontal",
-    "colorMode": "value",
-    "textMode": "value_and_name",
-    "reduceOptions": {
-      "calcs": ["lastNotNull"],
-      "values": false
-    }
-  }
-},
-{
-  "type": "stat",
-  "title": "Prometheus Availability (6h)",
-  "id": 3,
-  "gridPos": { "h": 4, "w": 6, "x": 12, "y": 6 },
-  "datasource": { "type": "prometheus", "uid": "prometheus" },
-  "targets": [
     {
-      "expr": "avg_over_time(up{job=\"prometheus\"}[6h]) * 100",
-      "refId": "A",
-      "legendFormat": "6h Availability"
-    }
-  ],
-  "fieldConfig": {
-    "defaults": {
-      "unit": "percent",
-      "decimals": 1,
-      "color": { "mode": "thresholds" },
-      "thresholds": {
-        "mode": "absolute",
-        "steps": [
-          { "color": "#d66666", "value": null },
-          { "color": "#e7b04a", "value": 97 },
-          { "color": "#8cbf88", "value": 99 }
-        ]
+      "type": "stat",
+      "title": "Woodpecker Availability (6h)",
+      "id": 2,
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "avg_over_time(up{job=\"woodpecker\"}[6h]) * 100",
+          "refId": "A",
+          "legendFormat": "6h Availability"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#d66060", "value": null },
+              { "color": "#e7c787", "value": 97 },
+              { "color": "#5fb3b3", "value": 99 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": { "text": "No data", "color": "#a5a5a5" }
+              }
+            }
+          ]
+        },
+        "overrides": []
       },
-      "mappings": [
-        {
-          "type": "special",
-          "options": {
-            "match": "nan",
-            "result": { "text": "No data", "color": "#a5a5a5" }
-          }
-        }
-      ]
+      "options": {
+        "orientation": "horizontal",
+        "colorMode": "value",
+        "textMode": "value_and_name",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      }
     },
-    "overrides": []
-  },
-  "options": {
-    "orientation": "horizontal",
-    "colorMode": "value",
-    "textMode": "value_and_name",
-    "reduceOptions": {
-      "calcs": ["lastNotNull"],
-      "values": false
-    }
-  }
-},
     {
-  "type": "stat",
-  "title": "Loki Availability (6h)",
-  "id": 4,
-  "gridPos": { "h": 4, "w": 6, "x": 18, "y": 6 },
-  "datasource": { "type": "prometheus", "uid": "prometheus" },
-  "targets": [
-    {
-      "expr": "avg_over_time(up{job=\"loki\"}[6h]) * 100",
-      "refId": "A",
-      "legendFormat": "6h Availability"
-    }
-  ],
-  "fieldConfig": {
-    "defaults": {
-      "unit": "percent",
-      "decimals": 1,
-      "color": { "mode": "thresholds" },
-      "thresholds": {
-        "mode": "absolute",
-        "steps": [
-          { "color": "#d66666", "value": null },
-          { "color": "#e7b04a", "value": 97 },
-          { "color": "#8cbf88", "value": 99 }
-        ]
+      "type": "stat",
+      "title": "Prometheus Availability (6h)",
+      "id": 3,
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "avg_over_time(up{job=\"prometheus\"}[6h]) * 100",
+          "refId": "A",
+          "legendFormat": "6h Availability"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#d66060", "value": null },
+              { "color": "#e7c787", "value": 97 },
+              { "color": "#5fb3b3", "value": 99 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": { "text": "No data", "color": "#a5a5a5" }
+              }
+            }
+          ]
+        },
+        "overrides": []
       },
-      "mappings": [
-        {
-          "type": "special",
-          "options": {
-            "match": "nan",
-            "result": { "text": "No data", "color": "#a5a5a5" }
-          }
-        }
-      ]
+      "options": {
+        "orientation": "horizontal",
+        "colorMode": "value",
+        "textMode": "value_and_name",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      }
     },
-    "overrides": []
-  },
-  "options": {
-    "orientation": "horizontal",
-    "colorMode": "value",
-    "textMode": "value_and_name",
-    "reduceOptions": {
-      "calcs": ["lastNotNull"],
-      "values": false
-    }
-  }
-},
-    {"type": "row", "title": "Resource Usage", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 10}},
+    {
+      "type": "stat",
+      "title": "Loki Availability (6h)",
+      "id": 4,
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "avg_over_time(up{job=\"loki\"}[6h]) * 100",
+          "refId": "A",
+          "legendFormat": "6h Availability"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#d66060", "value": null },
+              { "color": "#e7c787", "value": 97 },
+              { "color": "#5fb3b3", "value": 99 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": { "text": "No data", "color": "#a5a5a5" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "colorMode": "value",
+        "textMode": "value_and_name",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      }
+    },
+
+    { "type": "row", "title": "Resource Usage", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 10 } },
+
     {
       "type": "timeseries",
       "title": "Forgejo CPU (cores)",
       "id": 5,
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 11},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 11 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"forgejo\"}[5m]))", "refId": "A", "legendFormat": "Forgejo"}
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"forgejo\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "Forgejo"
+        }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "cores",
+          "color": { "mode": "palette-classic" },
           "links": [
-            {"title": "Grafana Explore", "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22prometheus%22%2C%22uid%22%3A%22prometheus%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22sum(rate(container_cpu_usage_seconds_total%7Bcontainer_label_com_docker_compose_service%3D\\\"forgejo\\\"%7D%5B5m%5D))%22%7D%5D%7D%5D"}
+            {
+              "title": "Grafana Explore",
+              "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22prometheus%22%2C%22uid%22%3A%22prometheus%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22sum(rate(container_cpu_usage_seconds_total%7Bcontainer_label_com_docker_compose_service%3D\\\"forgejo\\\"%7D%5B5m%5D))%22%7D%5D%7D%5D"
+            }
           ]
         }
       },
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" },
+        "drawStyle": "bars",
+        "fillOpacity": 15,
+        "lineWidth": 1
+      }
     },
     {
       "type": "timeseries",
       "title": "Woodpecker CPU (cores)",
       "id": 6,
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 11},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 11 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker\"}[5m]))", "refId": "A", "legendFormat": "Server"},
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker-runner\"}[5m]))", "refId": "B", "legendFormat": "Runner"}
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "Server"
+        },
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"woodpecker-runner\"}[5m]))",
+          "refId": "B",
+          "legendFormat": "Runner"
+        }
       ],
-      "fieldConfig": {"defaults": {"unit": "cores"}},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cores",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" },
+        "drawStyle": "bars",
+        "fillOpacity": 15,
+        "lineWidth": 1
+      }
     },
-    {"type": "row", "title": "Observability", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 19}},
+
+    { "type": "row", "title": "Observability", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 } },
+
     {
       "type": "stat",
       "title": "Queue Depth",
       "id": 9,
-      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 20},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 20 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {"expr": "max(woodpecker_server_queue_count)", "refId": "A"}
+        {
+          "expr": "max(woodpecker_server_queue_count)",
+          "refId": "A"
+        }
       ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {"type": "value", "options": {"null": {"text": "No data", "color": "#f2cc0c"}}}
+            {
+              "type": "value",
+              "options": {
+                "null": { "text": "No data", "color": "#e7c787" }
+              }
+            }
           ],
           "links": [
-            {"title": "Woodpecker Queue", "url": "/d/woodpecker/woodpecker?viewPanel=2"}
+            {
+              "title": "Woodpecker Queue",
+              "url": "/d/woodpecker/woodpecker?viewPanel=2"
+            }
           ]
         }
       },
-      "options": {"orientation": "horizontal", "textMode": "value"}
+      "options": { "orientation": "horizontal", "textMode": "value" }
     },
     {
       "type": "stat",
       "title": "Forgejo API Latency",
       "id": 10,
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 20},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 20 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"forgejo\"}[5m])) by (le))", "refId": "A", "legendFormat": "p95"}
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"forgejo\"}[5m])) by (le))",
+          "refId": "A",
+          "legendFormat": "p95"
+        }
       ],
-      "fieldConfig": {"defaults": {"unit": "s", "decimals": 2}},
-      "options": {"orientation": "horizontal", "textMode": "value"}
+      "fieldConfig": {
+        "defaults": { "unit": "s", "decimals": 2 }
+      },
+      "options": { "orientation": "horizontal", "textMode": "value" }
     },
     {
       "type": "timeseries",
       "title": "Prometheus CPU (cores)",
       "id": 11,
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}[5m]))", "refId": "A", "legendFormat": "Prometheus"}
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "Prometheus"
+        }
       ],
-      "fieldConfig": {"defaults": {"unit": "cores"}},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cores",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" },
+        "drawStyle": "bars",
+        "fillOpacity": 15,
+        "lineWidth": 1
+      }
     },
     {
       "type": "timeseries",
       "title": "Prometheus Memory (MB)",
       "id": 12,
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {"expr": "sum(container_memory_working_set_bytes{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Prometheus"}
+        {
+          "expr": "sum(container_memory_working_set_bytes{container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}) / 1024 / 1024",
+          "refId": "A",
+          "legendFormat": "Prometheus"
+        }
       ],
-      "fieldConfig": {"defaults": {"unit": "MB"}},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+      "fieldConfig": {
+        "defaults": {
+          "unit": "MB",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" },
+        "drawStyle": "bars",
+        "fillOpacity": 15,
+        "lineWidth": 1
+      }
     },
     {
       "type": "timeseries",
       "title": "Loki CPU (cores)",
       "id": 13,
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}[5m]))", "refId": "A", "legendFormat": "Loki"}
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "Loki"
+        }
       ],
-      "fieldConfig": {"defaults": {"unit": "cores"}},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cores",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" },
+        "drawStyle": "bars",
+        "fillOpacity": 15,
+        "lineWidth": 1
+      }
     },
     {
       "type": "timeseries",
       "title": "Loki Memory (MB)",
       "id": 14,
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {"expr": "sum(container_memory_working_set_bytes{container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Loki"}
-      ],
-      "fieldConfig": {"defaults": {"unit": "MB"}},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
-    },
-    {"type": "row", "title": "Adblocker", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 40}},
-{
-  "type": "stat",
-  "title": "Pi-hole Container (6h)",
-  "id": 201,
-  "gridPos": { "h": 4, "w": 6, "x": 0, "y": 41 },
-  "datasource": { "type": "prometheus", "uid": "prometheus" },
-  "targets": [
-    {
-      "expr": "avg_over_time(up{job=\"pihole\"}[6h]) * 100",
-      "refId": "A",
-      "legendFormat": "6h Availability"
-    }
-  ],
-  "fieldConfig": {
-    "defaults": {
-      "unit": "percent",
-      "decimals": 1,
-      "color": { "mode": "thresholds" },
-      "thresholds": {
-        "mode": "absolute",
-        "steps": [
-          { "color": "#d66666", "value": null },
-          { "color": "#e7b04a", "value": 97 },
-          { "color": "#8cbf88", "value": 99 }
-        ]
-      },
-      "mappings": [
         {
-          "type": "special",
-          "options": {
-            "match": "nan",
-            "result": { "text": "No data", "color": "#a5a5a5" }
-          }
+          "expr": "sum(container_memory_working_set_bytes{container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}) / 1024 / 1024",
+          "refId": "A",
+          "legendFormat": "Loki"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "MB",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" },
+        "drawStyle": "bars",
+        "fillOpacity": 15,
+        "lineWidth": 1
+      }
     },
-    "overrides": []
-  },
-  "options": {
-    "orientation": "horizontal",
-    "colorMode": "value",
-    "textMode": "value_and_name",
-    "sparkline": { "show": false },
-    "reduceOptions": {
-      "calcs": ["lastNotNull"],
-      "values": false
-    }
-  }
-},
+
+    { "type": "row", "title": "Adblocker", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 } },
+
+    {
+      "type": "stat",
+      "title": "Pi-hole Container (6h)",
+      "id": 201,
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 41 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "avg_over_time(up{job=\"pihole\"}[6h]) * 100",
+          "refId": "A",
+          "legendFormat": "6h Availability"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#d66060", "value": null },
+              { "color": "#e7c787", "value": 97 },
+              { "color": "#5fb3b3", "value": 99 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": { "text": "No data", "color": "#a5a5a5" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "colorMode": "value",
+        "textMode": "value_and_name",
+        "sparkline": { "show": false },
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      }
+    },
     {
       "type": "stat",
       "title": "Unbound Container",
       "id": 202,
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 41},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 41 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {"expr": "max(container_last_seen{container_label_com_docker_compose_service=\"adblocker-unbound\"}) > bool 0", "refId": "A", "legendFormat": "Status"}
+        {
+          "expr": "max(container_last_seen{container_label_com_docker_compose_service=\"adblocker-unbound\"}) > bool 0",
+          "refId": "A",
+          "legendFormat": "Status"
+        }
       ],
       "fieldConfig": {
         "defaults": {
-          "color": {"mode": "thresholds"},
+          "color": { "mode": "thresholds" },
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "Down", "color": "#d66666"}, "1": {"text": "Up", "color": "#8cbf88"}}}
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Down", "color": "#d66060" },
+                "1": { "text": "Up", "color": "#5fb3b3" }
+              }
+            }
           ],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "#d66666", "value": null}, {"color": "#8cbf88", "value": 1}]}
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#d66060", "value": null },
+              { "color": "#5fb3b3", "value": 1 }
+            ]
+          }
         }
       },
-      "options": {"orientation": "horizontal", "colorMode": "value", "textMode": "value", "sparkline": {"show": false}, "reduceOptions": {"calcs": ["lastNotNull"], "values": false}}
+      "options": {
+        "orientation": "horizontal",
+        "colorMode": "value",
+        "textMode": "value",
+        "sparkline": { "show": false },
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      }
     },
-    {"type": "row", "title": "Pi System", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 45}},
+
+    { "type": "row", "title": "Pi System", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 45 } },
+
     {
       "type": "timeseries",
       "title": "CPU Utilisation (%)",
       "id": 301,
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 46},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 46 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "100 - (avg by (instance) (sum by (instance, cpu) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m])))) * 100",
@@ -475,15 +660,27 @@
           "refId": "A"
         }
       ],
-      "fieldConfig": {"defaults": {"unit": "percent", "decimals": 1}},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}, "thresholdsStyle": {"mode": "line"}}
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" },
+        "drawStyle": "bars",
+        "fillOpacity": 15,
+        "lineWidth": 1
+      }
     },
     {
       "type": "timeseries",
       "title": "Memory Usage (%)",
       "id": 302,
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 50},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 50 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "(1 - avg by (instance) (node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"})) * 100",
@@ -491,84 +688,111 @@
           "refId": "A"
         }
       ],
-      "fieldConfig": {"defaults": {"unit": "percent", "decimals": 1}},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
-    },
-{
-  "type": "gauge",
-  "title": "CPU Temperature (°C)",
-  "id": 303,
-  "gridPos": { "h": 8, "w": 6, "x": 0, "y": 46 },
-  "datasource": { "type": "prometheus", "uid": "prometheus" },
-  "targets": [
-    { "expr": "pi_cpu_temperature_celsius", "refId": "A" }
-  ],
-  "fieldConfig": {
-    "defaults": {
-      "unit": "celsius",
-      "decimals": 1,
-      "color": { "mode": "thresholds" },
-      "thresholds": {
-        "mode": "absolute",
-        "steps": [
-          { "color": "#8cbf88", "value": null },
-          { "color": "#e7b04a", "value": 60 },
-          { "color": "#d66666", "value": 80 }
-        ]
-      },
-      "mappings": [
-        {
-          "type": "special",
-          "options": {
-            "match": "nan",
-            "result": { "text": "Unknown", "color": "#a5a5a5" }
-          }
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": { "mode": "palette-classic" }
         }
-      ]
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" },
+        "drawStyle": "bars",
+        "fillOpacity": 15,
+        "lineWidth": 1
+      }
     },
-    "overrides": []
-  },
-  "options": {
-    "orientation": "vertical",
-    "reduceOptions": {
-      "calcs": ["lastNotNull"],
-      "values": false
+
+    {
+      "type": "gauge",
+      "title": "CPU Temperature (°C)",
+      "id": 303,
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 46 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "pi_cpu_temperature_celsius", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#5fb3b3", "value": null },
+              { "color": "#e7c787", "value": 60 },
+              { "color": "#d66060", "value": 80 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": { "text": "Unknown", "color": "#a5a5a5" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "showThresholdMarkers": true,
+        "showThresholdLabels": false
+      }
     },
-    "showThresholdMarkers": true,
-    "showThresholdLabels": false,
-    "min": 0,
-    "max": 100,
-    "colorMode": "background"
-  }
-},
+
     {
       "type": "timeseries",
       "title": "CPU Temperature Trend",
       "id": 306,
-      "gridPos": {"h": 8, "w": 18, "x": 6, "y": 46},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 46 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        {"expr": "avg_over_time(pi_cpu_temperature_celsius[5m])", "refId": "A", "legendFormat": "Temperature"}
+        {
+          "expr": "avg_over_time(pi_cpu_temperature_celsius[5m])",
+          "refId": "A",
+          "legendFormat": "Temperature"
+        }
       ],
-      "fieldConfig": {"defaults": {"unit": "celsius"}},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" },
+        "drawStyle": "bars",
+        "fillOpacity": 15,
+        "lineWidth": 1
+      }
     },
+
     {
       "type": "text",
       "title": "Kernel Limitation",
       "id": 304,
-      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 54},
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 54 },
       "options": {
         "mode": "markdown",
         "content": "Voltage and throttling metrics remain disabled because the Ubuntu 6.17 raspi kernel omits the bcm2835_vcio mailbox driver. This Pi now boots from NVMe; install the `linux-raspi` kernel family or move to Raspberry Pi OS to restore those panels."
       }
     },
+
     {
       "type": "timeseries",
       "title": "Filesystem Usage (bytes)",
       "id": 305,
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 58},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 58 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum by (mountpoint) (node_filesystem_size_bytes{job=\"node-exporter\",fstype!~\"tmpfs|overlay\"} - node_filesystem_free_bytes{job=\"node-exporter\",fstype!~\"tmpfs|overlay\"})",
@@ -576,30 +800,50 @@
           "refId": "A"
         }
       ],
-      "fieldConfig": {"defaults": {"unit": "bytes"}},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" },
+        "drawStyle": "bars",
+        "fillOpacity": 15,
+        "lineWidth": 1
+      }
     },
-    {"type": "row", "title": "Recent Events", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 66}},
+
+    { "type": "row", "title": "Recent Events", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 66 } },
+
     {
       "type": "table",
       "title": "Error Logs (15m)",
       "id": 7,
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 75},
-      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 75 },
+      "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
-        {"expr": "topk(10, count_over_time({compose_service=~\"forgejo|woodpecker|adblocker\"} |= \"error\" [15m]))", "refId": "A"}
+        {
+          "expr": "topk(10, count_over_time({compose_service=~\"forgejo|woodpecker|adblocker\"} |= \"error\" [15m]))",
+          "refId": "A"
+        }
       ],
-      "fieldConfig": {"defaults": {"custom": {"align": "left"}}},
-      "options": {"showHeader": true}
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "left" }
+        }
+      },
+      "options": { "showHeader": true }
     }
   ],
   "refresh": "1m",
   "schemaVersion": 39,
   "style": "dark",
   "tags": ["pi-forge"],
-  "time": {"from": "now-6h", "to": "now"},
+  "time": { "from": "now-6h", "to": "now" },
   "timezone": "",
   "title": "Domain Overview",
   "uid": "pi-services-overview",
-  "version": 5
+  "version": 6
 }
