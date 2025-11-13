@@ -40,8 +40,6 @@ services:
       - "{{ PORT_ADBLOCKER_UNBOUND }}:53/udp"
     volumes:
       - ./unbound.conf:/etc/unbound/unbound.conf:ro
-      - /srv/adblocker/unbound:/var/lib/unbound
-    user: "0:0"
     networks:
       - adblocker-network
 
