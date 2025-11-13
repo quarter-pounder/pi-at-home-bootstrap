@@ -15,11 +15,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "panels": [
-    {
-      "type": "row",
-      "title": "Summary",
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
-    },
+    {"type": "row", "title": "Summary", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}},
     {
       "type": "stat",
       "title": "Domains Healthy",
@@ -27,12 +23,14 @@
       "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole|unbound\"}[5m]) > 0)", "refId": "A"}
+        {"expr": "sum(max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole-exporter|unbound\"}[5m]) > 0)", "refId": "A"}
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "none",
-          "links": [{"title": "Alerting", "url": "/alerting/list"}]
+          "links": [
+            {"title": "Alerting", "url": "/alerting/list"}
+          ]
         }
       },
       "options": {"orientation": "horizontal", "textMode": "value"}
@@ -44,7 +42,7 @@
       "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole|unbound\"}[5m]) == 0)", "refId": "A"}
+        {"expr": "sum(max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole-exporter|unbound\"}[5m]) == 0)", "refId": "A"}
       ],
       "fieldConfig": {
         "defaults": {
@@ -71,7 +69,9 @@
             {"type": "value", "options": {"0": {"text": "No Alerts", "color": "#8fc78f"}}},
             {"type": "range", "options": {"from": 1, "to": 100, "result": {"text": "Alerts Firing", "color": "#c27777"}}}
           ],
-          "links": [{"title": "View Alerts", "url": "/alerting/list"}]
+          "links": [
+            {"title": "View Alerts", "url": "/alerting/list"}
+          ]
         }
       },
       "options": {"orientation": "horizontal", "textMode": "value"}
@@ -91,16 +91,14 @@
             {"type": "value", "options": {"0": {"text": "Stable", "color": "#8fc78f"}}},
             {"type": "range", "options": {"from": 1, "to": 100, "result": {"text": "Throttling", "color": "#f2cc0c"}}}
           ],
-          "links": [{"title": "Pi System Overview", "url": "/d/pi-system-overview/pi-system-overview"}]
+          "links": [
+            {"title": "Pi System Details", "url": "/d/pi-domain-overview/pi-domain-overview?var-section=Pi%20System"}
+          ]
         }
       },
       "options": {"orientation": "horizontal", "textMode": "value"}
     },
-    {
-      "type": "row",
-      "title": "Core Domains",
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5}
-    },
+    {"type": "row", "title": "Core Domains", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5}},
     {
       "type": "stat",
       "title": "Forgejo Availability",
@@ -114,13 +112,7 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {"text": "Down", "color": "#c27777"},
-                "1": {"text": "Up", "color": "#8fc78f"}
-              }
-            }
+            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
           ],
           "thresholds": {"mode": "absolute", "steps": [{"color": "#777", "value": null}, {"color": "#8fc78f", "value": 1}]},
           "links": [
@@ -139,13 +131,7 @@
           }
         ]
       },
-      "options": {
-        "orientation": "horizontal",
-        "textMode": "value_and_name",
-        "sparkline": {"show": true},
-        "graphMode": "area",
-        "reduceOptions": {"calcs": ["lastNotNull"]}
-      }
+      "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}, "graphMode": "area", "reduceOptions": {"calcs": ["lastNotNull"]}}
     },
     {
       "type": "stat",
@@ -160,27 +146,14 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {"text": "Down", "color": "#c27777"},
-                "1": {"text": "Up", "color": "#8fc78f"}
-              }
-            }
+            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
           ],
           "links": [
             {"title": "Woodpecker Logs", "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22%7Bcompose_service%3D%5C%5C\"woodpecker%5C%5C\"%7D%22%7D%5D%7D%5D"}
           ]
         },
         "overrides": [
-          {
-            "matcher": {"id": "byName", "options": "6h"},
-            "properties": [
-              {"id": "displayName", "value": "6h Availability"},
-              {"id": "unit", "value": "percent"},
-              {"id": "decimals", "value": 1}
-            ]
-          }
+          {"matcher": {"id": "byName", "options": "6h"}, "properties": [{"id": "displayName", "value": "6h Availability"}, {"id": "unit", "value": "percent"}, {"id": "decimals", "value": 1}]}
         ]
       },
       "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}}
@@ -198,13 +171,7 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {"text": "Down", "color": "#c27777"},
-                "1": {"text": "Up", "color": "#8fc78f"}
-              }
-            }
+            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
           ],
           "links": [
             {"title": "Prometheus Targets", "url": "/d/prometheus/prometheus?viewPanel=1"}
@@ -226,13 +193,7 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {"text": "Down", "color": "#c27777"},
-                "1": {"text": "Up", "color": "#8fc78f"}
-              }
-            }
+            {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
           ],
           "links": [
             {"title": "Loki Logs", "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22%7Bjob%3D%5C%5C\"loki%5C%5C\"%7D%22%7D%5D%7D%5D"}
@@ -241,11 +202,7 @@
       },
       "options": {"orientation": "horizontal", "textMode": "value_and_name", "sparkline": {"show": true}}
     },
-    {
-      "type": "row",
-      "title": "Resource Usage",
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 10}
-    },
+    {"type": "row", "title": "Resource Usage", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 10}},
     {
       "type": "timeseries",
       "title": "Forgejo CPU (cores)",
@@ -255,7 +212,14 @@
       "targets": [
         {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"forgejo\"}[5m]))", "refId": "A", "legendFormat": "Forgejo"}
       ],
-      "fieldConfig": {"defaults": {"unit": "cores", "links": [{"title": "Grafana Explore", "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22prometheus%22%2C%22uid%22%3A%22prometheus%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22sum(rate(container_cpu_usage_seconds_total%7Bcontainer_label_com_docker_compose_service%3D\\\"forgejo\\\"%7D%5B5m%5D))%22%7D%5D%7D%5D"}]}},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cores",
+          "links": [
+            {"title": "Grafana Explore", "url": "/explore?schemaVersion=1&panes=%5B%7B%22datasource%22%3A%7B%22type%22%3A%22prometheus%22%2C%22uid%22%3A%22prometheus%22%7D%2C%22queries%22%3A%5B%7B%22expr%22%3A%22sum(rate(container_cpu_usage_seconds_total%7Bcontainer_label_com_docker_compose_service%3D\\\"forgejo\\\"%7D%5B5m%5D))%22%7D%5D%7D%5D"}
+          ]
+        }
+      },
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
     },
     {
@@ -271,11 +235,12 @@
       "fieldConfig": {"defaults": {"unit": "cores"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
     },
+    {"type": "row", "title": "Observability", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 19}},
     {
       "type": "stat",
       "title": "Queue Depth",
       "id": 9,
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 14},
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 20},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {"expr": "max(woodpecker_server_queue_count)", "refId": "A"}
@@ -285,7 +250,9 @@
           "mappings": [
             {"type": "value", "options": {"null": {"text": "No data", "color": "#f2cc0c"}}}
           ],
-          "links": [{"title": "Woodpecker Queue", "url": "/d/woodpecker/woodpecker?viewPanel=2"}]
+          "links": [
+            {"title": "Woodpecker Queue", "url": "/d/woodpecker/woodpecker?viewPanel=2"}
+          ]
         }
       },
       "options": {"orientation": "horizontal", "textMode": "value"}
@@ -294,7 +261,7 @@
       "type": "stat",
       "title": "Forgejo API Latency",
       "id": 10,
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 14},
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 20},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"forgejo\"}[5m])) by (le))", "refId": "A", "legendFormat": "p95"}
@@ -303,37 +270,76 @@
       "options": {"orientation": "horizontal", "textMode": "value"}
     },
     {
-      "type": "table",
-      "title": "Error Logs (15m)",
-      "id": 7,
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 18},
-      "datasource": {"type": "loki", "uid": "loki"},
-      "targets": [{"expr": "topk(10, count_over_time({compose_service=~\"forgejo|woodpecker|adblocker\"} |= \"error\" [15m]))", "refId": "A"}],
-      "fieldConfig": {"defaults": {"custom": {"align": "left"}}},
-      "options": {"showHeader": true}
+      "type": "timeseries",
+      "title": "Prometheus CPU (cores)",
+      "id": 11,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"prometheus\"}[5m]))", "refId": "A", "legendFormat": "Prometheus"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "cores"}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
     },
     {
-      "type": "row",
-      "title": "Adblocker",
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 19}
+      "type": "timeseries",
+      "title": "Prometheus Memory (MB)",
+      "id": 12,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(container_memory_usage_bytes{container_label_com_docker_compose_service=\"prometheus\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Prometheus"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "MB"}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
     },
+    {
+      "type": "timeseries",
+      "title": "Loki CPU (cores)",
+      "id": 13,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"loki\"}[5m]))", "refId": "A", "legendFormat": "Loki"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "cores"}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Loki Memory (MB)",
+      "id": 14,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(container_memory_usage_bytes{container_label_com_docker_compose_service=\"loki\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Loki"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "MB"}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+    },
+    {"type": "row", "title": "Adblocker", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 40}},
     {
       "type": "stat",
       "title": "Pi-hole",
       "id": 201,
-      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 11},
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 41},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {"expr": "max(up{job=\"pihole-exporter\"})", "refId": "A"},
-        {"expr": "avg_over_time(pihole_status{job=\"pihole-exporter\"}[6h])", "refId": "B", "legendFormat": "6h"}
+        {"expr": "avg_over_time(pihole_status{job=\"pihole-exporter\"}[6h]) * 100", "refId": "B", "legendFormat": "6h"}
       ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
             {"type": "value", "options": {"0": {"text": "Down", "color": "#c27777"}, "1": {"text": "Up", "color": "#8fc78f"}}}
           ],
-          "links": [{"title": "Pi-hole Dashboard", "url": "http://pihole."}]
-        }
+          "links": [
+            {"title": "Pi-hole Dashboard", "url": "http://pihole."}
+          ]
+        },
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "6h"}, "properties": [{"id": "displayName", "value": "6h Availability"}, {"id": "unit", "value": "percent"}, {"id": "decimals", "value": 1}]}
+        ]
       },
       "options": {"orientation": "horizontal", "sparkline": {"show": true}}
     },
@@ -341,7 +347,7 @@
       "type": "stat",
       "title": "Unbound",
       "id": 202,
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 11},
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 41},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {"expr": "max(up{job=\"unbound\"})", "refId": "A"},
@@ -360,7 +366,7 @@
       "type": "timeseries",
       "title": "DNS Query Volume",
       "id": 203,
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 11},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 41},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {"expr": "sum(rate(pihole_queries_total[5m]))", "refId": "A", "legendFormat": "Pi-hole"}
@@ -368,58 +374,95 @@
       "fieldConfig": {"defaults": {"unit": "req/s"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}}
     },
-    {
-      "type": "row",
-      "title": "Observability",
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 29}
-    },
+    {"type": "row", "title": "Pi System", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 49}},
     {
       "type": "timeseries",
-      "title": "Prometheus CPU (cores)",
-      "id": 11,
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 30},
+      "title": "CPU Utilisation (%)",
+      "id": 301,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 50},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"prometheus\"}[5m]))", "refId": "A", "legendFormat": "Prometheus"}
+        {
+          "expr": "100 - (avg by (instance) (sum by (instance, cpu) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m])))) * 100",
+          "legendFormat": "{% raw %}{{instance}}{% endraw %}",
+          "refId": "A"
+        }
       ],
-      "fieldConfig": {"defaults": {"unit": "cores"}},
+      "fieldConfig": {"defaults": {"unit": "percent", "decimals": 1}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
     },
     {
       "type": "timeseries",
-      "title": "Prometheus Memory (MB)",
-      "id": 12,
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 30},
+      "title": "Memory Usage (%)",
+      "id": 302,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 50},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(container_memory_usage_bytes{container_label_com_docker_compose_service=\"prometheus\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Prometheus"}
+        {
+          "expr": "(1 - avg by (instance) (node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"})) * 100",
+          "legendFormat": "{% raw %}{{instance}}{% endraw %}",
+          "refId": "A"
+        }
       ],
-      "fieldConfig": {"defaults": {"unit": "MB"}},
+      "fieldConfig": {"defaults": {"unit": "percent", "decimals": 1}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
     },
     {
-      "type": "timeseries",
-      "title": "Loki CPU (cores)",
-      "id": 13,
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 39},
+      "type": "gauge",
+      "title": "CPU Temperature (°C)",
+      "id": 303,
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 58},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [
-        {"expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"loki\"}[5m]))", "refId": "A", "legendFormat": "Loki"}
-      ],
-      "fieldConfig": {"defaults": {"unit": "cores"}},
-      "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+      "targets": [{"expr": "pi_cpu_temperature_celsius", "refId": "A"}],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "mappings": [
+            {"type": "special", "options": {"match": "nan", "result": {"text": "Unknown", "color": "#c1c7cd"}}}
+          ],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#7eb26d", "value": null}, {"color": "#eab839", "value": 60}, {"color": "#d44a3a", "value": 80}]}
+        }
+      },
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}, "orientation": "vertical"}
+    },
+    {
+      "type": "text",
+      "title": "Kernel Limitation",
+      "id": 304,
+      "gridPos": {"h": 8, "w": 18, "x": 6, "y": 58},
+      "options": {
+        "mode": "markdown",
+        "content": "Voltage and throttling metrics are hidden because the current Ubuntu kernel (`6.17.0-1003-raspi`) omits the bcm2835_vcio mailbox driver. The Pi health exporter emits `NaN`, so Grafana shows no data until that driver returns. Switch to a `linux-raspi` kernel or Raspberry Pi OS to re-enable those panels."
+      }
     },
     {
       "type": "timeseries",
-      "title": "Loki Memory (MB)",
-      "id": 14,
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 39},
+      "title": "Filesystem Usage (bytes)",
+      "id": 305,
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 66},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
-        {"expr": "sum(container_memory_usage_bytes{container_label_com_docker_compose_service=\"loki\"}) / 1024 / 1024", "refId": "A", "legendFormat": "Loki"}
+        {
+          "expr": "sum by (mountpoint) (node_filesystem_size_bytes{job=\"node-exporter\",fstype!~\"tmpfs|overlay\"} - node_filesystem_free_bytes{job=\"node-exporter\",fstype!~\"tmpfs|overlay\"})",
+          "legendFormat": "{% raw %}{{mountpoint}}{% endraw %}",
+          "refId": "A"
+        }
       ],
-      "fieldConfig": {"defaults": {"unit": "MB"}},
+      "fieldConfig": {"defaults": {"unit": "bytes"}},
       "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi"}}
+    },
+    {"type": "row", "title": "Recent Events", "gridPos": {"h": 1, "w": 24, "x": 0, "y": 74}},
+    {
+      "type": "table",
+      "title": "Error Logs (15m)",
+      "id": 7,
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 75},
+      "datasource": {"type": "loki", "uid": "loki"},
+      "targets": [
+        {"expr": "topk(10, count_over_time({compose_service=~\"forgejo|woodpecker|adblocker\"} |= \"error\" [15m]))", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"custom": {"align": "left"}}},
+      "options": {"showHeader": true}
     }
   ],
   "refresh": "1m",
@@ -430,5 +473,5 @@
   "timezone": "",
   "title": "Domain Overview",
   "uid": "pi-domain-overview",
-  "version": 3
+  "version": 4
 }
