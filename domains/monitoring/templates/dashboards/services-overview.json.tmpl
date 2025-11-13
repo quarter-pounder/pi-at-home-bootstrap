@@ -22,18 +22,6 @@
     },
     {
       "type": "stat",
-      "title": "Domains Healthy",
-      "id": 100,
-      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [
-        {"expr": "sum(max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole\"}[5m]))", "refId": "A"}
-      ],
-      "fieldConfig": {"defaults": {"unit": "none", "links": [{"title": "Alerting", "url": "/alerting/list"}]}},
-      "options": {"orientation": "horizontal", "textMode": "value"}
-    },
-    {
-      "type": "stat",
       "title": "Attention Required",
       "id": 101,
       "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
@@ -510,57 +498,47 @@
   "type": "gauge",
   "title": "CPU Temperature (°C)",
   "id": 303,
-  "gridPos": {"h": 8, "w": 6, "x": 0, "y": 46},
-  "datasource": {"type": "prometheus", "uid": "prometheus"},
+  "gridPos": { "h": 8, "w": 6, "x": 0, "y": 46 },
+  "datasource": { "type": "prometheus", "uid": "prometheus" },
   "targets": [
-    {
-      "expr": "pi_cpu_temperature_celsius",
-      "refId": "A"
-    }
+    { "expr": "pi_cpu_temperature_celsius", "refId": "A" }
   ],
   "fieldConfig": {
     "defaults": {
       "unit": "celsius",
-      "color": {
-        "mode": "thresholds"
+      "decimals": 1,
+      "color": { "mode": "thresholds" },
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          { "color": "#8cbf88", "value": null },
+          { "color": "#e7b04a", "value": 60 },
+          { "color": "#d66666", "value": 80 }
+        ]
       },
       "mappings": [
         {
           "type": "special",
           "options": {
             "match": "nan",
-            "result": {
-              "text": "Unknown",
-              "color": "#a5a5a5"
-            }
+            "result": { "text": "Unknown", "color": "#a5a5a5" }
           }
         }
-      ],
-      "thresholds": {
-        "mode": "absolute",
-        "steps": [
-          {
-            "color": "#8cbf88",
-            "value": null
-          },
-          {
-            "color": "#e7b04a",
-            "value": 60
-          },
-          {
-            "color": "#d66666",
-            "value": 80
-          }
-        ]
-      }
-    }
+      ]
+    },
+    "overrides": []
   },
   "options": {
-    "orientation": "horizontal",
+    "orientation": "vertical",
     "reduceOptions": {
       "calcs": ["lastNotNull"],
       "values": false
-    }
+    },
+    "showThresholdMarkers": true,
+    "showThresholdLabels": false,
+    "min": 0,
+    "max": 100,
+    "colorMode": "background"
   }
 },
     {
