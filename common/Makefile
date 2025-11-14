@@ -28,6 +28,7 @@ help:
 	@echo "  make render DOMAIN=<name> ENV=<env> - Render templates"
 	@echo "    (set DRY_RUN=1 to print available context keys without writing files)"
 	@echo "  make deploy DOMAIN=<name>       - Deploy domain"
+	@echo "    (set FORCE_RECREATE=1 to force container recreation)"
 	@echo "  make destroy DOMAIN=<name>      - Destroy domain"
 	@echo "  make manifest                   - Generate manifest"
 	@echo "  make drift-check                - Fail CI if metadata drift detected"
@@ -90,7 +91,7 @@ render: validate
 deploy: render
 	@echo "[Deploy] $(DOMAIN)"
 	@[ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ] || { echo "[Deploy][err] compose.yml not found for $(DOMAIN)"; exit 1; }
-	@cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml up -d
+	@cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml up -d --pull always $(if $(FORCE_RECREATE),--force-recreate)
 
 destroy:
 	@echo "[Destroy] $(DOMAIN)"
