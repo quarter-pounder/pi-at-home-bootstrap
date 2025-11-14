@@ -8,10 +8,10 @@ services:
       - |
         if [ ! -f /data/.runner ]; then
           echo "Creating runner file with instance: {{ FORGEJO_EXTERNAL_URL }}"
+          cd /data
           /bin/forgejo-runner create-runner-file \
             --instance {{ FORGEJO_EXTERNAL_URL }} \
-            --secret {{ FORGEJO_ACTIONS_RUNNER_TOKEN }} \
-            --output /data/.runner
+            --secret {{ FORGEJO_ACTIONS_RUNNER_TOKEN }}
         fi
         echo "Starting runner daemon..."
         exec /bin/forgejo-runner daemon
