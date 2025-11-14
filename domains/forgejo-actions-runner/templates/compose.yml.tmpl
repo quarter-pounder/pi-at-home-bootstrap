@@ -3,9 +3,11 @@ services:
     image: {{ FORGEJO_ACTIONS_RUNNER_IMAGE }}
     container_name: forgejo-actions-runner
     restart: unless-stopped
+    user: root
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
+        chown -R 1000:1000 /data || true
         if [ ! -f /data/.runner ]; then
           echo "WARNING: .runner file not found."
           echo "To register manually, run:"
