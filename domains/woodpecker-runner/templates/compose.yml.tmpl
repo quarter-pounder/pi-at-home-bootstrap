@@ -10,6 +10,7 @@ services:
       WOODPECKER_RUNNER_CAPACITY: "2"
       WOODPECKER_BACKEND: docker
       WOODPECKER_BACKEND_DOCKER_HOST: unix:///var/run/docker.sock
+      WOODPECKER_BACKEND_DOCKER_NETWORK: forgejo-network
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -21,4 +22,3 @@ networks:
   forgejo-network:
     external: true
     name: forgejo-network
-
