@@ -12,13 +12,12 @@ services:
             --no-interactive \
             --instance {{ FORGEJO_EXTERNAL_URL }} \
             --token {{ FORGEJO_ACTIONS_RUNNER_TOKEN }} \
-            --name {{ FORGEJO_RUNNER_NAME }} \
+            --name forgejo-actions-runner \
             --labels docker:docker://,self-hosted:host://
         fi
         echo "Starting runner daemon..."
         exec /bin/forgejo-runner daemon
-    environment:
-      FORGEJO_RUNNER_NAME: forgejo-actions-runner
+    environment: {}
     working_dir: /data
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
