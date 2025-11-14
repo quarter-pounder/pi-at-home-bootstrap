@@ -3,7 +3,7 @@ services:
     image: {{ FORGEJO_ACTIONS_RUNNER_IMAGE }}
     container_name: forgejo-actions-runner
     restart: unless-stopped
-    command: ["daemon"]
+    command: ["/bin/forgejo-runner", "daemon"]
     environment:
       FORGEJO_RUNNER_HOST: {{ FORGEJO_EXTERNAL_URL }}
       FORGEJO_RUNNER_TOKEN: {{ FORGEJO_ACTIONS_RUNNER_TOKEN }}
