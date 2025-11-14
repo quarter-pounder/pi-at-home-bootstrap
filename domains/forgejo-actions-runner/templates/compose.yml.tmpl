@@ -3,12 +3,23 @@ services:
     image: {{ FORGEJO_ACTIONS_RUNNER_IMAGE }}
     container_name: forgejo-actions-runner
     restart: unless-stopped
-    command: ["/bin/forgejo-runner", "daemon"]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ ! -f /data/.runner ]; then
+          echo "Registering runner..."
+          /bin/forgejo-runner register \
+            --no-interactive \
+            --instance {{ FORGEJO_EXTERNAL_URL }} \
+            --token {{ FORGEJO_ACTIONS_RUNNER_TOKEN }} \
+            --name {{ FORGEJO_RUNNER_NAME }} \
+            --labels docker:docker://,self-hosted:host://
+        fi
+        echo "Starting runner daemon..."
+        exec /bin/forgejo-runner daemon
     environment:
-      FORGEJO_RUNNER_HOST: {{ FORGEJO_EXTERNAL_URL }}
-      FORGEJO_RUNNER_TOKEN: {{ FORGEJO_ACTIONS_RUNNER_TOKEN }}
-      FORGEJO_RUNNER_LABELS: docker:docker://,self-hosted:host://
       FORGEJO_RUNNER_NAME: forgejo-actions-runner
+    working_dir: /data
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /srv/forgejo-actions-runner:/data
