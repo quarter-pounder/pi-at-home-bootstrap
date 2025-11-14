@@ -7,14 +7,12 @@ services:
     command:
       - |
         if [ ! -f /data/.runner ]; then
-          echo "Registering runner with instance: {{ FORGEJO_EXTERNAL_URL }}"
-          cd /data
-          FORGEJO_RUNNER_HOST="{{ FORGEJO_EXTERNAL_URL }}" \
-          FORGEJO_RUNNER_TOKEN="{{ FORGEJO_ACTIONS_RUNNER_TOKEN }}" \
-          /bin/forgejo-runner register \
-            --no-interactive \
-            --name forgejo-actions-runner \
-            --labels docker:docker://,self-hosted:host://
+          echo "WARNING: .runner file not found."
+          echo "To register manually, run:"
+          echo "  docker exec -it forgejo-actions-runner /bin/forgejo-runner register --no-interactive --instance {{ FORGEJO_EXTERNAL_URL }} --token <TOKEN> --name forgejo-actions-runner --labels docker:docker://,self-hosted:host://"
+          echo "The .runner file will be created in /data and persist across restarts."
+          echo "Container will exit. Restart after registration."
+          exit 1
         fi
         echo "Starting runner daemon..."
         exec /bin/forgejo-runner daemon
