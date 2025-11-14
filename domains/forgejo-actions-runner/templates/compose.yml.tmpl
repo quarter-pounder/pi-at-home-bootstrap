@@ -7,11 +7,11 @@ services:
     command:
       - |
         if [ ! -f /data/.runner ]; then
-          echo "Registering runner..."
-          FORGEJO_RUNNER_HOST="{{ FORGEJO_EXTERNAL_URL }}" \
-          FORGEJO_RUNNER_TOKEN="{{ FORGEJO_ACTIONS_RUNNER_TOKEN }}" \
+          echo "Registering runner with instance: $FORGEJO_RUNNER_HOST"
           /bin/forgejo-runner register \
             --no-interactive \
+            --instance "$FORGEJO_RUNNER_HOST" \
+            --token "$FORGEJO_RUNNER_TOKEN" \
             --name "forgejo-actions-runner" \
             --labels "docker:docker://,self-hosted:host://"
         fi
