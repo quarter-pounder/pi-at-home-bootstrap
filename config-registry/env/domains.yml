@@ -109,3 +109,15 @@ domains:
       - registry-network
       - forgejo-network
 
+  - name: forgejo-actions-runner
+    description: Forgejo Actions runner for executing GitHub Actions-compatible workflows
+    placement: local
+    standalone: false
+    requires:
+      - forgejo
+    exposes_to: []
+    consumes:
+      - forgejo
+    networks:
+      - forgejo-network
+

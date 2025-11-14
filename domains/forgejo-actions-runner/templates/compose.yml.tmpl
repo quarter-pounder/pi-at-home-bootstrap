@@ -1,0 +1,28 @@
+services:
+  forgejo-actions-runner:
+    image: {{ FORGEJO_ACTIONS_RUNNER_IMAGE }}
+    container_name: forgejo-actions-runner
+    restart: unless-stopped
+    command:
+      - "daemon"
+      - "--config"
+      - "/data/config.yaml"
+    environment:
+      FORGEJO_RUNNER_NAME: forgejo-actions-runner
+      FORGEJO_RUNNER_HOST: {{ FORGEJO_EXTERNAL_URL }}
+      FORGEJO_RUNNER_TOKEN: {{ FORGEJO_ACTIONS_RUNNER_TOKEN }}
+      FORGEJO_RUNNER_LABELS: docker:docker://,self-hosted:host://
+      FORGEJO_RUNNER_CAPACITY: "2"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /srv/forgejo-actions-runner:/data
+    networks:
+      forgejo-network:
+        aliases:
+          - forgejo-actions-runner
+
+networks:
+  forgejo-network:
+    external: true
+    name: forgejo-network
+
