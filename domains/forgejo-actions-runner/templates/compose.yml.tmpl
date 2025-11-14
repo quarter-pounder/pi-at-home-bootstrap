@@ -8,12 +8,12 @@ services:
       - |
         if [ ! -f /data/.runner ]; then
           echo "Registering runner with instance: {{ FORGEJO_EXTERNAL_URL }}"
-          export FORGEJO_RUNNER_HOST="{{ FORGEJO_EXTERNAL_URL }}"
-          export FORGEJO_RUNNER_TOKEN="{{ FORGEJO_ACTIONS_RUNNER_TOKEN }}"
           /bin/forgejo-runner register \
             --no-interactive \
-            --name "forgejo-actions-runner" \
-            --labels "docker:docker://,self-hosted:host://"
+            --instance {{ FORGEJO_EXTERNAL_URL }} \
+            --token {{ FORGEJO_ACTIONS_RUNNER_TOKEN }} \
+            --name forgejo-actions-runner \
+            --labels docker:docker://,self-hosted:host://
         fi
         echo "Starting runner daemon..."
         exec /bin/forgejo-runner daemon
