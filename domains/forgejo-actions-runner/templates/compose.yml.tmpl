@@ -3,11 +3,12 @@ services:
     image: {{ FORGEJO_ACTIONS_RUNNER_IMAGE }}
     container_name: forgejo-actions-runner
     restart: unless-stopped
+    command: ["daemon"]
     environment:
-      GITEA_RUNNER_HOST: {{ FORGEJO_EXTERNAL_URL }}
-      GITEA_RUNNER_TOKEN: {{ FORGEJO_ACTIONS_RUNNER_TOKEN }}
-      GITEA_RUNNER_LABELS: docker:docker://,self-hosted:host://
-      GITEA_RUNNER_NAME: forgejo-actions-runner
+      FORGEJO_RUNNER_HOST: {{ FORGEJO_EXTERNAL_URL }}
+      FORGEJO_RUNNER_TOKEN: {{ FORGEJO_ACTIONS_RUNNER_TOKEN }}
+      FORGEJO_RUNNER_LABELS: docker:docker://,self-hosted:host://
+      FORGEJO_RUNNER_NAME: forgejo-actions-runner
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /srv/forgejo-actions-runner:/data
