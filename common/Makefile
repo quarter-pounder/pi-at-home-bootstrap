@@ -2,7 +2,7 @@
 .SILENT:
 .DEFAULT_GOAL := help
 
-.PHONY: help env generate-metadata commit-metadata diff-metadata metadata-check drift-check validate lint validate-schema render deploy destroy manifest vault-create vault-edit vault-view check-secrets status
+.PHONY: help env generate-metadata commit-metadata diff-metadata metadata-check drift-check validate lint validate-schema render render-only render-diff deploy deploy-only restart logs ps clean diff-rendered status-domain validate-domain render-all deploy-all list-domains destroy manifest vault-create vault-edit vault-view check-secrets status
 
 ENV ?= dev
 DOMAIN ?= forgejo
@@ -25,10 +25,23 @@ help:
 	@echo "  make metadata-check             - Generate metadata and fail on drift"
 	@echo "  make validate                   - Runtime validation (fast, minimal)"
 	@echo "  make validate-schema            - Schema validation (CI enforcement)"
-	@echo "  make render DOMAIN=<name> ENV=<env> - Render templates"
+	@echo "  make render DOMAIN=<name> ENV=<env> - Render templates (with validation)"
 	@echo "    (set DRY_RUN=1 to print available context keys without writing files)"
-	@echo "  make deploy DOMAIN=<name>       - Deploy domain"
+	@echo "  make render-only DOMAIN=<name>  - Render templates without validation"
+	@echo "  make render-diff DOMAIN=<name>  - Show diff of rendered files"
+	@echo "  make deploy DOMAIN=<name>       - Render and deploy domain"
 	@echo "    (set FORCE_RECREATE=1 to force container recreation)"
+	@echo "  make deploy-only DOMAIN=<name>  - Deploy domain without rendering"
+	@echo "  make restart DOMAIN=<name>      - Restart domain containers"
+	@echo "  make logs DOMAIN=<name>         - Show logs for domain containers"
+	@echo "  make ps DOMAIN=<name>           - Show container status for domain"
+	@echo "  make clean DOMAIN=<name>        - Remove generated files for domain"
+	@echo "  make diff-rendered DOMAIN=<name> - Diff rendered files vs git"
+	@echo "  make status-domain DOMAIN=<name> - Show status for specific domain"
+	@echo "  make validate-domain DOMAIN=<name> - Validate specific domain"
+	@echo "  make render-all                - Render all domains"
+	@echo "  make deploy-all                - Deploy all domains"
+	@echo "  make list-domains              - List available domains"
 	@echo "  make destroy DOMAIN=<name>      - Destroy domain"
 	@echo "  make manifest                   - Generate manifest"
 	@echo "  make drift-check                - Fail CI if metadata drift detected"
@@ -88,10 +101,130 @@ render: validate
 	fi
 	@cd $(ROOT_DIR) && $(PYTHON) common/render_config.py --domain $(DOMAIN) --env $(ENV) $(if $(DRY_RUN),--dry-run)
 
+render-only:
+	@echo "[Render] $(DOMAIN) for $(ENV) (no validation)"
+	@if [ ! -f "$(ROOT_DIR)/.env" ]; then \
+		echo "[Render][err] .env not found; copy config-registry/env/base.env to .env and customize it"; \
+		exit 1; \
+	fi
+	@cd $(ROOT_DIR) && $(PYTHON) common/render_config.py --domain $(DOMAIN) --env $(ENV) $(if $(DRY_RUN),--dry-run)
+
+render-diff:
+	@echo "[Render][Diff] $(DOMAIN)"
+	@if [ ! -d "$(ROOT_DIR)/generated/$(DOMAIN)" ]; then \
+		echo "[Render][Diff][err] No generated files found for $(DOMAIN)"; \
+		exit 1; \
+	fi
+	@cd $(ROOT_DIR) && git diff --no-index generated/$(DOMAIN) generated/$(DOMAIN) 2>/dev/null || \
+		git diff generated/$(DOMAIN) 2>/dev/null || \
+		echo "[Render][Diff][info] No differences detected"
+
 deploy: render
 	@echo "[Deploy] $(DOMAIN)"
 	@[ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ] || { echo "[Deploy][err] compose.yml not found for $(DOMAIN)"; exit 1; }
 	@cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml up -d --pull always $(if $(FORCE_RECREATE),--force-recreate)
+
+deploy-only:
+	@echo "[Deploy] $(DOMAIN) (no render)"
+	@[ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ] || { echo "[Deploy][err] compose.yml not found for $(DOMAIN)"; exit 1; }
+	@cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml up -d --pull always $(if $(FORCE_RECREATE),--force-recreate)
+
+restart:
+	@echo "[Restart] $(DOMAIN)"
+	@[ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ] || { echo "[Restart][err] compose.yml not found for $(DOMAIN)"; exit 1; }
+	@cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml restart
+
+logs:
+	@echo "[Logs] $(DOMAIN)"
+	@[ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ] || { echo "[Logs][err] compose.yml not found for $(DOMAIN)"; exit 1; }
+	@cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml logs -f
+
+ps:
+	@echo "[PS] $(DOMAIN)"
+	@[ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ] || { echo "[PS][err] compose.yml not found for $(DOMAIN)"; exit 1; }
+	@cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml ps
+
+clean:
+	@echo "[Clean] $(DOMAIN)"
+	@if [ -d "$(ROOT_DIR)/generated/$(DOMAIN)" ]; then \
+		rm -rf "$(ROOT_DIR)/generated/$(DOMAIN)"; \
+		echo "[Clean][ok] Removed generated/$(DOMAIN)"; \
+	else \
+		echo "[Clean][info] No generated files found for $(DOMAIN)"; \
+	fi
+
+diff-rendered:
+	@echo "[Diff] Rendered files for $(DOMAIN)"
+	@if [ ! -d "$(ROOT_DIR)/generated/$(DOMAIN)" ]; then \
+		echo "[Diff][err] No generated files found for $(DOMAIN)"; \
+		exit 1; \
+	fi
+	@cd $(ROOT_DIR) && git diff generated/$(DOMAIN) || echo "[Diff][info] No differences detected"
+
+status-domain:
+	@echo "[Status] $(DOMAIN)"
+	@if [ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ]; then \
+		echo "[Status] Containers:"; \
+		cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml ps; \
+	else \
+		echo "[Status][info] Domain not rendered"; \
+	fi
+	@if [ -d "$(ROOT_DIR)/domains/$(DOMAIN)" ]; then \
+		echo "[Status] Domain metadata:"; \
+		cat "$(ROOT_DIR)/domains/$(DOMAIN)/metadata.yml" 2>/dev/null || echo "[Status][info] No metadata.yml found"; \
+	else \
+		echo "[Status][err] Domain $(DOMAIN) not found"; \
+	fi
+
+validate-domain:
+	@echo "[Validate] $(DOMAIN)"
+	@if [ ! -d "$(ROOT_DIR)/domains/$(DOMAIN)" ]; then \
+		echo "[Validate][err] Domain $(DOMAIN) not found"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(ROOT_DIR)/domains/$(DOMAIN)/metadata.yml" ]; then \
+		echo "[Validate][err] metadata.yml not found for $(DOMAIN)"; \
+		exit 1; \
+	fi
+	@echo "[Validate][ok] Domain $(DOMAIN) structure valid"
+
+list-domains:
+	@echo "[List] Available domains:"
+	@cd $(ROOT_DIR) && \
+		for domain in domains/*/; do \
+			domain_name=$$(basename $$domain); \
+			if [ -f "$$domain/metadata.yml" ]; then \
+				echo "  - $$domain_name"; \
+			fi; \
+		done
+
+render-all:
+	@echo "[Render][All] Rendering all domains for $(ENV)"
+	@if [ ! -f "$(ROOT_DIR)/.env" ]; then \
+		echo "[Render][All][err] .env not found; copy config-registry/env/base.env to .env and customize it"; \
+		exit 1; \
+	fi
+	@cd $(ROOT_DIR) && \
+		for domain in domains/*/; do \
+			domain_name=$$(basename $$domain); \
+			if [ -f "$$domain/metadata.yml" ]; then \
+				echo "[Render][All] Rendering $$domain_name..."; \
+				$(PYTHON) common/render_config.py --domain $$domain_name --env $(ENV) || echo "[Render][All][warn] Failed to render $$domain_name"; \
+			fi; \
+		done
+	@echo "[Render][All] Completed"
+
+deploy-all:
+	@echo "[Deploy][All] Deploying all domains"
+	@cd $(ROOT_DIR) && \
+		for domain in domains/*/; do \
+			domain_name=$$(basename $$domain); \
+			if [ -f "$$domain/metadata.yml" ] && [ -f "generated/$$domain_name/compose.yml" ]; then \
+				echo "[Deploy][All] Deploying $$domain_name..."; \
+				docker compose -f generated/$$domain_name/compose.yml up -d --pull always $(if $(FORCE_RECREATE),--force-recreate) || echo "[Deploy][All][warn] Failed to deploy $$domain_name"; \
+			fi; \
+		done
+	@echo "[Deploy][All] Completed"
 
 destroy:
 	@echo "[Destroy] $(DOMAIN)"
