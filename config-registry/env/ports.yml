@@ -26,6 +26,8 @@ woodpecker:
 
 woodpecker-runner: {}
 
+forgejo-actions-runner: {}
+
 adblocker:
   dns: 53
   web: 8081
