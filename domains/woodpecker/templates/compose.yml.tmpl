@@ -28,7 +28,8 @@ services:
         aliases:
           - woodpecker
     dns:
-      - {{ PIHOLE_LOCAL_IPV4 if PIHOLE_LOCAL_IPV4 else '1.1.1.1' }}
+      - {{ PIHOLE_LOCAL_IPV4 if PIHOLE_LOCAL_IPV4 else '192.168.0.58' }}
+      - 1.1.1.1
 
 networks:
   forgejo-network:
