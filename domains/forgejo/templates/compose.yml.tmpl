@@ -35,6 +35,7 @@ services:
       FORGEJO__mirror__BLOCKED_DOMAINS: "{{ FORGEJO_MIRROR_BLOCKED_DOMAINS }}"
       FORGEJO__mirror__ALLOW_LOCALNETWORKS: "{{ 'true' if FORGEJO_MIRROR_ALLOW_LOCALNETWORKS == 'true' else 'false' }}"
       FORGEJO__actions__ENABLED: "true"
+      FORGEJO__actions__DEFAULT_ACTIONS_URL: "github"
       FORGEJO__packages__ENABLED: "true"
       FORGEJO__packages__REGISTRY__ENABLED: "true"
       FORGEJO__packages__REGISTRY__LOG_PACKAGE_ACCESS: "true"
