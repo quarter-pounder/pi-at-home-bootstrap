@@ -10,8 +10,18 @@ services:
         chown -R 1000:1000 /data || true
         if [ ! -f /data/.runner ]; then
           echo "WARNING: .runner file not found."
-          echo "To register manually, run:"
-          echo "  docker exec -it forgejo-actions-runner /bin/forgejo-runner register --no-interactive --instance {{ FORGEJO_EXTERNAL_URL }} --token 'YOUR_TOKEN' --name forgejo-actions-runner --labels docker:docker://,self-hosted:host://"
+          echo "To register manually, run interactively:"
+          echo "  docker exec -it forgejo-actions-runner forgejo-runner register"
+          echo "Then provide:"
+          echo "  Instance URL: http://forgejo:3000 (internal) or {{ FORGEJO_EXTERNAL_URL }} (external)"
+          echo "  Token: (from vault: FORGEJO_ACTIONS_RUNNER_TOKEN)"
+          echo "  Name: forgejo-actions-runner"
+          echo "  Labels: ubuntu-latest:docker://ubuntu:22.04,self-hosted:host"
+          echo ""
+          echo "IMPORTANT: Label name must match workflow's 'runs-on' value"
+          echo "The Docker image can be any image (e.g., ubuntu:22.04, ubuntu:24.04, alpine)"
+          echo "Format: '<label-name>:docker://<docker-image>'"
+          echo "For host execution, use '<label>:host' (e.g., self-hosted:host)"
           echo "The .runner file will be created in /data and persist across restarts."
           echo "Waiting for manual registration (checking every 10 seconds)..."
           while [ ! -f /data/.runner ]; do
