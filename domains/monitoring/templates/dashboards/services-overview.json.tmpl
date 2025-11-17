@@ -358,7 +358,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo\"}) / 1024 / 1024",
+          "expr": "sum(container_memory_usage_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo\"}) / 1024 / 1024",
           "refId": "A",
           "legendFormat": "Forgejo"
         }
@@ -412,7 +412,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}) / 1024 / 1024",
+          "expr": "sum(container_memory_usage_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"monitoring-prometheus|prometheus\"}) / 1024 / 1024",
           "refId": "A",
           "legendFormat": "Prometheus"
         }
@@ -466,7 +466,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}) / 1024 / 1024",
+          "expr": "sum(container_memory_usage_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"monitoring-loki|loki\"}) / 1024 / 1024",
           "refId": "A",
           "legendFormat": "Loki"
         }
@@ -646,7 +646,7 @@
       "type": "gauge",
       "title": "CPU Temperature (°C)",
       "id": 303,
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 42 },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 50 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         { "expr": "pi_cpu_temperature_celsius", "refId": "A" }
@@ -690,7 +690,7 @@
       "type": "timeseries",
       "title": "CPU Temperature Trend",
       "id": 306,
-      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 42 },
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 50 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -718,7 +718,7 @@
       "type": "text",
       "title": "Kernel Limitation",
       "id": 304,
-      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 50 },
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 58 },
       "options": {
         "mode": "markdown",
         "content": "Voltage and throttling metrics remain disabled because the Ubuntu 6.17 raspi kernel omits the bcm2835_vcio mailbox driver. This Pi now boots from NVMe; install the `linux-raspi` kernel family or move to Raspberry Pi OS to restore those panels."
@@ -729,7 +729,7 @@
       "type": "timeseries",
       "title": "Filesystem Usage (bytes)",
       "id": 305,
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 54 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 62 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -753,17 +753,17 @@
       }
     },
 
-    { "type": "row", "title": "Recent Events", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 62 } },
+    { "type": "row", "title": "Recent Events", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 70 } },
 
     {
       "type": "table",
       "title": "Error Logs (15m)",
       "id": 7,
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 63 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 71 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "topk(10, count_over_time({job=\"docker\"} |= \"error\" [15m]))",
+          "expr": "topk(10, count_over_time({} |= \"error\" [15m]))",
           "refId": "A"
         }
       ],
