@@ -183,6 +183,46 @@ groups:
           description: "Memory usage: {{ $value | humanize }}B"
         {% endraw %}
 
+  - name: runner_alerts
+    interval: 30s
+    rules:
+      - alert: WoodpeckerRunnerDown
+        expr: up{job="cadvisor",container_label_com_docker_compose_service="woodpecker-runner"} == 0 and (alert_suppression_enabled{runner="woodpecker-runner"} == 0 or absent(alert_suppression_enabled{runner="woodpecker-runner"}))
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Woodpecker runner is down"
+          description: "Woodpecker runner container has been down for more than 5 minutes"
+
+      - alert: ForgejoActionsRunnerDown
+        expr: up{job="cadvisor",container_label_com_docker_compose_service="forgejo-actions-runner"} == 0 and (alert_suppression_enabled{runner="forgejo-actions-runner"} == 0 or absent(alert_suppression_enabled{runner="forgejo-actions-runner"}))
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Forgejo Actions runner is down"
+          description: "Forgejo Actions runner container has been down for more than 5 minutes"
+
+      - alert: GitHubActionsRunnerDown
+        expr: up{job="cadvisor",container_label_com_docker_compose_service="github-actions-runner"} == 0 and (alert_suppression_enabled{runner="github-actions-runner"} == 0 or absent(alert_suppression_enabled{runner="github-actions-runner"}))
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "GitHub Actions runner is down"
+          description: "GitHub Actions runner container has been down for more than 5 minutes"
+{% if EXTERNAL_RUNNER_METRICS_IP %}
+      - alert: ExternalRunnerDown
+        expr: up{job="external-runner"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "External runner is down"
+          description: "External runner metrics endpoint has been unreachable for more than 5 minutes"
+{% endif %}
+
 {% if DR_WEBHOOK_URL|default('') %}
   - name: dr_alerts
     interval: 30s
