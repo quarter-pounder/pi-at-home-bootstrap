@@ -18,6 +18,11 @@
   "tags": ["runners", "ci-cd", "pi-forge"],
   "timezone": "browser",
   "time": { "from": "now-6h", "to": "now" },
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "uid": "pi-runners-overview",
+  "version": 2,
   "panels": [
     {
       "type": "row",
@@ -66,33 +71,63 @@
       "id": 202,
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
+
       "targets": [
         {
-          "expr": "up{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"}",
+          "expr": "max(up{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"})",
           "refId": "A"
+        },
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"}[2m]))",
+          "refId": "B",
+          "hide": true
         }
       ],
+
       "fieldConfig": {
         "defaults": {
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 0.1,
+                "result": { "text": "Offline", "color": "#d66060" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0.1,
+                "to": 0.5,
+                "result": { "text": "Idle", "color": "#e7c787" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0.5,
+                "to": 1000000,
+                "result": { "text": "Running", "color": "#5fb3b3" }
+              }
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               { "value": null, "color": "#d66060" },
-              { "value": 1, "color": "#5fb3b3" }
+              { "value": 0.1, "color": "#e7c787" },
+              { "value": 0.5, "color": "#5fb3b3" }
             ]
-          },
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": { "text": "Down", "color": "#d66060" },
-                "1": { "text": "Up", "color": "#5fb3b3" }
-              }
-            }
-          ]
+          }
         }
       },
-      "options": { "orientation": "horizontal", "textMode": "value" }
+
+      "options": {
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      }
     },
     {
       "type": "stat",
@@ -100,78 +135,175 @@
       "id": 203,
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
+
       "targets": [
         {
-          "expr": "up{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"}",
+          "expr": "max(up{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"})",
           "refId": "A"
+        },
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"}[2m]))",
+          "refId": "B",
+          "hide": true
         }
       ],
+
       "fieldConfig": {
         "defaults": {
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 0.1,
+                "result": { "text": "Offline", "color": "#d66060" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0.1,
+                "to": 0.5,
+                "result": { "text": "Idle", "color": "#e7c787" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0.5,
+                "to": 1000000,
+                "result": { "text": "Running", "color": "#5fb3b3" }
+              }
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               { "value": null, "color": "#d66060" },
-              { "value": 1, "color": "#5fb3b3" }
+              { "value": 0.1, "color": "#e7c787" },
+              { "value": 0.5, "color": "#5fb3b3" }
             ]
-          },
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": { "text": "Down", "color": "#d66060" },
-                "1": { "text": "Up", "color": "#5fb3b3" }
-              }
-            }
-          ]
+          }
         }
       },
-      "options": { "orientation": "horizontal", "textMode": "value" }
+
+      "options": {
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      }
     },
+
     {
       "type": "stat",
       "title": "GitHub Actions Runner",
       "id": 204,
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
+
       "targets": [
         {
-          "expr": "up{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"}",
+          "expr": "max(up{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"})",
           "refId": "A"
+        },
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"}[2m]))",
+          "refId": "B",
+          "hide": true
         }
       ],
+
       "fieldConfig": {
         "defaults": {
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 0.1,
+                "result": { "text": "Offline", "color": "#d66060" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0.1,
+                "to": 0.5,
+                "result": { "text": "Idle", "color": "#e7c787" }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0.5,
+                "to": 1000000,
+                "result": { "text": "Running", "color": "#5fb3b3" }
+              }
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               { "value": null, "color": "#d66060" },
-              { "value": 1, "color": "#5fb3b3" }
+              { "value": 0.1, "color": "#e7c787" },
+              { "value": 0.5, "color": "#5fb3b3" }
             ]
-          },
+          }
+        }
+      },
+
+      "options": {
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      }
+    },
+{% if EXTERNAL_RUNNER_METRICS_IP %}
+    {
+      "type": "stat",
+      "title": "External Runner",
+      "id": 2051,
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "max_over_time(node_time_seconds{job=\"external-runner\"}[5m])", "refId": "A" },
+        { "expr": "sum(rate(node_cpu_seconds_total{job=\"external-runner\",mode!=\"idle\"}[2m]))", "refId": "B", "hide": true }
+      ],
+      "fieldConfig": {
+        "defaults": {
           "mappings": [
             {
-              "type": "value",
-              "options": {
-                "0": { "text": "Down", "color": "#d66060" },
-                "1": { "text": "Up", "color": "#5fb3b3" }
-              }
+              "type": "range",
+              "options": { "from": 0, "to": 0.1, "result": { "text": "Offline", "color": "#d66060" } }
+            },
+            {
+              "type": "range",
+              "options": { "from": 0.1, "to": 0.5, "result": { "text": "Idle", "color": "#e7c787" } }
+            },
+            {
+              "type": "range",
+              "options": { "from": 0.5, "to": 1000000, "result": { "text": "Running", "color": "#5fb3b3" } }
             }
           ]
         }
       },
-      "options": { "orientation": "horizontal", "textMode": "value" }
+      "options": {
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      }
     },
+{% endif %}
     {
       "type": "row",
       "title": "CPU Usage",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}9{% else %}5{% endif %} }
     },
     {
       "type": "timeseries",
       "title": "Runner CPU Usage (cores)",
       "id": 205,
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}10{% else %}6{% endif %} },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -213,7 +345,7 @@
       "type": "timeseries",
       "title": "Runner CPU Usage (%)",
       "id": 206,
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}10{% else %}6{% endif %} },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -246,13 +378,13 @@
     {
       "type": "row",
       "title": "Memory Usage",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}18{% else %}14{% endif %} }
     },
     {
       "type": "timeseries",
       "title": "Runner Memory Usage",
       "id": 207,
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}19{% else %}15{% endif %} },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -284,7 +416,7 @@
       "type": "timeseries",
       "title": "Runner Memory Usage (%)",
       "id": 208,
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}19{% else %}15{% endif %} },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -317,13 +449,13 @@
     {
       "type": "row",
       "title": "Network",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 }
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}27{% else %}23{% endif %} }
     },
     {
       "type": "timeseries",
       "title": "Runner Network Traffic",
       "id": 209,
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}28{% else %}24{% endif %} },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {

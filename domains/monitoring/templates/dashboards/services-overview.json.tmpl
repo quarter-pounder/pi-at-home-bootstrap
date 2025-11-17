@@ -28,7 +28,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(1 - clamp_max(max_over_time(up{job=~\"forgejo|woodpecker|prometheus|loki|pihole\"}[5m]), 1))",
+          "expr": "sum(1 - clamp_max(max_over_time(up{job=~\"forgejo|prometheus|loki|pihole\"}[5m]), 1))",
           "refId": "A"
         }
       ],
@@ -214,57 +214,6 @@
     },
     {
       "type": "stat",
-      "title": "Woodpecker Availability (6h)",
-      "id": 2,
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 6 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "avg_over_time(up{job=\"woodpecker\"}[6h]) * 100",
-          "refId": "A",
-          "legendFormat": "6h Availability"
-        },
-        {
-          "expr": "max(up{job=\"woodpecker\"})",
-          "refId": "B",
-          "legendFormat": "Status",
-          "hide": true
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "decimals": 1,
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "#d66060", "value": null },
-              { "color": "#e7c787", "value": 97 },
-              { "color": "#5fb3b3", "value": 99 }
-            ]
-          },
-          "mappings": [
-            {
-              "type": "special",
-              "options": {
-                "match": "nan",
-                "result": { "text": "No data", "color": "#a5a5a5" }
-              }
-            }
-          ]
-        },
-        "overrides": []
-      },
-      "options": {
-        "orientation": "horizontal",
-        "colorMode": "value",
-        "textMode": "value_and_name",
-        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
-      }
-    },
-    {
-      "type": "stat",
       "title": "Prometheus Availability (6h)",
       "id": 3,
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 6 },
@@ -401,68 +350,9 @@
         "lineWidth": 1
       }
     },
-    {
-      "type": "timeseries",
-      "title": "Woodpecker CPU (cores)",
-      "id": 6,
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 11 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker\"}[5m]))",
-          "refId": "A",
-          "legendFormat": "Server"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "cores",
-          "color": { "mode": "palette-classic" }
-        }
-      },
-      "options": {
-        "legend": { "displayMode": "table", "placement": "bottom" },
-        "tooltip": { "mode": "multi" },
-        "drawStyle": "bars",
-        "fillOpacity": 15,
-        "lineWidth": 1
-      }
-    },
 
     { "type": "row", "title": "Observability", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 } },
 
-    {
-      "type": "stat",
-      "title": "Queue Depth",
-      "id": 9,
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 20 },
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "max(woodpecker_server_queue_count)",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "null": { "text": "No data", "color": "#e7c787" }
-              }
-            }
-          ],
-          "links": [
-            {
-              "title": "Woodpecker Queue",
-              "url": "/d/woodpecker/woodpecker?viewPanel=2"
-            }
-          ]
-        }
-      },
-      "options": { "orientation": "horizontal", "textMode": "value" }
-    },
     {
       "type": "stat",
       "title": "Forgejo API Latency",
@@ -652,7 +542,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "max(container_last_seen{container_label_com_docker_compose_service=\"adblocker-unbound\"}) > bool 0",
+          "expr": "max(up{job=\"cadvisor\",container_label_com_docker_compose_service=\"adblocker-unbound\"})",
           "refId": "A",
           "legendFormat": "Status"
         }
@@ -867,7 +757,7 @@
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "topk(10, count_over_time({compose_service=~\"forgejo|woodpecker|adblocker\"} |= \"error\" [15m]))",
+          "expr": "topk(10, count_over_time({job=\"docker\",service=~\"forgejo|adblocker.*\"} |= \"error\" [15m]))",
           "refId": "A"
         }
       ],
