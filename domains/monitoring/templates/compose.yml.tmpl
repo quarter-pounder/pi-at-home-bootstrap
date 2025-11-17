@@ -74,9 +74,32 @@ services:
     volumes:
       - /:/host:ro,rslave
       - {{ NODE_EXPORTER_TEXTFILE_DIR }}:/textfile_collector
+      - /srv/monitoring/alert-suppression:/srv/monitoring/alert-suppression
     networks:
       - monitoring-network
     pid: host
+
+  alert-suppression-exporter:
+    image: alpine:latest
+    container_name: monitoring-alert-suppression-exporter
+    restart: always
+    command:
+      - /bin/sh
+      - -c
+      - |
+        chmod +x /scripts/alert-suppression.sh
+        while true; do
+          /scripts/alert-suppression.sh
+          sleep 30
+        done
+    volumes:
+      - ./exporters/alert-suppression.sh:/scripts/alert-suppression.sh:ro
+      - {{ NODE_EXPORTER_TEXTFILE_DIR }}:/textfile_collector
+      - /srv/monitoring/alert-suppression:/srv/monitoring/alert-suppression
+    networks:
+      - monitoring-network
+    depends_on:
+      - node-exporter
 
   cadvisor:
     image: {{ CADVISOR_IMAGE }}
