@@ -79,33 +79,13 @@
           }
         },
         {
-          "id": "groupBy",
+          "id": "calculateField",
           "options": {
-            "fields": {
-              "runner": {
-                "aggregations": [],
-                "operation": "groupby"
-              },
-              "Value #A": {
-                "aggregations": ["lastNotNull"],
-                "operation": "aggregate"
-              },
-              "Value #B": {
-                "aggregations": ["lastNotNull"],
-                "operation": "aggregate"
-              },
-              "Value #C": {
-                "aggregations": ["lastNotNull"],
-                "operation": "aggregate"
-              },
-              "Value #D": {
-                "aggregations": ["lastNotNull"],
-                "operation": "aggregate"
-              },
-              "Value": {
-                "aggregations": ["lastNotNull"],
-                "operation": "aggregate"
-              }
+            "alias": "Status",
+            "mode": "reduce",
+            "reduce": {
+              "include": ["Value #A", "Value #B", "Value #C", "Value #D", "Value"],
+              "reducer": "lastNotNull"
             }
           }
         },
@@ -113,12 +93,7 @@
           "id": "organize",
           "options": {
             "renameByName": {
-              "runner": "Runner",
-              "Value #A": "Status",
-              "Value #B": "Status",
-              "Value #C": "Status",
-              "Value #D": "Status",
-              "Value": "Status"
+              "runner": "Runner"
             }
           }
         },
