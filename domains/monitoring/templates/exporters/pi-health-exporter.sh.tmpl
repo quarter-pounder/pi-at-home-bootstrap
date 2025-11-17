@@ -1,11 +1,38 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
 OUTPUT_DIR="{{ NODE_EXPORTER_TEXTFILE_DIR }}"
 OUTPUT_FILE="${OUTPUT_DIR}/pi_power.prom"
 TMP_FILE="${OUTPUT_FILE}.tmp"
 
 mkdir -p "${OUTPUT_DIR}"
+
+find_vcgencmd() {
+  if command -v vcgencmd >/dev/null 2>&1; then
+    command -v vcgencmd
+    return
+  fi
+
+  local candidates=(
+    /usr/bin/vcgencmd
+    /opt/vc/bin/vcgencmd
+    /usr/local/bin/vcgencmd
+  )
+
+  for candidate in "${candidates[@]}"; do
+    if [[ -x "${candidate}" ]]; then
+      printf '%s' "${candidate}"
+      return
+    fi
+  done
+
+  printf ''
+}
+
+VCGENCMD_BIN="${VCGENCMD_BIN:-$(find_vcgencmd)}"
 
 write_header() {
   printf '# HELP pi_throttled_flag Raspberry Pi throttling flags (1 indicates active)
@@ -31,9 +58,9 @@ append_flag_metric() {
 
 parse_throttled() {
   local throttled_raw=""
-  if command -v vcgencmd >/dev/null 2>&1; then
+  if [[ -n "${VCGENCMD_BIN}" ]]; then
     local throttled_output
-    throttled_output=$(vcgencmd get_throttled 2>/dev/null || true)
+    throttled_output=$("${VCGENCMD_BIN}" get_throttled 2>/dev/null || true)
     if [[ "${throttled_output}" =~ throttled=0[xX]([0-9a-fA-F]+) ]]; then
       local hex_value="${BASH_REMATCH[1]}"
       throttled_raw=$((16#${hex_value}))
@@ -79,14 +106,14 @@ parse_throttled() {
 
 parse_voltage() {
   local voltage_value=""
-  if command -v vcgencmd >/dev/null 2>&1; then
+  if [[ -n "${VCGENCMD_BIN}" ]]; then
     local voltage_output
-    voltage_output=$(vcgencmd measure_volts 2>/dev/null || true)
+    voltage_output=$("${VCGENCMD_BIN}" measure_volts 2>/dev/null || true)
     if [[ "${voltage_output}" =~ volt=([0-9]+\.[0-9]+)V ]]; then
       voltage_value="${BASH_REMATCH[1]}"
     fi
     if [[ -z "${voltage_value}" ]]; then
-      voltage_output=$(vcgencmd measure_volts core 2>/dev/null || true)
+      voltage_output=$("${VCGENCMD_BIN}" measure_volts core 2>/dev/null || true)
       if [[ "${voltage_output}" =~ volt=([0-9]+\.[0-9]+)V ]]; then
         voltage_value="${BASH_REMATCH[1]}"
       fi
