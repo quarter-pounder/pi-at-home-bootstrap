@@ -164,25 +164,9 @@ groups:
       - alert: ContainerDown
         expr: |
           up == 0
-          and (
-            (
-              container_label_com_docker_compose_service != "woodpecker-runner"
-              and container_label_com_docker_compose_service != "forgejo-actions-runner"
-              and container_label_com_docker_compose_service != "github-actions-runner"
-            )
-            or (
-              container_label_com_docker_compose_service == "woodpecker-runner"
-              and alert_suppression_enabled{runner="woodpecker-runner"} != 1
-            )
-            or (
-              container_label_com_docker_compose_service == "forgejo-actions-runner"
-              and alert_suppression_enabled{runner="forgejo-actions-runner"} != 1
-            )
-            or (
-              container_label_com_docker_compose_service == "github-actions-runner"
-              and alert_suppression_enabled{runner="github-actions-runner"} != 1
-            )
-          )
+          and container_label_com_docker_compose_service != "woodpecker-runner"
+          and container_label_com_docker_compose_service != "forgejo-actions-runner"
+          and container_label_com_docker_compose_service != "github-actions-runner"
         for: 2m
         labels:
           severity: warning
@@ -190,6 +174,41 @@ groups:
         {% raw %}
           summary: "Container {{ $labels.job }} is down"
           description: "Container has been down for more than 2 minutes"
+        {% endraw %}
+
+      - alert: RunnerSuppressionActive
+        expr: |
+          label_replace(
+            alert_suppression_enabled{runner=~"woodpecker-runner|forgejo-actions-runner|github-actions-runner"} == 1,
+            "runner_name", "$1", "runner", "(.*)"
+          )
+        for: 10s
+        labels:
+          severity: info
+          alert_type: suppression
+        annotations:
+        {% raw %}
+          summary: "Runner alert suppression is active for {{ $labels.runner }}"
+          description: "Suppression is enabled for {{ $labels.runner }}. Runner down alerts will be inhibited."
+        {% endraw %}
+
+      - alert: RunnerContainerDown
+        expr: |
+          label_replace(
+            (
+              up == 0
+              and container_label_com_docker_compose_service =~ "woodpecker-runner|forgejo-actions-runner|github-actions-runner"
+            ),
+            "runner_name", "$1", "container_label_com_docker_compose_service", "(.*)"
+          )
+        for: 2m
+        labels:
+          severity: warning
+          alert_type: runner
+        annotations:
+        {% raw %}
+          summary: "Runner container {{ $labels.container_label_com_docker_compose_service }} is down"
+          description: "Runner container has been down for more than 2 minutes. Suppress this alert if the runner was manually stopped."
         {% endraw %}
 
       - alert: HighContainerMemory

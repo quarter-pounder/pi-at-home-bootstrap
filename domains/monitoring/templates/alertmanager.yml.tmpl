@@ -10,6 +10,15 @@ global:
   smtp_smarthost: '{{ smtp_host }}:{{ smtp_port }}'
   smtp_from: '{{ smtp_from }}'
 
+inhibit_rules:
+  - source_match:
+      alertname: RunnerSuppressionActive
+      alert_type: suppression
+    target_match:
+      alertname: RunnerContainerDown
+      alert_type: runner
+    equal: ['runner_name']
+
 route:
   group_by: ['alertname']
   group_wait: 10s
