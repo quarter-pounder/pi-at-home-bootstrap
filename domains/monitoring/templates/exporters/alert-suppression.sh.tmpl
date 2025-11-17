@@ -23,6 +23,7 @@ check_suppression() {
 cat > "${METRICS_FILE}.tmp" <<EOF
 # HELP alert_suppression_enabled Whether alert suppression is enabled for a runner (1=enabled, 0=disabled)
 # TYPE alert_suppression_enabled gauge
+alert_suppression_enabled{runner="woodpecker"} $(check_suppression "woodpecker")
 alert_suppression_enabled{runner="woodpecker-runner"} $(check_suppression "woodpecker-runner")
 alert_suppression_enabled{runner="forgejo-actions-runner"} $(check_suppression "forgejo-actions-runner")
 alert_suppression_enabled{runner="github-actions-runner"} $(check_suppression "github-actions-runner")
