@@ -54,7 +54,7 @@
 {% if EXTERNAL_RUNNER_METRICS_IP %}
         ,
         {
-          "expr": "label_replace((up{job=\"external-runner\"} or vector(0)), \"runner\", \"External Runner\", \"\", \"\")",
+          "expr": "label_replace((max(up{job=\"external-runner\"}) or vector(0)), \"runner\", \"External Runner\", \"\", \"\")",
           "refId": "D",
           "format": "table"
         }
@@ -92,24 +92,6 @@
             }
           }
         },
-        {
-          "id": "filterByValue",
-          "options": {
-            "filters": [
-              {
-                "fieldName": "Status",
-                "config": {
-                  "id": "number",
-                  "options": {
-                    "value": 1,
-                    "operator": "gte"
-                  }
-                }
-              }
-            ],
-            "type": "include"
-          }
-        }
       ],
       "fieldConfig": {
         "defaults": {
