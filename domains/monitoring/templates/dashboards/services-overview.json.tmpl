@@ -687,10 +687,53 @@
     },
 
     {
+      "type": "gauge",
+      "title": "Core Voltage (V)",
+      "id": 307,
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 50 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "pi_core_voltage_volts", "refId": "A", "instant": true }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "volt",
+          "decimals": 3,
+          "min": 0.6,
+          "max": 1.1,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#d66060", "value": null },
+              { "color": "#e7c787", "value": 0.72 },
+              { "color": "#5fb3b3", "value": 0.75 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "nan",
+                "result": { "text": "Unknown", "color": "#a5a5a5" }
+              }
+            }
+          ]
+        }
+      },
+      "options": {
+        "orientation": "vertical",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "showThresholdMarkers": true,
+        "showThresholdLabels": false
+      }
+    },
+
+    {
       "type": "timeseries",
       "title": "CPU Temperature Trend",
       "id": 306,
-      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 50 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 50 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -715,13 +758,75 @@
     },
 
     {
-      "type": "text",
-      "title": "Kernel Limitation",
-      "id": 304,
-      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 58 },
+      "type": "table",
+      "title": "Throttle Flags",
+      "id": 308,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 58 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "pi_throttled_flag",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "Metric": true },
+            "renameByName": { "Value": "Status", "condition": "Flag" }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Clear", "color": "#5fb3b3" },
+                "1": { "text": "Active", "color": "#d66060" }
+              }
+            }
+          ]
+        }
+      },
       "options": {
-        "mode": "markdown",
-        "content": "Voltage and throttling metrics remain disabled because the Ubuntu 6.17 raspi kernel omits the bcm2835_vcio mailbox driver. This Pi now boots from NVMe; install the `linux-raspi` kernel family or move to Raspberry Pi OS to restore those panels."
+        "showHeader": true,
+        "footer": { "show": false },
+        "sortBy": [{ "displayName": "Flag" }]
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Core Voltage Trend",
+      "id": 309,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 58 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "avg_over_time(pi_core_voltage_volts[5m])",
+          "refId": "A",
+          "legendFormat": "Voltage"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "volt",
+          "decimals": 3,
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" },
+        "drawStyle": "lines",
+        "fillOpacity": 10,
+        "lineWidth": 2
       }
     },
 
@@ -729,7 +834,7 @@
       "type": "timeseries",
       "title": "Filesystem Usage (bytes)",
       "id": 305,
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 62 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 66 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -753,13 +858,13 @@
       }
     },
 
-    { "type": "row", "title": "Recent Events", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 70 } },
+    { "type": "row", "title": "Recent Events", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 74 } },
 
     {
       "type": "logs",
       "title": "Error Logs (15m)",
       "id": 7,
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 71 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 75 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -783,7 +888,7 @@
       "type": "logs",
       "title": "All Logs",
       "id": 8,
-      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 79 },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 83 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
