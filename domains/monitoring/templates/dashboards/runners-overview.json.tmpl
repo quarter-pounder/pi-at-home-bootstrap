@@ -37,7 +37,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "(count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300)) > 0) + (count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300)) > 0) + (count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300)) > 0){% if EXTERNAL_RUNNER_METRICS_IP %} + (max(up{job=\"external-runner\"}) or vector(0)){% endif %}",
+          "expr": "sum((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"} > (time() - 300)) > 0) or vector(0)){% if EXTERNAL_RUNNER_METRICS_IP %} + (max(up{job=\"external-runner\"}) or vector(0)){% endif %}",
           "refId": "A",
           "instant": true
         }
