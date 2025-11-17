@@ -353,7 +353,7 @@
     {
       "type": "timeseries",
       "title": "Forgejo Memory (MB)",
-      "id": 5b,
+      "id": 6,
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 11 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
@@ -381,7 +381,7 @@
       "type": "timeseries",
       "title": "Prometheus CPU (cores)",
       "id": 11,
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -408,7 +408,7 @@
       "type": "timeseries",
       "title": "Prometheus Memory (MB)",
       "id": 12,
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -435,7 +435,7 @@
       "type": "timeseries",
       "title": "Loki CPU (cores)",
       "id": 13,
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -462,7 +462,7 @@
       "type": "timeseries",
       "title": "Loki Memory (MB)",
       "id": 14,
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -486,13 +486,13 @@
       }
     },
 
-    { "type": "row", "title": "Adblocker", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 } },
+    { "type": "row", "title": "Adblocker", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 } },
 
     {
       "type": "stat",
       "title": "Pi-hole Container (6h)",
       "id": 201,
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 41 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 37 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -544,7 +544,7 @@
       "type": "stat",
       "title": "Unbound Container",
       "id": 202,
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 41 },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 37 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -583,13 +583,13 @@
       }
     },
 
-    { "type": "row", "title": "Pi System", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 45 } },
+    { "type": "row", "title": "Pi System", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 41 } },
 
     {
       "type": "timeseries",
       "title": "CPU Utilisation (%)",
       "id": 301,
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 46 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 42 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -617,7 +617,7 @@
       "type": "timeseries",
       "title": "Memory Usage (%)",
       "id": 302,
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 50 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 42 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -646,7 +646,7 @@
       "type": "gauge",
       "title": "CPU Temperature (°C)",
       "id": 303,
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 46 },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 42 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         { "expr": "pi_cpu_temperature_celsius", "refId": "A" }
@@ -690,7 +690,7 @@
       "type": "timeseries",
       "title": "CPU Temperature Trend",
       "id": 306,
-      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 46 },
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 42 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -718,7 +718,7 @@
       "type": "text",
       "title": "Kernel Limitation",
       "id": 304,
-      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 54 },
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 50 },
       "options": {
         "mode": "markdown",
         "content": "Voltage and throttling metrics remain disabled because the Ubuntu 6.17 raspi kernel omits the bcm2835_vcio mailbox driver. This Pi now boots from NVMe; install the `linux-raspi` kernel family or move to Raspberry Pi OS to restore those panels."
@@ -729,7 +729,7 @@
       "type": "timeseries",
       "title": "Filesystem Usage (bytes)",
       "id": 305,
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 58 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 54 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -753,13 +753,13 @@
       }
     },
 
-    { "type": "row", "title": "Recent Events", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 66 } },
+    { "type": "row", "title": "Recent Events", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 62 } },
 
     {
       "type": "table",
       "title": "Error Logs (15m)",
       "id": 7,
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 75 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 63 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
