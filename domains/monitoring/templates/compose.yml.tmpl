@@ -80,7 +80,7 @@ services:
     pid: host
 
   alert-suppression-exporter:
-    image: alpine:latest
+    image: alpine:3.19
     container_name: monitoring-alert-suppression-exporter
     restart: always
     command:
