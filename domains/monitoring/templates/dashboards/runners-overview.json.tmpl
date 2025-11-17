@@ -37,30 +37,26 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300))",
-          "refId": "woodpecker",
-          "legendFormat": "Woodpecker Runner",
+          "expr": "label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300)) > 0) or vector(0), \"runner\", \"Woodpecker Runner\", \"\", \"\")",
+          "refId": "A",
           "instant": true,
           "format": "table"
         },
         {
-          "expr": "count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300))",
-          "refId": "forgejo",
-          "legendFormat": "Forgejo Actions Runner",
+          "expr": "label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300)) > 0) or vector(0), \"runner\", \"Forgejo Actions Runner\", \"\", \"\")",
+          "refId": "B",
           "instant": true,
           "format": "table"
         },
         {
-          "expr": "count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300))",
-          "refId": "github",
-          "legendFormat": "GitHub Actions Runner",
+          "expr": "label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300)) > 0) or vector(0), \"runner\", \"GitHub Actions Runner\", \"\", \"\")",
+          "refId": "C",
           "instant": true,
           "format": "table"
         }{% if EXTERNAL_RUNNER_METRICS_IP %},
         {
-          "expr": "max(up{job=\"external-runner\"})",
-          "refId": "external",
-          "legendFormat": "External Runner",
+          "expr": "label_replace((max(up{job=\"external-runner\"}) or vector(0)), \"runner\", \"External Runner\", \"\", \"\")",
+          "refId": "D",
           "instant": true,
           "format": "table"
         }
@@ -68,17 +64,61 @@
       ],
       "transformations": [
         {
+          "id": "merge",
+          "options": {}
+        },
+        {
           "id": "organize",
           "options": {
-            "renameByName": {
-              "Value": "Status",
-              "legend": "Runner"
-            },
             "excludeByName": {
               "Time": true,
               "__name__": true,
               "instance": true,
               "job": true
+            }
+          }
+        },
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "runner": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "Value #A": {
+                "aggregations": ["lastNotNull"],
+                "operation": "aggregate"
+              },
+              "Value #B": {
+                "aggregations": ["lastNotNull"],
+                "operation": "aggregate"
+              },
+              "Value #C": {
+                "aggregations": ["lastNotNull"],
+                "operation": "aggregate"
+              },
+              "Value #D": {
+                "aggregations": ["lastNotNull"],
+                "operation": "aggregate"
+              },
+              "Value": {
+                "aggregations": ["lastNotNull"],
+                "operation": "aggregate"
+              }
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "runner": "Runner",
+              "Value #A": "Status",
+              "Value #B": "Status",
+              "Value #C": "Status",
+              "Value #D": "Status",
+              "Value": "Status"
             }
           }
         },
