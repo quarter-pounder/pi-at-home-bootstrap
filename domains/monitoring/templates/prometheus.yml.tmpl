@@ -55,13 +55,15 @@ scrape_configs:
       - targets:
           - 'adblocker-pihole-exporter:9617'
 {% if EXTERNAL_RUNNER_METRICS_IP %}
+{% set runner_target = EXTERNAL_RUNNER_METRICS_IP.replace("http://", "").replace("https://", "") %}
+{% set runner_target = runner_target if ":" in runner_target else runner_target + ":9100" %}
   - job_name: 'external-runner'
     scheme: http
     metrics_path: '/metrics'
     scrape_interval: 30s
     static_configs:
       - targets:
-          - '{{ EXTERNAL_RUNNER_METRICS_IP }}:9100'
+          - '{{ runner_target }}'
         labels:
           instance: 'external-runner'
           runner_type: 'external'
