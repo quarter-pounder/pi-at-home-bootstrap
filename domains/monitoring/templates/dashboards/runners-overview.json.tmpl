@@ -74,7 +74,7 @@
 
       "targets": [
         {
-          "expr": "time() - max(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"}) < 300",
+          "expr": "count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300)) > 0",
           "refId": "A"
         },
         {
@@ -128,7 +128,7 @@
 
       "targets": [
         {
-          "expr": "time() - max(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"}) < 300",
+          "expr": "count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300)) > 0",
           "refId": "A"
         },
         {
@@ -183,7 +183,7 @@
 
       "targets": [
         {
-          "expr": "time() - max(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"}) < 300",
+          "expr": "count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300)) > 0",
           "refId": "A"
         },
         {

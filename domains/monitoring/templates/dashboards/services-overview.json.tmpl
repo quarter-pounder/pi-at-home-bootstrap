@@ -566,7 +566,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "time() - max(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"adblocker-unbound\"}) < 300",
+          "expr": "count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"adblocker-unbound\"} > (time() - 300)) > 0",
           "refId": "A",
           "legendFormat": "Status"
         }
