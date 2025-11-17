@@ -124,8 +124,8 @@ deploy: render
 	@echo "[Deploy] $(DOMAIN)"
 	@[ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ] || { echo "[Deploy][err] compose.yml not found for $(DOMAIN)"; exit 1; }
 	@cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml up -d --pull always $(if $(FORCE_RECREATE),--force-recreate)
-	@if echo "$(DOMAIN)" | grep -qE "(runner|actions-runner)"; then \
-		echo "[Deploy] Runner detected - removing alert suppression marker..."; \
+	@if echo "$(DOMAIN)" | grep -qE "(runner|actions-runner|woodpecker)"; then \
+		echo "[Deploy] Runner/service detected - removing alert suppression marker..."; \
 		rm -f /srv/monitoring/alert-suppression/$(DOMAIN).down 2>/dev/null || true; \
 		echo "[Deploy] Alert suppression disabled for $(DOMAIN)"; \
 	fi
@@ -134,8 +134,8 @@ deploy-only:
 	@echo "[Deploy] $(DOMAIN) (no render)"
 	@[ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ] || { echo "[Deploy][err] compose.yml not found for $(DOMAIN)"; exit 1; }
 	@cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml up -d --pull always $(if $(FORCE_RECREATE),--force-recreate)
-	@if echo "$(DOMAIN)" | grep -qE "(runner|actions-runner)"; then \
-		echo "[Deploy] Runner detected - removing alert suppression marker..."; \
+	@if echo "$(DOMAIN)" | grep -qE "(runner|actions-runner|woodpecker)"; then \
+		echo "[Deploy] Runner/service detected - removing alert suppression marker..."; \
 		rm -f /srv/monitoring/alert-suppression/$(DOMAIN).down 2>/dev/null || true; \
 		echo "[Deploy] Alert suppression disabled for $(DOMAIN)"; \
 	fi
@@ -269,8 +269,8 @@ down:
 	fi; \
 	echo "[Down] Bringing down $(DOMAIN)..."; \
 	docker compose -f generated/$(DOMAIN)/compose.yml down; \
-	if echo "$(DOMAIN)" | grep -qE "(runner|actions-runner)"; then \
-		echo "[Down] Runner detected - creating alert suppression marker..."; \
+	if echo "$(DOMAIN)" | grep -qE "(runner|actions-runner|woodpecker)"; then \
+		echo "[Down] Runner/service detected - creating alert suppression marker..."; \
 		mkdir -p /srv/monitoring/alert-suppression; \
 		touch /srv/monitoring/alert-suppression/$(DOMAIN).down; \
 		echo "[Down] Alert suppression enabled for $(DOMAIN)"; \
