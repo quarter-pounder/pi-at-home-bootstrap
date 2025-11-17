@@ -24,7 +24,7 @@
       "type": "stat",
       "title": "Attention Required",
       "id": 101,
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -68,7 +68,7 @@
       "type": "stat",
       "title": "Active Alerts",
       "id": 102,
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -115,7 +115,7 @@
       "type": "stat",
       "title": "Pi System Status",
       "id": 103,
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -165,7 +165,7 @@
       "type": "stat",
       "title": "Forgejo Availability (6h)",
       "id": 1,
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 6 },
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 6 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -216,7 +216,7 @@
       "type": "stat",
       "title": "Prometheus Availability (6h)",
       "id": 3,
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 6 },
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 6 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -267,7 +267,7 @@
       "type": "stat",
       "title": "Loki Availability (6h)",
       "id": 4,
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 6 },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 6 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -348,6 +348,30 @@
         "drawStyle": "bars",
         "fillOpacity": 15,
         "lineWidth": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Forgejo Memory (MB)",
+      "id": 5b,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 11 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(container_memory_working_set_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo\"}) / 1024 / 1024",
+          "refId": "A",
+          "legendFormat": "Forgejo"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "MB",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
       }
     },
 
@@ -542,7 +566,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "max(up{job=\"cadvisor\",container_label_com_docker_compose_service=\"adblocker-unbound\"})",
+          "expr": "time() - max(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"adblocker-unbound\"}) < 300",
           "refId": "A",
           "legendFormat": "Status"
         }
