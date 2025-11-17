@@ -1,0 +1,369 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "grafana" },
+        "enable": true,
+        "hide": true,
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "title": "Runners Overview",
+  "tags": ["runners", "ci-cd"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "row",
+      "title": "Summary",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Runners Status",
+      "id": 201,
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(up{job=~\"node-exporter|external-runner\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "#5fb3b3" },
+              { "value": 1, "color": "#d66060" }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "No runners" },
+                "1": { "text": "1 runner" },
+                "2": { "text": "2 runners" },
+                "3": { "text": "3 runners" }
+              }
+            }
+          ]
+        }
+      },
+      "options": { "orientation": "horizontal", "textMode": "value" }
+    },
+    {
+      "type": "stat",
+      "title": "Woodpecker Runner",
+      "id": 202,
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "up{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "#d66060" },
+              { "value": 1, "color": "#5fb3b3" }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Down", "color": "#d66060" },
+                "1": { "text": "Up", "color": "#5fb3b3" }
+              }
+            }
+          ]
+        }
+      },
+      "options": { "orientation": "horizontal", "textMode": "value" }
+    },
+    {
+      "type": "stat",
+      "title": "Forgejo Actions Runner",
+      "id": 203,
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "up{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "#d66060" },
+              { "value": 1, "color": "#5fb3b3" }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Down", "color": "#d66060" },
+                "1": { "text": "Up", "color": "#5fb3b3" }
+              }
+            }
+          ]
+        }
+      },
+      "options": { "orientation": "horizontal", "textMode": "value" }
+    },
+    {
+      "type": "stat",
+      "title": "GitHub Actions Runner",
+      "id": 204,
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "up{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "#d66060" },
+              { "value": 1, "color": "#5fb3b3" }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Down", "color": "#d66060" },
+                "1": { "text": "Up", "color": "#5fb3b3" }
+              }
+            }
+          ]
+        }
+      },
+      "options": { "orientation": "horizontal", "textMode": "value" }
+    },
+    {
+      "type": "row",
+      "title": "CPU Usage",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Runner CPU Usage (cores)",
+      "id": 205,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "Woodpecker Runner"
+        },
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"}[5m]))",
+          "refId": "B",
+          "legendFormat": "Forgejo Actions Runner"
+        },
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"}[5m]))",
+          "refId": "C",
+          "legendFormat": "GitHub Actions Runner"
+        }
+{% if EXTERNAL_RUNNER_METRICS_IP %}
+        ,
+        {
+          "expr": "sum(rate(node_cpu_seconds_total{job=\"external-runner\",mode!=\"idle\"}[5m]))",
+          "refId": "D",
+          "legendFormat": "External Runner"
+        }
+{% endif %}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cores",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Runner CPU Usage (%)",
+      "id": 206,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 * sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "{{container_label_com_docker_compose_service}}"
+        }
+{% if EXTERNAL_RUNNER_METRICS_IP %}
+        ,
+        {
+          "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{job=\"external-runner\",mode=\"idle\"}[5m])) * 100)",
+          "refId": "B",
+          "legendFormat": "External Runner"
+        }
+{% endif %}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Memory Usage",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Runner Memory Usage",
+      "id": 207,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "container_memory_usage_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}",
+          "refId": "A",
+          "legendFormat": "{{container_label_com_docker_compose_service}}"
+        }
+{% if EXTERNAL_RUNNER_METRICS_IP %}
+        ,
+        {
+          "expr": "node_memory_MemTotal_bytes{job=\"external-runner\"} - node_memory_MemAvailable_bytes{job=\"external-runner\"}",
+          "refId": "B",
+          "legendFormat": "External Runner"
+        }
+{% endif %}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Runner Memory Usage (%)",
+      "id": 208,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 * (container_memory_usage_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"} / container_spec_memory_limit_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"})",
+          "refId": "A",
+          "legendFormat": "{{container_label_com_docker_compose_service}}"
+        }
+{% if EXTERNAL_RUNNER_METRICS_IP %}
+        ,
+        {
+          "expr": "100 * (1 - (node_memory_MemAvailable_bytes{job=\"external-runner\"} / node_memory_MemTotal_bytes{job=\"external-runner\"}))",
+          "refId": "B",
+          "legendFormat": "External Runner"
+        }
+{% endif %}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Network",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Runner Network Traffic",
+      "id": 209,
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "rate(container_network_receive_bytes_total{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}[5m])",
+          "refId": "A",
+          "legendFormat": "{{container_label_com_docker_compose_service}} RX"
+        },
+        {
+          "expr": "rate(container_network_transmit_bytes_total{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}[5m])",
+          "refId": "B",
+          "legendFormat": "{{container_label_com_docker_compose_service}} TX"
+        }
+{% if EXTERNAL_RUNNER_METRICS_IP %}
+        ,
+        {
+          "expr": "rate(node_network_receive_bytes_total{job=\"external-runner\",device!=\"lo\"}[5m])",
+          "refId": "C",
+          "legendFormat": "External Runner RX"
+        },
+        {
+          "expr": "rate(node_network_transmit_bytes_total{job=\"external-runner\",device!=\"lo\"}[5m])",
+          "refId": "D",
+          "legendFormat": "External Runner TX"
+        }
+{% endif %}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "version": 1
+}
+
