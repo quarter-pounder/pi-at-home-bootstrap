@@ -412,11 +412,6 @@
           "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker\"}[5m]))",
           "refId": "A",
           "legendFormat": "Server"
-        },
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"}[5m]))",
-          "refId": "B",
-          "legendFormat": "Runner"
         }
       ],
       "fieldConfig": {
