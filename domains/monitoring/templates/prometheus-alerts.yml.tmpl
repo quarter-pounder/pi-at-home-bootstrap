@@ -163,10 +163,7 @@ groups:
     rules:
       - alert: ContainerDown
         expr: |
-          up{job="cadvisor"} == 0
-          and container_label_com_docker_compose_service != "woodpecker-runner"
-          and container_label_com_docker_compose_service != "forgejo-actions-runner"
-          and container_label_com_docker_compose_service != "github-actions-runner"
+          up{job="cadvisor",container_label_com_docker_compose_service!="woodpecker-runner",container_label_com_docker_compose_service!="forgejo-actions-runner",container_label_com_docker_compose_service!="github-actions-runner"} == 0
         for: 2m
         labels:
           severity: warning
@@ -196,9 +193,9 @@ groups:
         expr: |
           label_replace(
             (
-              (up{job="cadvisor"} == 0 and container_label_com_docker_compose_service == "woodpecker-runner")
-              or (up{job="cadvisor"} == 0 and container_label_com_docker_compose_service == "forgejo-actions-runner")
-              or (up{job="cadvisor"} == 0 and container_label_com_docker_compose_service == "github-actions-runner")
+              up{job="cadvisor",container_label_com_docker_compose_service="woodpecker-runner"} == 0
+              or up{job="cadvisor",container_label_com_docker_compose_service="forgejo-actions-runner"} == 0
+              or up{job="cadvisor",container_label_com_docker_compose_service="github-actions-runner"} == 0
             ),
             "runner_name", "$1", "container_label_com_docker_compose_service", "(.*)"
           )
