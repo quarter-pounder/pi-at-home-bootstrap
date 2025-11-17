@@ -30,126 +30,45 @@
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
     },
     {
-      "type": "table",
+      "type": "stat",
       "title": "Currently Online Runners",
       "id": 201,
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 1 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300)) > 0) or vector(0), \"runner\", \"Woodpecker Runner\", \"\", \"\")",
+          "expr": "(count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300)) > 0) + (count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300)) > 0) + (count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300)) > 0){% if EXTERNAL_RUNNER_METRICS_IP %} + (max(up{job=\"external-runner\"}) or vector(0)){% endif %}",
           "refId": "A",
-          "instant": true,
-          "format": "table"
-        },
-        {
-          "expr": "label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300)) > 0) or vector(0), \"runner\", \"Forgejo Actions Runner\", \"\", \"\")",
-          "refId": "B",
-          "instant": true,
-          "format": "table"
-        },
-        {
-          "expr": "label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300)) > 0) or vector(0), \"runner\", \"GitHub Actions Runner\", \"\", \"\")",
-          "refId": "C",
-          "instant": true,
-          "format": "table"
-        }{% if EXTERNAL_RUNNER_METRICS_IP %},
-        {
-          "expr": "label_replace((max(up{job=\"external-runner\"}) or vector(0)), \"runner\", \"External Runner\", \"\", \"\")",
-          "refId": "D",
-          "instant": true,
-          "format": "table"
-        }
-        {% endif %}
-      ],
-      "transformations": [
-        {
-          "id": "merge",
-          "options": {}
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "__name__": true,
-              "instance": true,
-              "job": true
-            }
-          }
-        },
-        {
-          "id": "calculateField",
-          "options": {
-            "alias": "Status",
-            "mode": "reduce",
-            "reduce": {
-              "include": ["Value #A", "Value #B", "Value #C", "Value #D", "Value"],
-              "reducer": "lastNotNull"
-            }
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "renameByName": {
-              "runner": "Runner"
-            }
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "include": {
-              "names": ["Runner", "Status"]
-            }
-          }
+          "instant": true
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "custom": {
-            "align": "left",
-            "displayMode": "color-background"
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
           },
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": { "text": "Offline", "color": "#d66060" },
-                "1": { "text": "Online", "color": "#5fb3b3" }
-              }
-            }
-          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "value": null, "color": "transparent" },
+              { "value": null, "color": "text" },
               { "value": 0, "color": "#d66060" },
               { "value": 1, "color": "#5fb3b3" }
             ]
           }
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "Runner" },
-            "properties": [
-              { "id": "custom.width", "value": 180 },
-              { "id": "mappings", "value": [] },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [ { "value": null, "color": "transparent" } ]
-                }
-              }
-            ]
-          }
-        ]
+        }
       },
       "options": {
-        "showHeader": true,
-        "sortBy": []
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "textMode": "value"
       }
     },
     {
