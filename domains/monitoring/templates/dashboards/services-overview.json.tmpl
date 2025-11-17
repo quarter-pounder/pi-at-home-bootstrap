@@ -763,7 +763,7 @@
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "topk(10, count_over_time({} |= \"error\" [15m]))",
+          "expr": "topk(10, count_over_time({filename=~\".+\"} |= \"error\" [15m]))",
           "refId": "A"
         }
       ],
