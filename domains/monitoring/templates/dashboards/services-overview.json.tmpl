@@ -756,23 +756,52 @@
     { "type": "row", "title": "Recent Events", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 70 } },
 
     {
-      "type": "table",
+      "type": "logs",
       "title": "Error Logs (15m)",
       "id": 7,
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 71 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "topk(10, count_over_time({filename=~\".+\"} |= \"error\" [15m]))",
-          "refId": "A"
+          "expr": "{filename=~\".+\"} |= \"error\"",
+          "refId": "A",
+          "queryType": "range"
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "custom": { "align": "left" }
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    },
+    {
+      "type": "logs",
+      "title": "All Logs",
+      "id": 8,
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 79 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "{filename=~\".+\"}",
+          "refId": "A",
+          "queryType": "range"
         }
-      },
-      "options": { "showHeader": true }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
     }
   ],
   "refresh": "1m",
