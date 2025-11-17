@@ -697,8 +697,9 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "volt",
+          "unit": "none",
           "decimals": 3,
+          "custom": { "valueSuffix": " V" },
           "min": 0.6,
           "max": 1.1,
           "color": { "mode": "thresholds" },
@@ -775,8 +776,16 @@
         {
           "id": "organize",
           "options": {
-            "excludeByName": { "Time": true, "Metric": true },
-            "renameByName": { "Value": "Status", "condition": "Flag" }
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "instance": true,
+              "job": true
+            },
+            "renameByName": {
+              "condition": "Flag",
+              "Value": "Status"
+            }
           }
         }
       ],
@@ -809,16 +818,17 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "avg_over_time(pi_core_voltage_volts[5m])",
+          "expr": "pi_core_voltage_volts",
           "refId": "A",
           "legendFormat": "Voltage"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "volt",
+          "unit": "none",
           "decimals": 3,
-          "color": { "mode": "palette-classic" }
+          "color": { "mode": "palette-classic" },
+          "custom": { "valueSuffix": " V" }
         }
       },
       "options": {
