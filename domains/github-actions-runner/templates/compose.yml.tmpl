@@ -1,0 +1,29 @@
+services:
+  github-actions-runner:
+    image: {{ GITHUB_ACTIONS_RUNNER_IMAGE }}
+    container_name: github-actions-runner
+    restart: unless-stopped
+    environment:
+      RUNNER_NAME: {{ GITHUB_ACTIONS_RUNNER_NAME }}
+{% if GITHUB_ACTIONS_RUNNER_REPO_URL %}
+      REPO_URL: {{ GITHUB_ACTIONS_RUNNER_REPO_URL }}
+{% endif %}
+      RUNNER_TOKEN: {{ GITHUB_ACTIONS_RUNNER_TOKEN }}
+      RUNNER_WORKDIR: /tmp/runner/work
+      RUNNER_LABELS: {{ GITHUB_ACTIONS_RUNNER_LABELS }}
+      RUNNER_ALLOW_RUNASROOT: "true"
+      DOCKER_ENABLED: "{{ 'true' if GITHUB_ACTIONS_RUNNER_DOCKER_ENABLED == 'true' else 'false' }}"
+      EPHEMERAL: "false"
+      DISABLE_RUNNER_UPDATE: "false"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /srv/github-actions-runner:/data
+    networks:
+      github-actions-runner-network:
+        aliases:
+          - github-actions-runner
+
+networks:
+  github-actions-runner-network:
+    driver: bridge
+
