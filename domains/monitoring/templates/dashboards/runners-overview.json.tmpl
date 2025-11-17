@@ -30,40 +30,114 @@
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
     },
     {
-      "type": "stat",
-      "title": "Runners Status",
+      "type": "table",
+      "title": "Currently Online Runners",
       "id": 201,
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(up{job=~\"node-exporter|external-runner\"})",
-          "refId": "A"
+          "expr": "label_replace(count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300)) > 0, \"runner\", \"Woodpecker Runner\", \"\", \"\")",
+          "refId": "A",
+          "format": "table"
+        },
+        {
+          "expr": "label_replace(count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300)) > 0, \"runner\", \"Forgejo Actions Runner\", \"\", \"\")",
+          "refId": "B",
+          "format": "table"
+        },
+        {
+          "expr": "label_replace(count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300)) > 0, \"runner\", \"GitHub Actions Runner\", \"\", \"\")",
+          "refId": "C",
+          "format": "table"
+        }
+{% if EXTERNAL_RUNNER_METRICS_IP %}
+        ,
+        {
+          "expr": "label_replace(up{job=\"external-runner\"}, \"runner\", \"External Runner\", \"\", \"\")",
+          "refId": "D",
+          "format": "table"
+        }
+{% endif %}
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "job": true,
+              "instance": true
+            },
+            "indexByName": {
+              "runner": 0,
+              "Value": 1
+            },
+            "renameByName": {
+              "runner": "Runner",
+              "Value": "Status"
+            }
+          }
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "value": null, "color": "#5fb3b3" },
-              { "value": 1, "color": "#d66060" }
-            ]
+          "custom": {
+            "align": "left",
+            "displayMode": "color-background"
           },
           "mappings": [
             {
               "type": "value",
               "options": {
-                "0": { "text": "No runners" },
-                "1": { "text": "1 runner" },
-                "2": { "text": "2 runners" },
-                "3": { "text": "3 runners" }
+                "0": { "text": "Offline", "color": "#d66060" },
+                "1": { "text": "Online", "color": "#5fb3b3" }
               }
             }
-          ]
-        }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "#a5a5a5" },
+              { "value": 0, "color": "#d66060" },
+              { "value": 1, "color": "#5fb3b3" }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Runner" },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              },
+              {
+                "id": "mappings",
+                "value": []
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "value": null, "color": "transparent" }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
       },
-      "options": { "orientation": "horizontal", "textMode": "value" }
+      "options": {
+        "showHeader": true,
+        "sortBy": []
+      }
     },
     {
       "type": "stat",
@@ -74,16 +148,10 @@
 
       "targets": [
         {
-          "expr": "count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300)) > 0",
+          "expr": "(count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300)) > 0) * (1 + (sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"}[2m])) >= 0.1))",
           "refId": "A"
-        },
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"}[2m]))",
-          "refId": "B",
-          "hide": true
         }
       ],
-
       "fieldConfig": {
         "defaults": {
           "mappings": [
@@ -91,7 +159,8 @@
               "type": "value",
               "options": {
                 "0": { "text": "Offline", "color": "#d66060" },
-                "1": { "text": "Online", "color": "#5fb3b3" }
+                "1": { "text": "Idle", "color": "#e7c787" },
+                "2": { "text": "Active", "color": "#5fb3b3" }
               }
             },
             {
@@ -107,15 +176,15 @@
             "steps": [
               { "value": null, "color": "#a5a5a5" },
               { "value": 0, "color": "#d66060" },
-              { "value": 1, "color": "#5fb3b3" }
+              { "value": 1, "color": "#e7c787" },
+              { "value": 2, "color": "#5fb3b3" }
             ]
           }
         }
       },
-
       "options": {
         "orientation": "horizontal",
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background"
       }
     },
@@ -128,16 +197,10 @@
 
       "targets": [
         {
-          "expr": "count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300)) > 0",
+          "expr": "(count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300)) > 0) * (1 + (sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"}[2m])) >= 0.1))",
           "refId": "A"
-        },
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"}[2m]))",
-          "refId": "B",
-          "hide": true
         }
       ],
-
       "fieldConfig": {
         "defaults": {
           "mappings": [
@@ -145,7 +208,8 @@
               "type": "value",
               "options": {
                 "0": { "text": "Offline", "color": "#d66060" },
-                "1": { "text": "Online", "color": "#5fb3b3" }
+                "1": { "text": "Idle", "color": "#e7c787" },
+                "2": { "text": "Active", "color": "#5fb3b3" }
               }
             },
             {
@@ -161,15 +225,15 @@
             "steps": [
               { "value": null, "color": "#a5a5a5" },
               { "value": 0, "color": "#d66060" },
-              { "value": 1, "color": "#5fb3b3" }
+              { "value": 1, "color": "#e7c787" },
+              { "value": 2, "color": "#5fb3b3" }
             ]
           }
         }
       },
-
       "options": {
         "orientation": "horizontal",
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background"
       }
     },
@@ -183,16 +247,10 @@
 
       "targets": [
         {
-          "expr": "count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300)) > 0",
+          "expr": "(count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300)) > 0) * (1 + (sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"}[2m])) >= 0.1))",
           "refId": "A"
-        },
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"}[2m]))",
-          "refId": "B",
-          "hide": true
         }
       ],
-
       "fieldConfig": {
         "defaults": {
           "mappings": [
@@ -200,7 +258,8 @@
               "type": "value",
               "options": {
                 "0": { "text": "Offline", "color": "#d66060" },
-                "1": { "text": "Online", "color": "#5fb3b3" }
+                "1": { "text": "Idle", "color": "#e7c787" },
+                "2": { "text": "Active", "color": "#5fb3b3" }
               }
             },
             {
@@ -216,15 +275,15 @@
             "steps": [
               { "value": null, "color": "#a5a5a5" },
               { "value": 0, "color": "#d66060" },
-              { "value": 1, "color": "#5fb3b3" }
+              { "value": 1, "color": "#e7c787" },
+              { "value": 2, "color": "#5fb3b3" }
             ]
           }
         }
       },
-
       "options": {
         "orientation": "horizontal",
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background"
       }
     },
@@ -236,8 +295,10 @@
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 5 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        { "expr": "max(up{job=\"external-runner\"})", "refId": "A" },
-        { "expr": "sum(rate(node_cpu_seconds_total{job=\"external-runner\",mode!=\"idle\"}[2m]))", "refId": "B", "hide": true }
+        {
+          "expr": "max(up{job=\"external-runner\"}) * (1 + (sum(rate(node_cpu_seconds_total{job=\"external-runner\",mode!=\"idle\"}[2m])) >= 0.1))",
+          "refId": "A"
+        }
       ],
       "fieldConfig": {
         "defaults": {
@@ -246,23 +307,32 @@
               "type": "value",
               "options": {
                 "0": { "text": "Offline", "color": "#d66060" },
-                "1": { "text": "Online", "color": "#5fb3b3" }
+                "1": { "text": "Idle", "color": "#e7c787" },
+                "2": { "text": "Active", "color": "#5fb3b3" }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": { "text": "No data", "color": "#a5a5a5" }
               }
             }
           ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "value": null, "color": "#d66060" },
+              { "value": null, "color": "#a5a5a5" },
               { "value": 0, "color": "#d66060" },
-              { "value": 1, "color": "#5fb3b3" }
+              { "value": 1, "color": "#e7c787" },
+              { "value": 2, "color": "#5fb3b3" }
             ]
           }
         }
       },
       "options": {
         "orientation": "horizontal",
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background"
       }
     },
@@ -270,13 +340,13 @@
     {
       "type": "row",
       "title": "CPU Usage",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}9{% else %}5{% endif %} }
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}13{% else %}9{% endif %} }
     },
     {
       "type": "timeseries",
       "title": "Runner CPU Usage (cores)",
       "id": 205,
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}10{% else %}6{% endif %} },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}14{% else %}10{% endif %} },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -318,7 +388,7 @@
       "type": "timeseries",
       "title": "Runner CPU Usage (%)",
       "id": 206,
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}10{% else %}6{% endif %} },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}14{% else %}10{% endif %} },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -351,13 +421,13 @@
     {
       "type": "row",
       "title": "Memory Usage",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}18{% else %}14{% endif %} }
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}22{% else %}18{% endif %} }
     },
     {
       "type": "timeseries",
       "title": "Runner Memory Usage",
       "id": 207,
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}19{% else %}15{% endif %} },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}23{% else %}19{% endif %} },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -389,7 +459,7 @@
       "type": "timeseries",
       "title": "Runner Memory Usage (%)",
       "id": 208,
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}19{% else %}15{% endif %} },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}23{% else %}19{% endif %} },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -422,13 +492,13 @@
     {
       "type": "row",
       "title": "Network",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}27{% else %}23{% endif %} }
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}31{% else %}27{% endif %} }
     },
     {
       "type": "timeseries",
       "title": "Runner Network Traffic",
       "id": 209,
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}28{% else %}24{% endif %} },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": {% if EXTERNAL_RUNNER_METRICS_IP %}32{% else %}28{% endif %} },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
