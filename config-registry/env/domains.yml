@@ -121,3 +121,13 @@ domains:
     networks:
       - forgejo-network
 
+  - name: github-actions-runner
+    description: GitHub Actions self-hosted runner for executing workflows
+    placement: local
+    standalone: true
+    requires: []
+    exposes_to: []
+    consumes: []
+    networks:
+      - github-actions-runner-network
+
