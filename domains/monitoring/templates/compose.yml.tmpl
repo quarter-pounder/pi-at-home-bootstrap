@@ -87,9 +87,8 @@ services:
       - /bin/sh
       - -c
       - |
-        chmod +x /scripts/alert-suppression.sh
         while true; do
-          /scripts/alert-suppression.sh
+          sh /scripts/alert-suppression.sh
           sleep 30
         done
     volumes:
