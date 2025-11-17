@@ -37,25 +37,48 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300)) > 0) or vector(0), \"runner\", \"Woodpecker Runner\", \"\", \"\") or label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300)) > 0) or vector(0), \"runner\", \"Forgejo Actions Runner\", \"\", \"\") or label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300)) > 0) or vector(0), \"runner\", \"GitHub Actions Runner\", \"\", \"\"){% if EXTERNAL_RUNNER_METRICS_IP %} or label_replace((max(up{job=\"external-runner\"}) or vector(0)), \"runner\", \"External Runner\", \"\", \"\"){% endif %}",
-          "refId": "A",
-          "format": "table",
-          "instant": true
+          "expr": "count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300))",
+          "refId": "woodpecker",
+          "legendFormat": "Woodpecker Runner",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "expr": "count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300))",
+          "refId": "forgejo",
+          "legendFormat": "Forgejo Actions Runner",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "expr": "count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300))",
+          "refId": "github",
+          "legendFormat": "GitHub Actions Runner",
+          "instant": true,
+          "format": "table"
+        }{% if EXTERNAL_RUNNER_METRICS_IP %},
+        {
+          "expr": "max(up{job=\"external-runner\"})",
+          "refId": "external",
+          "legendFormat": "External Runner",
+          "instant": true,
+          "format": "table"
         }
+        {% endif %}
       ],
       "transformations": [
         {
           "id": "organize",
           "options": {
+            "renameByName": {
+              "Value": "Status",
+              "legend": "Runner"
+            },
             "excludeByName": {
               "Time": true,
               "__name__": true,
-              "job": true,
-              "instance": true
-            },
-            "renameByName": {
-              "runner": "Runner",
-              "Value": "Status"
+              "instance": true,
+              "job": true
             }
           }
         },
@@ -66,7 +89,7 @@
               "names": ["Runner", "Status"]
             }
           }
-        },
+        }
       ],
       "fieldConfig": {
         "defaults": {
@@ -86,7 +109,7 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "value": null, "color": "#a5a5a5" },
+              { "value": null, "color": "transparent" },
               { "value": 0, "color": "#d66060" },
               { "value": 1, "color": "#5fb3b3" }
             ]
@@ -96,21 +119,13 @@
           {
             "matcher": { "id": "byName", "options": "Runner" },
             "properties": [
-              {
-                "id": "custom.width",
-                "value": 180
-              },
-              {
-                "id": "mappings",
-                "value": []
-              },
+              { "id": "custom.width", "value": 180 },
+              { "id": "mappings", "value": [] },
               {
                 "id": "thresholds",
                 "value": {
                   "mode": "absolute",
-                  "steps": [
-                    { "value": null, "color": "transparent" }
-                  ]
+                  "steps": [ { "value": null, "color": "transparent" } ]
                 }
               }
             ]
