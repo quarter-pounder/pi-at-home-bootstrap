@@ -165,19 +165,23 @@ groups:
         expr: |
           up == 0
           and (
-            container_label_com_docker_compose_service != "woodpecker-runner"
-            or absent(alert_suppression_enabled{runner="woodpecker-runner"})
-            or alert_suppression_enabled{runner="woodpecker-runner"} != 1
-          )
-          and (
-            container_label_com_docker_compose_service != "forgejo-actions-runner"
-            or absent(alert_suppression_enabled{runner="forgejo-actions-runner"})
-            or alert_suppression_enabled{runner="forgejo-actions-runner"} != 1
-          )
-          and (
-            container_label_com_docker_compose_service != "github-actions-runner"
-            or absent(alert_suppression_enabled{runner="github-actions-runner"})
-            or alert_suppression_enabled{runner="github-actions-runner"} != 1
+            (
+              container_label_com_docker_compose_service != "woodpecker-runner"
+              and container_label_com_docker_compose_service != "forgejo-actions-runner"
+              and container_label_com_docker_compose_service != "github-actions-runner"
+            )
+            or (
+              container_label_com_docker_compose_service == "woodpecker-runner"
+              and alert_suppression_enabled{runner="woodpecker-runner"} != 1
+            )
+            or (
+              container_label_com_docker_compose_service == "forgejo-actions-runner"
+              and alert_suppression_enabled{runner="forgejo-actions-runner"} != 1
+            )
+            or (
+              container_label_com_docker_compose_service == "github-actions-runner"
+              and alert_suppression_enabled{runner="github-actions-runner"} != 1
+            )
           )
         for: 2m
         labels:
