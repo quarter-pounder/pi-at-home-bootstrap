@@ -37,13 +37,38 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300)) > 0) or vector(0), \"runner\", \"Woodpecker Runner\", \"\", \"\") or label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300)) > 0) or vector(0), \"runner\", \"Forgejo Actions Runner\", \"\", \"\") or label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300)) > 0) or vector(0), \"runner\", \"GitHub Actions Runner\", \"\", \"\"){% if EXTERNAL_RUNNER_METRICS_IP %} or label_replace((max(up{job=\"external-runner\"}) or vector(0)), \"runner\", \"External Runner\", \"\", \"\"){% endif %}",
+          "expr": "label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300)) > 0) or label_replace(vector(0), \"runner\", \"Woodpecker Runner\", \"\", \"\"), \"runner\", \"Woodpecker Runner\", \"\", \"\")",
           "refId": "A",
           "format": "table",
           "instant": true
+        },
+        {
+          "expr": "label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300)) > 0) or label_replace(vector(0), \"runner\", \"Forgejo Actions Runner\", \"\", \"\"), \"runner\", \"Forgejo Actions Runner\", \"\", \"\")",
+          "refId": "B",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "expr": "label_replace((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300)) > 0) or label_replace(vector(0), \"runner\", \"GitHub Actions Runner\", \"\", \"\"), \"runner\", \"GitHub Actions Runner\", \"\", \"\")",
+          "refId": "C",
+          "format": "table",
+          "instant": true
         }
+{% if EXTERNAL_RUNNER_METRICS_IP %}
+        ,
+        {
+          "expr": "label_replace((max(up{job=\"external-runner\"}) or label_replace(vector(0), \"runner\", \"External Runner\", \"\", \"\")), \"runner\", \"External Runner\", \"\", \"\")",
+          "refId": "D",
+          "format": "table",
+          "instant": true
+        }
+{% endif %}
       ],
       "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
         {
           "id": "organize",
           "options": {
@@ -54,7 +79,18 @@
               "instance": true
             },
             "renameByName": {
-              "runner": "Runner",
+              "runner": "Runner"
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "Value #A": "Status",
+              "Value #B": "Status",
+              "Value #C": "Status",
+              "Value #D": "Status",
               "Value": "Status"
             }
           }
