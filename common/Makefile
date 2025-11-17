@@ -2,7 +2,7 @@
 .SILENT:
 .DEFAULT_GOAL := help
 
-.PHONY: help env generate-metadata commit-metadata diff-metadata metadata-check drift-check validate lint validate-schema render render-only render-diff deploy deploy-only restart logs ps clean diff-rendered status-domain validate-domain render-all deploy-all list-domains destroy manifest vault-create vault-edit vault-view check-secrets status
+.PHONY: help env generate-metadata commit-metadata diff-metadata metadata-check drift-check validate lint validate-schema render render-only render-diff deploy deploy-only restart logs ps clean diff-rendered status-domain validate-domain render-all deploy-all list-domains down destroy manifest vault-create vault-edit vault-view check-secrets status
 
 ENV ?= dev
 DOMAIN ?= forgejo
@@ -42,6 +42,7 @@ help:
 	@echo "  make render-all                - Render all domains"
 	@echo "  make deploy-all                - Deploy all domains"
 	@echo "  make list-domains              - List available domains"
+	@echo "  make down DOMAIN=<name>        - Bring domain down (with warnings and dependency checks)"
 	@echo "  make destroy DOMAIN=<name>      - Destroy domain"
 	@echo "  make manifest                   - Generate manifest"
 	@echo "  make drift-check                - Fail CI if metadata drift detected"
@@ -123,11 +124,21 @@ deploy: render
 	@echo "[Deploy] $(DOMAIN)"
 	@[ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ] || { echo "[Deploy][err] compose.yml not found for $(DOMAIN)"; exit 1; }
 	@cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml up -d --pull always $(if $(FORCE_RECREATE),--force-recreate)
+	@if echo "$(DOMAIN)" | grep -qE "(runner|actions-runner)"; then \
+		echo "[Deploy] Runner detected - removing alert suppression marker..."; \
+		rm -f /srv/monitoring/alert-suppression/$(DOMAIN).down 2>/dev/null || true; \
+		echo "[Deploy] Alert suppression disabled for $(DOMAIN)"; \
+	fi
 
 deploy-only:
 	@echo "[Deploy] $(DOMAIN) (no render)"
 	@[ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ] || { echo "[Deploy][err] compose.yml not found for $(DOMAIN)"; exit 1; }
 	@cd $(ROOT_DIR) && docker compose -f generated/$(DOMAIN)/compose.yml up -d --pull always $(if $(FORCE_RECREATE),--force-recreate)
+	@if echo "$(DOMAIN)" | grep -qE "(runner|actions-runner)"; then \
+		echo "[Deploy] Runner detected - removing alert suppression marker..."; \
+		rm -f /srv/monitoring/alert-suppression/$(DOMAIN).down 2>/dev/null || true; \
+		echo "[Deploy] Alert suppression disabled for $(DOMAIN)"; \
+	fi
 
 restart:
 	@echo "[Restart] $(DOMAIN)"
@@ -225,6 +236,45 @@ deploy-all:
 			fi; \
 		done
 	@echo "[Deploy][All] Completed"
+
+down:
+	@echo "[Down] $(DOMAIN)"
+	@[ -f "$(ROOT_DIR)/generated/$(DOMAIN)/compose.yml" ] || { echo "[Down][err] compose.yml not found for $(DOMAIN)"; exit 1; }
+	@cd $(ROOT_DIR) && \
+	CRITICAL_DOMAINS="monitoring postgres forgejo"; \
+	if echo "$$CRITICAL_DOMAINS" | grep -q "^$(DOMAIN)$$" || echo "$$CRITICAL_DOMAINS" | grep -q " $(DOMAIN)$$"; then \
+		echo "[Down][WARN] ⚠️  $(DOMAIN) is a critical service. Bringing it down may affect other services."; \
+		echo "[Down][WARN] Press Ctrl+C within 5 seconds to cancel..."; \
+		sleep 5; \
+	fi; \
+	DEPENDENTS=$$($(PYTHON) -c "import yaml, sys; \
+		domains = yaml.safe_load(open('config-registry/env/domains.yml'))['domains']; \
+		target = [d for d in domains if d['name'] == '$(DOMAIN)'][0] if any(d['name'] == '$(DOMAIN)' for d in domains) else None; \
+		if target: \
+			deps = [d['name'] for d in domains if 'requires' in d and '$(DOMAIN)' in d.get('requires', [])]; \
+			if deps: \
+				print(' '.join(deps)); \
+		" 2>/dev/null || echo ""); \
+	if [ -n "$$DEPENDENTS" ]; then \
+		echo "[Down][ERR] Cannot bring down $(DOMAIN): other domains depend on it:"; \
+		for dep in $$DEPENDENTS; do \
+			echo "[Down][ERR]   - $$dep"; \
+		done; \
+		echo "[Down][ERR] Bring down dependent domains first, or use FORCE=1 to override"; \
+		if [ "$$FORCE" != "1" ]; then \
+			exit 1; \
+		else \
+			echo "[Down][WARN] FORCE=1 set, proceeding despite dependencies..."; \
+		fi; \
+	fi; \
+	echo "[Down] Bringing down $(DOMAIN)..."; \
+	docker compose -f generated/$(DOMAIN)/compose.yml down; \
+	if echo "$(DOMAIN)" | grep -qE "(runner|actions-runner)"; then \
+		echo "[Down] Runner detected - creating alert suppression marker..."; \
+		mkdir -p /srv/monitoring/alert-suppression; \
+		touch /srv/monitoring/alert-suppression/$(DOMAIN).down; \
+		echo "[Down] Alert suppression enabled for $(DOMAIN)"; \
+	fi
 
 destroy:
 	@echo "[Destroy] $(DOMAIN)"
