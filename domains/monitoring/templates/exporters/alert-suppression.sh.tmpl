@@ -1,0 +1,32 @@
+#!/bin/sh
+# Generate alert suppression metrics for runners
+# This script checks for suppression markers and exports them as Prometheus metrics
+
+SUPPRESSION_DIR="/srv/monitoring/alert-suppression"
+TEXTFILE_DIR="/textfile_collector"
+METRICS_FILE="${TEXTFILE_DIR}/alert_suppression.prom"
+
+mkdir -p "${SUPPRESSION_DIR}"
+mkdir -p "${TEXTFILE_DIR}"
+
+# Function to check if a runner is suppressed
+check_suppression() {
+    local runner_name=$1
+    if [ -f "${SUPPRESSION_DIR}/${runner_name}.down" ]; then
+        echo 1
+    else
+        echo 0
+    fi
+}
+
+# Generate metrics
+cat > "${METRICS_FILE}.tmp" <<EOF
+# HELP alert_suppression_enabled Whether alert suppression is enabled for a runner (1=enabled, 0=disabled)
+# TYPE alert_suppression_enabled gauge
+alert_suppression_enabled{runner="woodpecker-runner"} $(check_suppression "woodpecker-runner")
+alert_suppression_enabled{runner="forgejo-actions-runner"} $(check_suppression "forgejo-actions-runner")
+alert_suppression_enabled{runner="github-actions-runner"} $(check_suppression "github-actions-runner")
+EOF
+
+mv "${METRICS_FILE}.tmp" "${METRICS_FILE}"
+
