@@ -54,3 +54,15 @@ scrape_configs:
     static_configs:
       - targets:
           - 'adblocker-pihole-exporter:9617'
+{% if EXTERNAL_RUNNER_METRICS_IP %}
+  - job_name: 'external-runner'
+    scheme: http
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - '{{ EXTERNAL_RUNNER_METRICS_IP }}:9100'
+        labels:
+          instance: 'external-runner'
+          runner_type: 'external'
+{% endif %}
