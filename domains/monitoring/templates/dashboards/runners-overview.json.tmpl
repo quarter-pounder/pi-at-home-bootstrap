@@ -219,7 +219,7 @@
         {
           "expr": "100 * sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}[5m]))",
           "refId": "A",
-          "legendFormat": "{{container_label_com_docker_compose_service}}"
+          "legendFormat": "{% raw %}{{container_label_com_docker_compose_service}}{% endraw %}"
         }
 {% if EXTERNAL_RUNNER_METRICS_IP %}
         ,
@@ -258,7 +258,7 @@
         {
           "expr": "container_memory_usage_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}",
           "refId": "A",
-          "legendFormat": "{{container_label_com_docker_compose_service}}"
+          "legendFormat": "{% raw %}{{container_label_com_docker_compose_service}}{% endraw %}"
         }
 {% if EXTERNAL_RUNNER_METRICS_IP %}
         ,
@@ -290,7 +290,7 @@
         {
           "expr": "100 * (container_memory_usage_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"} / container_spec_memory_limit_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"})",
           "refId": "A",
-          "legendFormat": "{{container_label_com_docker_compose_service}}"
+          "legendFormat": "{% raw %}{{container_label_com_docker_compose_service}}{% endraw %}"
         }
 {% if EXTERNAL_RUNNER_METRICS_IP %}
         ,
@@ -329,12 +329,12 @@
         {
           "expr": "rate(container_network_receive_bytes_total{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}[5m])",
           "refId": "A",
-          "legendFormat": "{{container_label_com_docker_compose_service}} RX"
+          "legendFormat": "{% raw %}{{container_label_com_docker_compose_service}}{% endraw %} RX"
         },
         {
           "expr": "rate(container_network_transmit_bytes_total{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}[5m])",
           "refId": "B",
-          "legendFormat": "{{container_label_com_docker_compose_service}} TX"
+          "legendFormat": "{% raw %}{{container_label_com_docker_compose_service}}{% endraw %} TX"
         }
 {% if EXTERNAL_RUNNER_METRICS_IP %}
         ,
