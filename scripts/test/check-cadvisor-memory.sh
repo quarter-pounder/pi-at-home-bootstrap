@@ -42,8 +42,8 @@ if [[ -z "${api_payload}" ]]; then
   exit 1
 fi
 
-api_usage=$(echo "${api_payload}" | jq '.[-1].memory.usage // empty')
-api_working_set=$(echo "${api_payload}" | jq '.[-1].memory.working_set // empty')
+api_usage=$(echo "${api_payload}" | jq '.stats[-1].memory.usage // empty')
+api_working_set=$(echo "${api_payload}" | jq '.stats[-1]."memory".working_set // empty')
 
 printf 'Container: %s (%s)\n' "${CONTAINER_NAME}" "${short_id}"
 printf 'cgroup memory.current: %s bytes\n' "${cgroup_bytes}"
