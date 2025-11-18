@@ -100,6 +100,28 @@ services:
     depends_on:
       - node-exporter
 
+  container-name-exporter:
+    image: alpine:3.19
+    container_name: monitoring-container-name-exporter
+    restart: always
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache curl jq >/dev/null 2>&1 || true
+        while true; do
+          sh /scripts/container-name-exporter.sh
+          sleep 60
+        done
+    volumes:
+      - ./exporters/container-name-exporter.sh:/scripts/container-name-exporter.sh:ro
+      - {{ NODE_EXPORTER_TEXTFILE_DIR }}:/textfile_collector
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - monitoring-network
+    depends_on:
+      - node-exporter
+
   cadvisor:
     image: {{ CADVISOR_IMAGE }}
     container_name: monitoring-cadvisor
