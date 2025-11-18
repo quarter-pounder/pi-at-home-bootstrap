@@ -34,7 +34,7 @@ if [[ ! -f "${cgroup_path}" ]]; then
 fi
 
 cgroup_bytes=$(cat "${cgroup_path}")
-api_endpoint="${CADAVISOR_URL}/api/v1.3/docker/${short_id}"
+api_endpoint="${CADVISOR_URL}/api/v1.3/docker/${short_id}"
 api_payload=$(curl -sf "${api_endpoint}" || true)
 
 if [[ -z "${api_payload}" ]]; then
