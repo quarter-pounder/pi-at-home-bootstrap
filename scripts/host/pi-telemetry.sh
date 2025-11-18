@@ -37,13 +37,13 @@ read_voltage() {
 
 render_throttle_flags() {
   if ! command -v vcgencmd >/dev/null 2>&1; then
-    return
+    return 1
   fi
 
   local throttled_raw
   throttled_raw=$(vcgencmd get_throttled 2>/dev/null || true)
   if [[ ! "${throttled_raw}" =~ 0x([0-9a-fA-F]+) ]]; then
-    return
+    return 1
   fi
 
   local mask_hex="${BASH_REMATCH[1]}"
@@ -64,7 +64,10 @@ render_throttle_flags() {
     local flag_mask=${FLAGS["${flag}"]}
     local value=$(( (mask_dec & flag_mask) > 0 ? 1 : 0 ))
     printf 'pi_throttle_flags{flag="%s"} %d\n' "${flag}" "${value}"
+    printf 'pi_throttled_flag{condition="%s"} %d\n' "${flag}" "${value}"
   done
+
+  return 0
 }
 
 write_metrics() {
@@ -94,7 +97,12 @@ write_metrics() {
 
     printf '# HELP pi_throttle_flags Raspberry Pi throttling & voltage status bits\n'
     printf '# TYPE pi_throttle_flags gauge\n'
-    render_throttle_flags || printf 'pi_throttle_flags{flag="unknown"} NaN\n'
+    printf '# HELP pi_throttled_flag Backwards-compatible throttling status metric (deprecated)\n'
+    printf '# TYPE pi_throttled_flag gauge\n'
+    if ! render_throttle_flags; then
+      printf 'pi_throttle_flags{flag="unknown"} NaN\n'
+      printf 'pi_throttled_flag{condition="unknown"} NaN\n'
+    fi
 
     printf '# HELP pi_throttle_last_update_timestamp_seconds UNIX timestamp of last throttle status sample\n'
     printf '# TYPE pi_throttle_last_update_timestamp_seconds gauge\n'
