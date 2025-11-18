@@ -168,7 +168,8 @@ cleanup() {
   set +e
   log_info "Cleaning up..."
   mountpoint -q "${BOOT_MNT}" && umount "${BOOT_MNT}" || true
-  rm -f "${IMG_FILE}" "${IMG}" "${IMG_FILE}.SHA256SUMS" 2>/dev/null || true
+  [[ -n "${IMG_FILE:-}" ]] && rm -f "${IMG_FILE}" "${IMG_FILE}.SHA256SUMS" 2>/dev/null || true
+  [[ -n "${IMG:-}" ]] && rm -f "${IMG}" 2>/dev/null || true
 }
 trap cleanup EXIT
 
