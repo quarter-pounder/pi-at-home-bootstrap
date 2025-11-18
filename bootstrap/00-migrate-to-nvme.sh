@@ -161,14 +161,27 @@ download_file() {
   log_success "Successfully downloaded ${description}"
 }
 
+# Error handler
+error_handler() {
+  local line_no=$1
+  log_error "Script failed at line ${line_no}"
+  log_error "Command: ${BASH_COMMAND}"
+  exit 1
+}
+
 # Cleanup on exit
 cleanup() {
+  local exit_code=$?
   set +e
+  if [[ $exit_code -ne 0 ]]; then
+    log_error "Script exited with error code: $exit_code"
+  fi
   log_info "Cleaning up..."
   mountpoint -q "${BOOT_MNT}" && umount "${BOOT_MNT}" || true
   [[ -n "${IMG_FILE:-}" ]] && rm -f "${IMG_FILE}" "${IMG_FILE}.SHA256SUMS" 2>/dev/null || true
   [[ -n "${IMG:-}" ]] && rm -f "${IMG}" 2>/dev/null || true
 }
+trap 'error_handler ${LINENO}' ERR
 trap cleanup EXIT
 
 # Load environment if available
@@ -300,15 +313,21 @@ else
     exit 1
   fi
 
-  SIZE=$(stat -c%s "${IMG_FILE}")
-  log_info "Downloaded size: $((${SIZE}/1024/1024))MB"
-  if (( SIZE < MIN_IMAGE_SIZE )); then
-    log_error "Image too small or truncated"
+  SIZE=$(stat -c%s "${IMG_FILE}" 2>/dev/null || echo "0")
+  if [[ -z "${SIZE:-}" ]] || [[ "$SIZE" == "0" ]]; then
+    log_error "Failed to get image file size"
     exit 1
   fi
+  log_info "Downloaded size: $((${SIZE}/1024/1024))MB"
+  if (( SIZE < MIN_IMAGE_SIZE )); then
+    log_error "Image too small or truncated: ${SIZE} bytes (minimum: ${MIN_IMAGE_SIZE})"
+    exit 1
+  fi
+  log_info "Image size check passed"
 
   # Verify downloaded compressed image
   if [[ -n "${SHA256SUM_FILE:-}" ]] && [[ -f "$SHA256SUM_FILE" ]]; then
+    log_info "Verifying downloaded image checksum..."
     EXPECTED_HASH=$(grep " ${IMG_FILE}$" "$SHA256SUM_FILE" | cut -d' ' -f1)
     if [[ -n "$EXPECTED_HASH" ]]; then
       verify_sha256 "$IMG_FILE" "$EXPECTED_HASH" || {
@@ -322,15 +341,19 @@ else
   else
     log_warn "SHA256SUMS file not available, skipping verification"
   fi
+  log_info "Image download and verification complete"
 fi
 
 # Decompress if needed
 if [[ ! -f "${IMG}" ]]; then
-  log_info "Decompressing image..."
+  log_info "Decompressing image (this may take several minutes)..."
   if ! unxz -f "${IMG_FILE}"; then
     log_error "Failed to decompress image: ${IMG_FILE}"
     exit 1
   fi
+  log_info "Image decompression complete"
+else
+  log_info "Decompressed image already exists: ${IMG}"
 fi
 
 # Verify decompressed image
