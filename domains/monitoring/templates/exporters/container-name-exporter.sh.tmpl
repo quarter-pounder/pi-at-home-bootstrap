@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+OUTPUT_DIR="{{ NODE_EXPORTER_TEXTFILE_DIR }}"
+OUTPUT_FILE="${OUTPUT_DIR}/container_names.prom"
+TMP_FILE="${OUTPUT_FILE}.tmp"
+DOCKER_SOCK="/var/run/docker.sock"
+
+mkdir -p "${OUTPUT_DIR}"
+
+write_header() {
+  printf '# HELP container_name_info Container ID to name mapping (1 = exists)
+' > "${TMP_FILE}"
+  printf '# TYPE container_name_info gauge
+' >> "${TMP_FILE}"
+}
+
+export_container_names() {
+  if [[ ! -S "${DOCKER_SOCK}" ]]; then
+    printf '# Docker socket not available
+' >> "${TMP_FILE}"
+    return
+  fi
+
+  if ! command -v curl >/dev/null 2>&1; then
+    printf '# curl not available
+' >> "${TMP_FILE}"
+    return
+  fi
+
+  containers_json=$(curl -s --unix-socket "${DOCKER_SOCK}" "http://localhost/containers/json" 2>/dev/null)
+  if [[ -z "${containers_json}" ]]; then
+    printf '# Failed to query Docker API
+' >> "${TMP_FILE}"
+    return
+  fi
+
+  if command -v jq >/dev/null 2>&1; then
+    echo "${containers_json}" | jq -r '.[] | "\(.Id[0:12])\t\(.Names[0] // "" | ltrimstr("/"))"' | while IFS=$'\t' read -r container_id container_name; do
+      if [[ -n "${container_id}" && -n "${container_name}" ]]; then
+        printf 'container_name_info{container_id="%s",container_name="%s"} 1
+' "${container_id}" "${container_name}" >> "${TMP_FILE}"
+      fi
+    done
+  else
+    echo "${containers_json}" | grep -o '"Id":"[^"]*"' | sed 's/"Id":"\([^"]*\)"/\1/' | while read -r full_id; do
+      short_id="${full_id:0:12}"
+      container_json=$(curl -s --unix-socket "${DOCKER_SOCK}" "http://localhost/containers/${full_id}/json" 2>/dev/null)
+      container_name=$(echo "${container_json}" | grep -o '"Names":\["[^"]*"' | head -1 | sed 's/"Names":\["\([^"]*\)"/\1/' | sed 's|^/||')
+      if [[ -n "${short_id}" && -n "${container_name}" ]]; then
+        printf 'container_name_info{container_id="%s",container_name="%s"} 1
+' "${short_id}" "${container_name}" >> "${TMP_FILE}"
+      fi
+    done
+  fi
+}
+
+write_header
+export_container_names
+mv "${TMP_FILE}" "${OUTPUT_FILE}"
+
