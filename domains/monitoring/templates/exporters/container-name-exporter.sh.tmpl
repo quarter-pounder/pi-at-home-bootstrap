@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-OUTPUT_DIR="{{ NODE_EXPORTER_TEXTFILE_DIR }}"
-OUTPUT_FILE="${OUTPUT_DIR}/container_names.prom"
+TEXTFILE_DIR="/textfile_collector"
+OUTPUT_FILE="${TEXTFILE_DIR}/container_names.prom"
 TMP_FILE="${OUTPUT_FILE}.tmp"
 DOCKER_SOCK="/var/run/docker.sock"
 
-mkdir -p "${OUTPUT_DIR}"
+mkdir -p "${TEXTFILE_DIR}"
 
 write_header() {
   printf '# HELP container_name_info Container ID to name mapping (1 = exists)
