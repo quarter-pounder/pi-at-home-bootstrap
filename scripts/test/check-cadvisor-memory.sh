@@ -34,7 +34,8 @@ if [[ ! -f "${cgroup_path}" ]]; then
 fi
 
 cgroup_bytes=$(cat "${cgroup_path}")
-api_payload=$(curl -sf "${CADVISOR_URL}/api/v1.3/containers/docker/${short_id}" || true)
+api_endpoint="${CADAVISOR_URL}/api/v1.3/docker/${short_id}"
+api_payload=$(curl -sf "${api_endpoint}" || true)
 
 if [[ -z "${api_payload}" ]]; then
   echo "Failed to query cadvisor API at ${CADVISOR_URL}" >&2
