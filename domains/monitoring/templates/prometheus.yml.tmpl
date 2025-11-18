@@ -48,12 +48,6 @@ scrape_configs:
       - targets:
           - 'loki:3100'
 
-  - job_name: 'pihole'
-    scheme: http
-    metrics_path: '/metrics'
-    static_configs:
-      - targets:
-          - 'adblocker-pihole-exporter:9617'
 {% if EXTERNAL_RUNNER_METRICS_IP %}
 {% set runner_target = EXTERNAL_RUNNER_METRICS_IP.replace("http://", "").replace("https://", "") %}
 {% set runner_target = runner_target if ":" in runner_target else runner_target + ":9100" %}

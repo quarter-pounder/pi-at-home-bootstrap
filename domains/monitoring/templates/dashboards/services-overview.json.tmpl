@@ -496,12 +496,12 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "avg_over_time(up{job=\"pihole\"}[6h]) * 100",
+          "expr": "clamp_max(avg_over_time((count(label_replace(container_last_seen{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=~\"adblocker-pihole|pihole\"}) > 0)[6h:1m]) * 100, 100)",
           "refId": "A",
           "legendFormat": "6h Availability"
         },
         {
-          "expr": "max(up{job=\"pihole\"})",
+          "expr": "max((count(label_replace(container_last_seen{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=~\"adblocker-pihole|pihole\"}) > 0) * 1)",
           "refId": "B",
           "legendFormat": "Status",
           "hide": true

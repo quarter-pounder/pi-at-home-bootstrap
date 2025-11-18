@@ -37,7 +37,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"} > (time() - 300)) > 0) or vector(0)){% if EXTERNAL_RUNNER_METRICS_IP %} + (max(up{job=\"external-runner\"}) or vector(0)){% endif %}",
+          "expr": "(sum(max by (container_name)((label_replace(container_last_seen{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}) > (time() - 300))) or vector(0)){% if EXTERNAL_RUNNER_METRICS_IP %} + (max(up{job=\"external-runner\"}) or vector(0)){% endif %}",
           "refId": "A",
           "instant": true
         }
@@ -80,7 +80,7 @@
 
       "targets": [
         {
-          "expr": "((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"} > (time() - 300)) > 0) or vector(0)) * (1 + ((sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"}[2m])) or vector(0)) >= bool 0.1))",
+          "expr": "( (max((label_replace(container_last_seen{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"woodpecker-runner\"}) > (time() - 300)) ) or vector(0) ) * (1 + (((sum(label_replace(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[2m]),\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"woodpecker-runner\"})) or vector(0)) >= bool 0.1))",
           "refId": "A"
         }
       ],
@@ -129,7 +129,7 @@
 
       "targets": [
         {
-          "expr": "((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"} > (time() - 300)) > 0) or vector(0)) * (1 + ((sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"}[2m])) or vector(0)) >= bool 0.1))",
+          "expr": "( (max((label_replace(container_last_seen{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"forgejo-actions-runner\"}) > (time() - 300)) ) or vector(0) ) * (1 + (((sum(label_replace(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[2m]),\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"forgejo-actions-runner\"})) or vector(0)) >= bool 0.1))",
           "refId": "A"
         }
       ],
@@ -179,7 +179,7 @@
 
       "targets": [
         {
-          "expr": "((count(container_last_seen{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"} > (time() - 300)) > 0) or vector(0)) * (1 + ((sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"}[2m])) or vector(0)) >= bool 0.1))",
+          "expr": "( (max((label_replace(container_last_seen{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"github-actions-runner\"}) > (time() - 300)) ) or vector(0) ) * (1 + (((sum(label_replace(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[2m]),\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"github-actions-runner\"})) or vector(0)) >= bool 0.1))",
           "refId": "A"
         }
       ],
@@ -282,19 +282,9 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"woodpecker-runner\"}[5m]))",
+          "expr": "sum by (container_name)(label_replace(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[5m]),\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"})",
           "refId": "A",
-          "legendFormat": "Woodpecker Runner"
-        },
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"forgejo-actions-runner\"}[5m]))",
-          "refId": "B",
-          "legendFormat": "Forgejo Actions Runner"
-        },
-        {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=\"github-actions-runner\"}[5m]))",
-          "refId": "C",
-          "legendFormat": "GitHub Actions Runner"
+          "legendFormat": "{% raw %}{{container_name}}{% endraw %}"
         }
 {% if EXTERNAL_RUNNER_METRICS_IP %}
         ,
@@ -324,9 +314,9 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "100 * sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}[5m]))",
+          "expr": "100 * sum by (container_name)(label_replace(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[5m]),\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"})",
           "refId": "A",
-          "legendFormat": "{% raw %}{{container_label_com_docker_compose_service}}{% endraw %}"
+          "legendFormat": "{% raw %}{{container_name}}{% endraw %}"
         }
 {% if EXTERNAL_RUNNER_METRICS_IP %}
         ,
@@ -363,9 +353,9 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "container_memory_usage_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}",
+          "expr": "sum by (container_name)(label_replace(container_memory_usage_bytes{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"})",
           "refId": "A",
-          "legendFormat": "{% raw %}{{container_label_com_docker_compose_service}}{% endraw %}"
+          "legendFormat": "{% raw %}{{container_name}}{% endraw %}"
         }
 {% if EXTERNAL_RUNNER_METRICS_IP %}
         ,
@@ -395,9 +385,9 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "100 * (container_memory_usage_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"} / container_spec_memory_limit_bytes{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"})",
+          "expr": "100 * sum by (container_name)(((label_replace(container_memory_usage_bytes{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") / label_replace(container_spec_memory_limit_bytes{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\")) * on(container_id) group_left(container_name) container_name_info{container_name=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}))",
           "refId": "A",
-          "legendFormat": "{% raw %}{{container_label_com_docker_compose_service}}{% endraw %}"
+          "legendFormat": "{% raw %}{{container_name}}{% endraw %}"
         }
 {% if EXTERNAL_RUNNER_METRICS_IP %}
         ,
@@ -434,14 +424,14 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "rate(container_network_receive_bytes_total{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}[5m])",
+          "expr": "sum by (container_name)(label_replace(rate(container_network_receive_bytes_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[5m]),\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"})",
           "refId": "A",
-          "legendFormat": "{% raw %}{{container_label_com_docker_compose_service}}{% endraw %} RX"
+          "legendFormat": "{% raw %}{{container_name}}{% endraw %} RX"
         },
         {
-          "expr": "rate(container_network_transmit_bytes_total{job=\"cadvisor\",container_label_com_docker_compose_service=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}[5m])",
+          "expr": "sum by (container_name)(label_replace(rate(container_network_transmit_bytes_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[5m]),\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"})",
           "refId": "B",
-          "legendFormat": "{% raw %}{{container_label_com_docker_compose_service}}{% endraw %} TX"
+          "legendFormat": "{% raw %}{{container_name}}{% endraw %} TX"
         }
 {% if EXTERNAL_RUNNER_METRICS_IP %}
         ,
