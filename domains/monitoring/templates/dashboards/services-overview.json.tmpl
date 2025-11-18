@@ -548,7 +548,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "((count(label_replace(container_last_seen{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=~\"adblocker-unbound|unbound\"} > (time() - 300)) > 0) * 1) or vector(0)",
+          "expr": "(count(label_replace(container_last_seen{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=~\"adblocker-unbound|unbound\"}) > 0) * 1",
           "refId": "A",
           "legendFormat": "Status",
           "instant": true
