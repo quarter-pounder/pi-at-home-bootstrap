@@ -776,7 +776,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "pi_throttled_flag",
+          "expr": "pi_throttle_flags",
           "refId": "A",
           "format": "table",
           "instant": true
@@ -793,7 +793,7 @@
               "job": true
             },
             "renameByName": {
-              "condition": "Flag",
+              "flag": "Flag",
               "Value": "Status"
             }
           }
