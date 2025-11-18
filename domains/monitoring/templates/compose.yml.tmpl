@@ -151,7 +151,10 @@ services:
     command:
       - -config.file=/etc/loki/loki.yaml
     networks:
-      - monitoring-network
+      monitoring-network:
+        aliases:
+          - loki
+          - monitoring-loki
 
   alloy:
     image: {{ ALLOY_IMAGE }}
