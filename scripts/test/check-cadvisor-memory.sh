@@ -17,7 +17,7 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 CONTAINER_NAME="${1:-forgejo}"
-CADVISOR_URL="${CADVISOR_URL:-http://localhost:8080}"
+CADVISOR_URL="${CADVISOR_URL:-http://127.0.0.1:8080}"
 
 container_id=$(docker inspect --format '{{.Id}}' "${CONTAINER_NAME}" 2>/dev/null || true)
 if [[ -z "${container_id}" ]]; then
