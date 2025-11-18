@@ -137,7 +137,9 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
     networks:
-      - monitoring-network
+      monitoring-network:
+        aliases:
+          - cadvisor
 
   loki:
     image: {{ LOKI_IMAGE }}
