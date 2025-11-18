@@ -325,7 +325,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12})\")[5m]) * on(container_id) group_left(container_name) container_name_info{container_name=\"forgejo\"})",
+          "expr": "sum(rate(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[5m],\"container_id\",\"$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12})\")) * on(container_id) group_left(container_name) container_name_info{container_name=\"forgejo\"})",
           "refId": "A",
           "legendFormat": "Forgejo"
         }
@@ -385,7 +385,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12})\")[5m]) * on(container_id) group_left(container_name) container_name_info{container_name=~\"monitoring-prometheus|prometheus\"})",
+          "expr": "sum(rate(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[5m],\"container_id\",\"$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12})\")) * on(container_id) group_left(container_name) container_name_info{container_name=~\"monitoring-prometheus|prometheus\"})",
           "refId": "A",
           "legendFormat": "Prometheus"
         }
@@ -439,7 +439,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12})\")[5m]) * on(container_id) group_left(container_name) container_name_info{container_name=~\"monitoring-loki|loki\"})",
+          "expr": "sum(rate(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[5m],\"container_id\",\"$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12})\")) * on(container_id) group_left(container_name) container_name_info{container_name=~\"monitoring-loki|loki\"})",
           "refId": "A",
           "legendFormat": "Loki"
         }
