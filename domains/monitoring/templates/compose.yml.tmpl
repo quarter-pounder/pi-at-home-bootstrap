@@ -122,6 +122,26 @@ services:
     depends_on:
       - node-exporter
 
+  pi-temp-exporter:
+    image: alpine:3.19
+    container_name: monitoring-pi-temp-exporter
+    restart: always
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache bash awk >/dev/null 2>&1 || true
+        while true; do
+          sh /scripts/pi-temp-exporter.sh
+          sleep 30
+        done
+    volumes:
+      - ./exporters/pi-temp-exporter.sh:/scripts/pi-temp-exporter.sh:ro
+      - {{ NODE_EXPORTER_TEXTFILE_DIR }}:/textfile_collector
+      - /sys:/host/sys:ro
+    depends_on:
+      - node-exporter
+
   cadvisor:
     image: {{ CADVISOR_IMAGE }}
     container_name: monitoring-cadvisor

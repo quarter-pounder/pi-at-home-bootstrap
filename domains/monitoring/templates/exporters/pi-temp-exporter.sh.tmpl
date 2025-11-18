@@ -10,21 +10,29 @@ mkdir -p "${OUTPUT_DIR}"
 read_temperature() {
   local temp_value=""
 
-  if command -v vcgencmd >/dev/null 2>&1; then
+  # Try thermal zone first (works in containers with mounted /sys)
+  if [[ -f /host/sys/class/thermal/thermal_zone0/temp ]]; then
+    local raw
+    raw=$(cat /host/sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "")
+    if [[ "${raw}" =~ ^[0-9]+$ ]]; then
+      temp_value=$(awk -v value="${raw}" 'BEGIN { printf "%.1f", value / 1000 }')
+    fi
+  elif [[ -f /sys/class/thermal/thermal_zone0/temp ]]; then
+    local raw
+    raw=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "")
+    if [[ "${raw}" =~ ^[0-9]+$ ]]; then
+      temp_value=$(awk -v value="${raw}" 'BEGIN { printf "%.1f", value / 1000 }')
+    fi
+  fi
+
+  # Fallback to vcgencmd if available (requires host access)
+  if [[ -z "${temp_value}" ]] && command -v vcgencmd >/dev/null 2>&1; then
     local vcgencmd_out
     vcgencmd_out=$(vcgencmd measure_temp 2>/dev/null || true)
     if [[ "${vcgencmd_out}" =~ temp=([0-9]+\.[0-9]+) ]]; then
       temp_value="${BASH_REMATCH[1]}"
     elif [[ "${vcgencmd_out}" =~ temp=([0-9]+) ]]; then
       temp_value="${BASH_REMATCH[1]}"
-    fi
-  fi
-
-  if [[ -z "${temp_value}" ]] && [[ -f /sys/class/thermal/thermal_zone0/temp ]]; then
-    local raw
-    raw=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "")
-    if [[ "${raw}" =~ ^[0-9]+$ ]]; then
-      temp_value=$(awk -v value="${raw}" 'BEGIN { printf "%.1f", value / 1000 }')
     fi
   fi
 
