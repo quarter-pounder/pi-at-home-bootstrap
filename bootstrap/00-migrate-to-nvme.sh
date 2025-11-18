@@ -308,7 +308,7 @@ else
   fi
 
   # Verify downloaded compressed image
-  if [[ -f "$SHA256SUM_FILE" ]]; then
+  if [[ -n "${SHA256SUM_FILE:-}" ]] && [[ -f "$SHA256SUM_FILE" ]]; then
     EXPECTED_HASH=$(grep " ${IMG_FILE}$" "$SHA256SUM_FILE" | cut -d' ' -f1)
     if [[ -n "$EXPECTED_HASH" ]]; then
       verify_sha256 "$IMG_FILE" "$EXPECTED_HASH" || {
@@ -319,13 +319,18 @@ else
     else
       log_warn "Checksum for ${IMG_FILE} not found in SHA256SUMS - file may be invalid"
     fi
+  else
+    log_warn "SHA256SUMS file not available, skipping verification"
   fi
 fi
 
 # Decompress if needed
 if [[ ! -f "${IMG}" ]]; then
   log_info "Decompressing image..."
-  unxz -f "${IMG_FILE}"
+  if ! unxz -f "${IMG_FILE}"; then
+    log_error "Failed to decompress image: ${IMG_FILE}"
+    exit 1
+  fi
 fi
 
 # Verify decompressed image
