@@ -199,9 +199,37 @@ fi
 log_debug "Root device check passed: ROOT_DEV=$ROOT_DEV, NVME_DEVICE=$NVME_DEVICE"
 
 # Prepare image
-IMG_FILE="ubuntu-${UBUNTU_VERSION}-preinstalled-server-arm64+raspi.img.xz"
-IMG_URL="${UBUNTU_IMG_URL:-"${UBUNTU_BASE_URL}/${UBUNTU_VERSION}/release/${IMG_FILE}"}"
-IMG="${IMG_FILE%.xz}"
+# Detect actual image filename (may include patch version like 24.04.3)
+detect_image_filename() {
+  if [[ -n "${UBUNTU_IMG_URL:-}" ]]; then
+    # Use provided URL directly
+    IMG_FILE=$(basename "${UBUNTU_IMG_URL}")
+    IMG_URL="${UBUNTU_IMG_URL}"
+  else
+    # Try to find the actual filename in the release directory
+    local release_url="${UBUNTU_BASE_URL}/${UBUNTU_VERSION}/release/"
+    log_debug "Checking available images at ${release_url}"
+    local filename
+    filename=$(curl -s "${release_url}" 2>/dev/null \
+      | grep -i "preinstalled-server-arm64.*raspi.*img.xz" \
+      | sed -n 's/.*href="\(ubuntu-'${UBUNTU_VERSION}'[^"]*preinstalled-server-arm64+raspi\.img\.xz\)".*/\1/p' \
+      | head -1)
+
+    if [[ -n "$filename" ]]; then
+      IMG_FILE="$filename"
+      IMG_URL="${release_url}${IMG_FILE}"
+      log_debug "Found image: ${IMG_FILE}"
+    else
+      # Fallback to expected filename
+      IMG_FILE="ubuntu-${UBUNTU_VERSION}-preinstalled-server-arm64+raspi.img.xz"
+      IMG_URL="${release_url}${IMG_FILE}"
+      log_warn "Could not detect exact image filename, using: ${IMG_FILE}"
+    fi
+  fi
+  IMG="${IMG_FILE%.xz}"
+}
+
+detect_image_filename
 
 AVAILABLE=$(($(df . | awk 'NR==2 {print $4}') * 1024))
 REQUIRED=$((MIN_IMAGE_SIZE * 2))
