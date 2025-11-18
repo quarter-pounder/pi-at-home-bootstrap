@@ -11,12 +11,14 @@ log()   { printf '%s [INFO] %s\n' "$(date '+%F %T')" "$*"; }
 warn()  { printf '%s%s [WARN] %s%s\n' "$YELLOW" "$(date '+%F %T')" "$*" "$RESET"; }
 error() { printf '%s%s [ERROR] %s%s\n' "$RED" "$(date '+%F %T')" "$*" "$RESET" >&2; }
 ok()    { printf '%s%s [OK] %s%s\n' "$GREEN" "$(date '+%F %T')" "$*" "$RESET"; }
+debug() { [[ "${DEBUG:-0}" == "1" ]] && printf '%s [DEBUG] %s\n' "$(date '+%F %T')" "$*" >&2 || true; }
 
 # Alias for compatibility with common/utils.sh naming
 log_info()    { log "$@"; }
 log_warn()    { warn "$@"; }
 log_error()   { error "$@"; }
 log_success() { ok "$@"; }
+log_debug()   { debug "$@"; }
 
 # Safety helpers
 require_root() {
