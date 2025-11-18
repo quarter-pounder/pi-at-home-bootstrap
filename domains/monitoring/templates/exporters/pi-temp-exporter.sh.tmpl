@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env sh
+set -eu
 
 OUTPUT_DIR="{{ NODE_EXPORTER_TEXTFILE_DIR }}"
 OUTPUT_FILE="${OUTPUT_DIR}/pi_temperature.prom"
@@ -8,31 +8,28 @@ TMP_FILE="${OUTPUT_FILE}.tmp"
 mkdir -p "${OUTPUT_DIR}"
 
 read_temperature() {
-  local temp_value=""
+  temp_value=""
 
   # Try thermal zone first (works in containers with mounted /sys)
-  if [[ -f /host/sys/class/thermal/thermal_zone0/temp ]]; then
-    local raw
+  if [ -f /host/sys/class/thermal/thermal_zone0/temp ]; then
     raw=$(cat /host/sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "")
-    if [[ "${raw}" =~ ^[0-9]+$ ]]; then
+    if echo "${raw}" | grep -qE '^[0-9]+$'; then
       temp_value=$(awk -v value="${raw}" 'BEGIN { printf "%.1f", value / 1000 }')
     fi
-  elif [[ -f /sys/class/thermal/thermal_zone0/temp ]]; then
-    local raw
+  elif [ -f /sys/class/thermal/thermal_zone0/temp ]; then
     raw=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "")
-    if [[ "${raw}" =~ ^[0-9]+$ ]]; then
+    if echo "${raw}" | grep -qE '^[0-9]+$'; then
       temp_value=$(awk -v value="${raw}" 'BEGIN { printf "%.1f", value / 1000 }')
     fi
   fi
 
   # Fallback to vcgencmd if available (requires host access)
-  if [[ -z "${temp_value}" ]] && command -v vcgencmd >/dev/null 2>&1; then
-    local vcgencmd_out
+  if [ -z "${temp_value}" ] && command -v vcgencmd >/dev/null 2>&1; then
     vcgencmd_out=$(vcgencmd measure_temp 2>/dev/null || true)
-    if [[ "${vcgencmd_out}" =~ temp=([0-9]+\.[0-9]+) ]]; then
-      temp_value="${BASH_REMATCH[1]}"
-    elif [[ "${vcgencmd_out}" =~ temp=([0-9]+) ]]; then
-      temp_value="${BASH_REMATCH[1]}"
+    if echo "${vcgencmd_out}" | grep -qE 'temp=[0-9]+\.[0-9]+'; then
+      temp_value=$(echo "${vcgencmd_out}" | sed -n 's/.*temp=\([0-9]*\.[0-9]*\).*/\1/p')
+    elif echo "${vcgencmd_out}" | grep -qE 'temp=[0-9]+'; then
+      temp_value=$(echo "${vcgencmd_out}" | sed -n 's/.*temp=\([0-9]*\).*/\1/p')
     fi
   fi
 
@@ -41,7 +38,7 @@ read_temperature() {
 
 TEMPERATURE_C=$(read_temperature)
 
-if [[ -z "${TEMPERATURE_C}" ]]; then
+if [ -z "${TEMPERATURE_C}" ]; then
   printf '# HELP pi_cpu_temperature_celsius Current SoC temperature in Celsius
 ' > "${TMP_FILE}"
   printf '# TYPE pi_cpu_temperature_celsius gauge
