@@ -66,7 +66,7 @@ services:
     environment:
       PIHOLE_HOSTNAME: adblocker-pihole
       PIHOLE_PORT: "80"
-      PIHOLE_API_TOKEN: {{ PIHOLE_API_TOKEN if PIHOLE_API_TOKEN else '' }}
+      PIHOLE_API_TOKEN: {{ PIHOLE_API_TOKEN if PIHOLE_API_TOKEN else (PIHOLE_WEB_PASSWORD if PIHOLE_WEB_PASSWORD else '') }}
       PORT: "9617"
     ports:
       - "{{ PORT_ADBLOCKER_EXPORTER }}:9617"
