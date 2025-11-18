@@ -290,7 +290,7 @@ elif [[ -f "${IMG_FILE}" ]]; then
   log_info "Reusing existing compressed image: ${IMG_FILE}"
   # Verify existing compressed image
   if [[ -f "$SHA256SUM_FILE" ]]; then
-    EXPECTED_HASH=$(grep " ${IMG_FILE}$" "$SHA256SUM_FILE" | cut -d' ' -f1)
+    EXPECTED_HASH=$(grep " ${IMG_FILE}$" "$SHA256SUM_FILE" 2>/dev/null | cut -d' ' -f1 || echo "")
     if [[ -n "$EXPECTED_HASH" ]]; then
       verify_sha256 "$IMG_FILE" "$EXPECTED_HASH" || {
         log_error "Existing compressed image failed verification"
@@ -328,7 +328,7 @@ else
   # Verify downloaded compressed image
   if [[ -n "${SHA256SUM_FILE:-}" ]] && [[ -f "$SHA256SUM_FILE" ]]; then
     log_info "Verifying downloaded image checksum..."
-    EXPECTED_HASH=$(grep " ${IMG_FILE}$" "$SHA256SUM_FILE" | cut -d' ' -f1)
+    EXPECTED_HASH=$(grep " ${IMG_FILE}$" "$SHA256SUM_FILE" 2>/dev/null | cut -d' ' -f1 || echo "")
     if [[ -n "$EXPECTED_HASH" ]]; then
       verify_sha256 "$IMG_FILE" "$EXPECTED_HASH" || {
         log_error "Downloaded image failed verification"
