@@ -91,16 +91,14 @@ readonly BOOT_MNT="/mnt/boot"
 detect_latest_lts() {
   if [[ -z "${UBUNTU_VERSION:-}" ]]; then
     log_debug "Auto-detecting Ubuntu LTS version..."
-    UBUNTU_VERSION=$(
-      local detected
-      detected=$(curl -s https://api.launchpad.net/devel/ubuntu/series 2>/dev/null \
-        | grep -oP '"name": "\K[0-9]{2}\.[0-9]{2}(?=")' \
-        | sort -V | tail -1 || echo "24.04")
-      if [[ "$detected" == "24.04" ]]; then
-        log_warn "Could not detect Ubuntu version, defaulting to 24.04"
-      fi
-      echo "$detected"
-    )
+    local detected
+    detected=$(curl -s https://api.launchpad.net/devel/ubuntu/series 2>/dev/null \
+      | grep -oP '"name": "\K[0-9]{2}\.[0-9]{2}(?=")' \
+      | sort -V | tail -1 || echo "24.04")
+    if [[ "$detected" == "24.04" ]]; then
+      log_warn "Could not detect Ubuntu version, defaulting to 24.04"
+    fi
+    UBUNTU_VERSION="$detected"
     log_info "Auto-detected Ubuntu LTS: $UBUNTU_VERSION"
     log_debug "Detected UBUNTU_VERSION=$UBUNTU_VERSION"
   else
