@@ -1,0 +1,22 @@
+_meta:
+  generated_at: '2025-11-18T12:00:42Z'
+  git_commit: 60f42f3
+  source_hash: f46ffa414dc3aa0c5465b9195e7ce101d0bf3953d9e1ec04ec97a07775045022
+  domain: registry
+  template_hash: c224373b1dca38cd64cafce940bb7601a6f326937ec31740fc8a33f03152a5e9
+name: registry
+placement: tunnel
+standalone: false
+requires:
+- forgejo
+exposes_to:
+- tunnel
+- forgejo
+consumes:
+- forgejo
+networks:
+- registry-network
+- forgejo-network
+description: Container registry exposed via Forgejo
+ports:
+  http: 5050

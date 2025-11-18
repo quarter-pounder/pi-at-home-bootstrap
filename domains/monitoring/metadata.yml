@@ -1,0 +1,24 @@
+_meta:
+  generated_at: '2025-11-18T12:00:42Z'
+  git_commit: 60f42f3
+  source_hash: f46ffa414dc3aa0c5465b9195e7ce101d0bf3953d9e1ec04ec97a07775045022
+  domain: monitoring
+  template_hash: b01ef66c1466fb4767d93dfe5cfa4b2b1e88c9cfe34b67596775b51f51912ef9
+name: monitoring
+placement: local
+standalone: true
+requires: []
+exposes_to:
+- tunnel
+consumes:
+- forgejo
+- woodpecker
+networks:
+- monitoring-network
+description: Prometheus, Grafana, Loki
+ports:
+  prometheus: 9090
+  grafana: 3000
+  alertmanager: 9093
+  loki: 3100
+  alloy: 12345
