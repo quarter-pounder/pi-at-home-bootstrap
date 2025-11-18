@@ -24,6 +24,12 @@ services:
     volumes:
       - /srv/adblocker/pihole:/etc/pihole
       - /srv/adblocker/dnsmasq.d:/etc/dnsmasq.d
+    healthcheck:
+      test: ["CMD-SHELL", "dig +time=2 +tries=1 @127.0.0.1 pi.hole || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 45s
     cap_add:
       - NET_ADMIN
     networks:
@@ -40,9 +46,11 @@ services:
       - "{{ PORT_ADBLOCKER_UNBOUND }}:53/tcp"
       - "{{ PORT_ADBLOCKER_UNBOUND }}:53/udp"
     healthcheck:
-      test: ["CMD-SHELL", "drill -p 53 unbound.net @127.0.0.1"]
-      interval: 30s
+      test: ["CMD-SHELL", "drill -Q @127.0.0.1 cloudflare.com A || dig +time=2 +tries=1 @127.0.0.1 cloudflare.com || exit 1"]
+      interval: 1m
       timeout: 10s
+      retries: 3
+      start_period: 30s
     volumes:
       - ./unbound.conf:/etc/unbound/unbound.conf:ro
       - /srv/adblocker/unbound:/var/lib/unbound
@@ -59,26 +67,6 @@ services:
     networks:
       - adblocker-network
 
-  pihole-exporter:
-    image: ekofr/pihole-exporter:v0.4.0
-    container_name: adblocker-pihole-exporter
-    restart: unless-stopped
-    environment:
-      PIHOLE_HOSTNAME: adblocker-pihole
-      PIHOLE_PORT: "80"
-      PIHOLE_API_TOKEN: {{ PIHOLE_API_TOKEN if PIHOLE_API_TOKEN else (PIHOLE_WEB_PASSWORD if PIHOLE_WEB_PASSWORD else '') }}
-      PORT: "9617"
-    ports:
-      - "{{ PORT_ADBLOCKER_EXPORTER }}:9617"
-    networks:
-      - adblocker-network
-      - monitoring-network
-    depends_on:
-      - pihole
-
 networks:
   adblocker-network:
     driver: bridge
-  monitoring-network:
-    external: true
-    name: monitoring_monitoring-network
