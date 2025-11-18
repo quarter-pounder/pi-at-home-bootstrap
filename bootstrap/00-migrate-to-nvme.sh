@@ -290,7 +290,10 @@ elif [[ -f "${IMG_FILE}" ]]; then
 else
   log_info "Downloading Ubuntu ${UBUNTU_VERSION} image..."
   log_info "URL: ${IMG_URL}"
-  curl -L --retry-delay 10 --continue-at - -o "${IMG_FILE}" "${IMG_URL}"
+  curl -L --retry-delay 10 --continue-at - -o "${IMG_FILE}" "${IMG_URL}" || {
+    log_error "Failed to download image"
+    exit 1
+  }
 
   if [[ ! -f "${IMG_FILE}" ]]; then
     log_error "Image not found after download"
