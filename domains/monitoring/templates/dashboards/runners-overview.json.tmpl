@@ -37,7 +37,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "(sum(max by (container_name)((count(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"}) > 0)) or vector(0)){% if EXTERNAL_RUNNER_METRICS_IP %} + (max(up{job=\"external-runner\"}) or vector(0)){% endif %}",
+          "expr": "(count(count by (container_name)(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=~\"woodpecker-runner|forgejo-actions-runner|github-actions-runner\"})) or vector(0)){% if EXTERNAL_RUNNER_METRICS_IP %} + (max(up{job=\"external-runner\"}) or vector(0)){% endif %}",
           "refId": "A",
           "instant": true
         }
@@ -80,7 +80,7 @@
 
       "targets": [
         {
-          "expr": "( (count(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"woodpecker-runner\"}) > 0) or vector(0) ) * (1 + (((sum(label_replace(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[2m]),\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"woodpecker-runner\"})) or vector(0)) >= bool 0.1))",
+          "expr": "((count(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"woodpecker-runner\"}) > 0) or vector(0)) * (1 + ((sum(label_replace(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[2m]),\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"woodpecker-runner\"}) or vector(0)) >= bool 0.1))",
           "refId": "A"
         }
       ],
@@ -129,7 +129,7 @@
 
       "targets": [
         {
-          "expr": "( (count(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"forgejo-actions-runner\"}) > 0) or vector(0) ) * (1 + (((sum(label_replace(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[2m]),\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"forgejo-actions-runner\"})) or vector(0)) >= bool 0.1))",
+          "expr": "((count(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"forgejo-actions-runner\"}) > 0) or vector(0)) * (1 + ((sum(label_replace(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[2m]),\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"forgejo-actions-runner\"}) or vector(0)) >= bool 0.1))",
           "refId": "A"
         }
       ],
@@ -179,7 +179,7 @@
 
       "targets": [
         {
-          "expr": "( (count(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"github-actions-runner\"}) > 0) or vector(0) ) * (1 + (((sum(label_replace(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[2m]),\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"github-actions-runner\"})) or vector(0)) >= bool 0.1))",
+          "expr": "((count(label_replace(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"},\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"github-actions-runner\"}) > 0) or vector(0)) * (1 + ((sum(label_replace(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",id=~\"/system.slice/docker-.*\"}[2m]),\"container_id\",\"$$1\",\"id\",\"/system.slice/docker-([a-f0-9]{12}).*\") * on(container_id) group_left(container_name) container_name_info{container_name=\"github-actions-runner\"}) or vector(0)) >= bool 0.1))",
           "refId": "A"
         }
       ],
