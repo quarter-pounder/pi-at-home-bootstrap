@@ -17,7 +17,7 @@ if ! mkdir -p /var/log 2>/dev/null || ! touch "$LOG_FILE" 2>/dev/null; then
 fi
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-source "./utils.sh"
+source "$(dirname "$0")/utils.sh"
 
 if [[ "$LOG_FILE" != "/var/log/nvme-migrate-live.log" ]]; then
   log_warn "Cannot write to /var/log, using fallback: $LOG_FILE"
