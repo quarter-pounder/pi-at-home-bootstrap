@@ -334,15 +334,16 @@ fi
 log_success "NVMe partitions created: $NVME_BOOT_PART (boot), $NVME_ROOT_PART (root)"
 
 log_info "Creating filesystems on NVMe..."
-if ! mkfs.vfat -F 32 -n BOOT_NVME "$NVME_BOOT_PART"; then
+# Use labels that match Ubuntu's expected labels (system-boot and writable)
+if ! mkfs.vfat -F 32 -n system-boot "$NVME_BOOT_PART"; then
   log_error "Failed to create boot filesystem"
   exit 1
 fi
-if ! mkfs.ext4 -L rootfs-nvme "$NVME_ROOT_PART"; then
+if ! mkfs.ext4 -L writable "$NVME_ROOT_PART"; then
   log_error "Failed to create root filesystem"
   exit 1
 fi
-log_success "Filesystems created"
+log_success "Filesystems created with labels: system-boot (boot), writable (root)"
 
 # Verify filesystems
 log_info "Verifying new filesystems..."
@@ -521,21 +522,39 @@ fi
 
 if [[ -n "$CMDLINE" ]]; then
   cp "$CMDLINE" "${CMDLINE}.bak.$(date +%Y%m%d_%H%M%S)"
-  if [[ -n "$OLD_ROOT_UUID" && -n "$NEW_ROOT_UUID" ]]; then
-    # Check if old UUID exists in cmdline.txt before replacing
-    if grep -q "root=PARTUUID=${OLD_ROOT_UUID}" "$CMDLINE"; then
-      sed -i "s|root=PARTUUID=${OLD_ROOT_UUID}|root=PARTUUID=${NEW_ROOT_UUID}|g" "$CMDLINE"
-      # Verify update
-      if ! grep -q "root=PARTUUID=${NEW_ROOT_UUID}" "$CMDLINE"; then
-        log_error "Failed to update root PARTUUID in cmdline.txt"
-        exit 1
+
+  # Update or add root= parameter
+  if [[ -n "$NEW_ROOT_UUID" ]]; then
+    # Check if root= already exists
+    if grep -q "root=" "$CMDLINE"; then
+      # Replace existing root= parameter
+      if [[ -n "$OLD_ROOT_UUID" ]] && grep -q "root=PARTUUID=${OLD_ROOT_UUID}" "$CMDLINE"; then
+        sed -i "s|root=PARTUUID=${OLD_ROOT_UUID}|root=PARTUUID=${NEW_ROOT_UUID}|g" "$CMDLINE"
+        log_success "Updated root PARTUUID in cmdline.txt"
+      elif grep -q "root=LABEL=" "$CMDLINE"; then
+        # Replace LABEL=writable with PARTUUID
+        sed -i "s|root=LABEL=writable|root=PARTUUID=${NEW_ROOT_UUID}|g" "$CMDLINE"
+        log_success "Updated root parameter in cmdline.txt (LABEL to PARTUUID)"
+      else
+        # Replace any root= with new PARTUUID
+        sed -i "s|root=[^ ]*|root=PARTUUID=${NEW_ROOT_UUID}|g" "$CMDLINE"
+        log_success "Updated root parameter in cmdline.txt"
       fi
-      log_success "Updated and verified root PARTUUID in cmdline.txt"
     else
-      log_warn "Root PARTUUID ${OLD_ROOT_UUID} not found in cmdline.txt (may use different format) – check manually."
+      # Add root= parameter if it doesn't exist
+      # Add it at the beginning of the cmdline
+      sed -i "s|^|root=PARTUUID=${NEW_ROOT_UUID} |" "$CMDLINE"
+      log_success "Added root PARTUUID to cmdline.txt"
     fi
+
+    # Verify root= parameter exists
+    if ! grep -q "root=PARTUUID=${NEW_ROOT_UUID}" "$CMDLINE"; then
+      log_error "Failed to set root PARTUUID in cmdline.txt"
+      exit 1
+    fi
+    log_success "Verified root PARTUUID in cmdline.txt"
   else
-    log_warn "Could not rewrite root=PARTUUID in cmdline.txt (missing UUIDs) – check manually."
+    log_warn "Could not determine new root PARTUUID – cmdline.txt may need manual update."
   fi
 else
   log_warn "cmdline.txt not found on target boot partition – check layout manually."
