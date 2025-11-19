@@ -45,6 +45,14 @@ help:
 	@echo "  make down DOMAIN=<name>        - Bring domain down (with warnings and dependency checks)"
 	@echo "  make destroy DOMAIN=<name>      - Destroy domain"
 	@echo "  make manifest                   - Generate manifest"
+	@echo ""
+	@echo "GitHub Actions Runner Management:"
+	@echo "  make add-github-runner NAME=<name> REPO_URL=<url> TOKEN=<token> [LABELS=<labels>]"
+	@echo "  make github-runner-down NAME=<name> - Bring down a runner"
+	@echo "  make destroy-github-runner NAME=<name> - Destroy a runner (removes data)"
+	@echo "  make list-github-runners        - List all configured runners"
+	@echo "  make render-github-runner NAME=<name> - Render compose file for runner"
+	@echo "  make deploy-github-runner NAME=<name> - Deploy a runner"
 	@echo "  make drift-check                - Fail CI if metadata drift detected"
 	@echo "  make vault-create               - Create secrets.env.vault (uses .vault_pass when present)"
 	@echo "  make vault-edit                 - Edit secrets.env.vault"
@@ -352,6 +360,52 @@ status:
 	@$(MAKE) -s check-secrets || true
 	@echo "[Status] Rendered domains:"
 	@ls -1 $(ROOT_DIR)/generated 2>/dev/null || echo "(none)"
+
+.PHONY: add-github-runner github-runner-down destroy-github-runner list-github-runners render-github-runner deploy-github-runner
+GITHUB_RUNNER_MANAGER := $(ROOT_DIR)/common/scripts/github-runner-manager.sh
+
+add-github-runner:
+	@if [ -z "$(NAME)" ]; then \
+		echo "[GitHub Runner][err] NAME required"; \
+		echo "Usage: make add-github-runner NAME=<name> REPO_URL=<url> TOKEN=<token> [LABELS=<labels>] [DOCKER_ENABLED=true]"; \
+		exit 1; \
+	fi
+	@bash $(GITHUB_RUNNER_MANAGER) add $(NAME) \
+		--repo-url "$(REPO_URL)" \
+		--token "$(TOKEN)" \
+		$(if $(LABELS),--labels "$(LABELS)",) \
+		$(if $(DOCKER_ENABLED),--docker-enabled "$(DOCKER_ENABLED)",)
+
+github-runner-down:
+	@if [ -z "$(NAME)" ]; then \
+		echo "[GitHub Runner][err] NAME required (e.g., make github-runner-down NAME=pi-runner)"; \
+		exit 1; \
+	fi
+	@bash $(GITHUB_RUNNER_MANAGER) down $(NAME)
+
+destroy-github-runner:
+	@if [ -z "$(NAME)" ]; then \
+		echo "[GitHub Runner][err] NAME required (e.g., make destroy-github-runner NAME=pi-runner)"; \
+		exit 1; \
+	fi
+	@bash $(GITHUB_RUNNER_MANAGER) destroy $(NAME)
+
+list-github-runners:
+	@bash $(GITHUB_RUNNER_MANAGER) list
+
+render-github-runner:
+	@if [ -z "$(NAME)" ]; then \
+		echo "[GitHub Runner][err] NAME required (e.g., make render-github-runner NAME=pi-runner)"; \
+		exit 1; \
+	fi
+	@bash $(GITHUB_RUNNER_MANAGER) render $(NAME)
+
+deploy-github-runner:
+	@if [ -z "$(NAME)" ]; then \
+		echo "[GitHub Runner][err] NAME required (e.g., make deploy-github-runner NAME=pi-runner)"; \
+		exit 1; \
+	fi
+	@bash $(GITHUB_RUNNER_MANAGER) deploy $(NAME)
 
 .PHONY: backup backup-cloud backup-prune
 backup:
