@@ -1,7 +1,7 @@
 services:
   github-actions-runner:
     image: {{ GITHUB_ACTIONS_RUNNER_IMAGE }}
-    container_name: github-actions-runner
+    container_name: github-actions-runner-{{ GITHUB_ACTIONS_RUNNER_NAME }}
     restart: unless-stopped
     environment:
       RUNNER_NAME: {{ GITHUB_ACTIONS_RUNNER_NAME }}
@@ -17,11 +17,11 @@ services:
       DISABLE_RUNNER_UPDATE: "false"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /srv/github-actions-runner:/data
+      - /srv/github-actions-runner-{{ GITHUB_ACTIONS_RUNNER_NAME }}:/data
     networks:
       github-actions-runner-network:
         aliases:
-          - github-actions-runner
+          - github-actions-runner-{{ GITHUB_ACTIONS_RUNNER_NAME }}
 
 networks:
   github-actions-runner-network:
