@@ -36,8 +36,14 @@ cleanup() {
   local exit_code=$?
   set +e
   log_info "Cleaning up temporary mounts..."
-  mountpoint -q /mnt/nvme-root && umount /mnt/nvme-root || true
-  mountpoint -q /mnt/nvme-boot && umount /mnt/nvme-boot || true
+  # Unmount bind mount first
+  mountpoint -q /mnt/nvme-root/boot && umount /mnt/nvme-root/boot 2>/dev/null || true
+  # Then unmount main mounts
+  mountpoint -q /mnt/nvme-root && umount /mnt/nvme-root 2>/dev/null || true
+  mountpoint -q /mnt/nvme-boot && umount /mnt/nvme-boot 2>/dev/null || true
+  # Force unmount if still busy
+  umount -l /mnt/nvme-root 2>/dev/null || true
+  umount -l /mnt/nvme-boot 2>/dev/null || true
   rmdir /mnt/nvme-root 2>/dev/null || true
   rmdir /mnt/nvme-boot 2>/dev/null || true
 
@@ -183,6 +189,23 @@ fi
 
 log_info "Target NVMe disk: $NVME_DEVICE"
 
+# Clean up any leftover mounts from previous runs
+log_info "Cleaning up any leftover mounts from previous runs..."
+mountpoint -q /mnt/nvme-root/boot && umount /mnt/nvme-root/boot 2>/dev/null || true
+mountpoint -q /mnt/nvme-root && umount /mnt/nvme-root 2>/dev/null || true
+mountpoint -q /mnt/nvme-boot && umount /mnt/nvme-boot 2>/dev/null || true
+umount -l /mnt/nvme-root 2>/dev/null || true
+umount -l /mnt/nvme-boot 2>/dev/null || true
+
+# Unmount any existing NVMe partitions
+for part in "${NVME_DEVICE}"p* "${NVME_DEVICE}"[0-9]*; do
+  [[ -e "$part" ]] && mountpoint -q "$part" 2>/dev/null && umount "$part" 2>/dev/null || true
+done
+
+# Refresh partition table to clear any stale entries
+partprobe "$NVME_DEVICE" 2>/dev/null || true
+sleep 1
+
 # ---------------------------------------------------------------------------
 # Sanity checks on sizes
 # ---------------------------------------------------------------------------
@@ -265,12 +288,21 @@ log_info "Wiping existing partition table on $NVME_DEVICE..."
 wipefs -a "$NVME_DEVICE" >/dev/null 2>&1 || true
 sgdisk --zap-all "$NVME_DEVICE" >/dev/null 2>&1 || true
 
+# Force kernel to forget about old partitions
+partprobe "$NVME_DEVICE" 2>/dev/null || true
+partx -d "$NVME_DEVICE" 2>/dev/null || true
+sleep 2
+
 log_info "Creating new GPT, boot + root partitions on NVMe..."
-parted -s "$NVME_DEVICE" \
+if ! parted -s "$NVME_DEVICE" \
   mklabel gpt \
   mkpart primary fat32 1MiB "${BOOT_SIZE_MIB}MiB" \
   set 1 boot on \
-  mkpart primary ext4 "${BOOT_SIZE_MIB}MiB" 100%
+  mkpart primary ext4 "${BOOT_SIZE_MIB}MiB" 100%; then
+  log_error "Failed to create partitions. Device may be in use."
+  log_error "Try: sudo partprobe $NVME_DEVICE && sudo partx -d $NVME_DEVICE"
+  exit 1
+fi
 
 sleep 2
 if ! partprobe "$NVME_DEVICE" 2>/dev/null; then
@@ -278,6 +310,8 @@ if ! partprobe "$NVME_DEVICE" 2>/dev/null; then
     log_warn "Partition table refresh failed, trying alternative method..."
     sleep 2
     udevadm settle || true
+    # Try one more time
+    partprobe "$NVME_DEVICE" 2>/dev/null || true
   fi
 fi
 sleep 2
@@ -443,24 +477,36 @@ if [[ -f "$FSTAB" ]]; then
   cp "$FSTAB" "${FSTAB}.bak.$(date +%Y%m%d_%H%M%S)"
 
   if [[ -n "$OLD_ROOT_UUID" && -n "$NEW_ROOT_UUID" ]]; then
-    sed -i "s|PARTUUID=${OLD_ROOT_UUID}|PARTUUID=${NEW_ROOT_UUID}|g" "$FSTAB"
-    # Verify update
-    if ! grep -q "PARTUUID=${NEW_ROOT_UUID}" "$FSTAB"; then
-      log_error "Failed to update root PARTUUID in /etc/fstab"
-      exit 1
+    # Check if old UUID exists in fstab before replacing
+    if grep -q "PARTUUID=${OLD_ROOT_UUID}" "$FSTAB"; then
+      sed -i "s|PARTUUID=${OLD_ROOT_UUID}|PARTUUID=${NEW_ROOT_UUID}|g" "$FSTAB"
+      # Verify update
+      if ! grep -q "PARTUUID=${NEW_ROOT_UUID}" "$FSTAB"; then
+        log_error "Failed to update root PARTUUID in /etc/fstab"
+        exit 1
+      fi
+      log_success "Updated root PARTUUID in /etc/fstab"
+    else
+      log_warn "Root PARTUUID ${OLD_ROOT_UUID} not found in /etc/fstab (may use device names or labels)"
     fi
   fi
 
   if [[ -n "$OLD_BOOT_UUID" && -n "$NEW_BOOT_UUID" ]]; then
-    sed -i "s|PARTUUID=${OLD_BOOT_UUID}|PARTUUID=${NEW_BOOT_UUID}|g" "$FSTAB"
-    # Verify update
-    if ! grep -q "PARTUUID=${NEW_BOOT_UUID}" "$FSTAB"; then
-      log_error "Failed to update boot PARTUUID in /etc/fstab"
-      exit 1
+    # Check if old UUID exists in fstab before replacing
+    if grep -q "PARTUUID=${OLD_BOOT_UUID}" "$FSTAB"; then
+      sed -i "s|PARTUUID=${OLD_BOOT_UUID}|PARTUUID=${NEW_BOOT_UUID}|g" "$FSTAB"
+      # Verify update
+      if ! grep -q "PARTUUID=${NEW_BOOT_UUID}" "$FSTAB"; then
+        log_error "Failed to update boot PARTUUID in /etc/fstab"
+        exit 1
+      fi
+      log_success "Updated boot PARTUUID in /etc/fstab"
+    else
+      log_warn "Boot PARTUUID ${OLD_BOOT_UUID} not found in /etc/fstab (may use device names or labels)"
     fi
   fi
 
-  log_success "Updated and verified /etc/fstab on NVMe."
+  log_success "fstab update complete."
 else
   log_warn "No /etc/fstab found on target? Check manually."
 fi
@@ -476,13 +522,18 @@ fi
 if [[ -n "$CMDLINE" ]]; then
   cp "$CMDLINE" "${CMDLINE}.bak.$(date +%Y%m%d_%H%M%S)"
   if [[ -n "$OLD_ROOT_UUID" && -n "$NEW_ROOT_UUID" ]]; then
-    sed -i "s|root=PARTUUID=${OLD_ROOT_UUID}|root=PARTUUID=${NEW_ROOT_UUID}|g" "$CMDLINE"
-    # Verify update
-    if ! grep -q "root=PARTUUID=${NEW_ROOT_UUID}" "$CMDLINE"; then
-      log_error "Failed to update root PARTUUID in cmdline.txt"
-      exit 1
+    # Check if old UUID exists in cmdline.txt before replacing
+    if grep -q "root=PARTUUID=${OLD_ROOT_UUID}" "$CMDLINE"; then
+      sed -i "s|root=PARTUUID=${OLD_ROOT_UUID}|root=PARTUUID=${NEW_ROOT_UUID}|g" "$CMDLINE"
+      # Verify update
+      if ! grep -q "root=PARTUUID=${NEW_ROOT_UUID}" "$CMDLINE"; then
+        log_error "Failed to update root PARTUUID in cmdline.txt"
+        exit 1
+      fi
+      log_success "Updated and verified root PARTUUID in cmdline.txt"
+    else
+      log_warn "Root PARTUUID ${OLD_ROOT_UUID} not found in cmdline.txt (may use different format) – check manually."
     fi
-    log_success "Updated and verified root PARTUUID in cmdline.txt"
   else
     log_warn "Could not rewrite root=PARTUUID in cmdline.txt (missing UUIDs) – check manually."
   fi
