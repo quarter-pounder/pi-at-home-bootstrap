@@ -4,10 +4,10 @@ cd "$(dirname "$0")/.."
 
 source "$(dirname "$0")/utils.sh"
 
-if [[ $EUID -ne 0 ]]; then
-  log_warn "Re-running with sudo for accurate checks..."
-  exec sudo bash "$0"
-fi
+   if [[ $EUID -ne 0 ]]; then
+     log_error "Run with sudo: sudo bootstrap/01-preflight.sh"
+     exit 1
+   fi
 
 log_info "Running pre-flight checks..."
 echo ""
