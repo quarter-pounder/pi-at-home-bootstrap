@@ -20,14 +20,26 @@ check_suppression() {
 }
 
 # Generate metrics
-cat > "${METRICS_FILE}.tmp" <<EOF
+{
+    cat > "${METRICS_FILE}.tmp" <<EOF
 # HELP alert_suppression_enabled Whether alert suppression is enabled for a runner (1=enabled, 0=disabled)
 # TYPE alert_suppression_enabled gauge
 alert_suppression_enabled{runner="woodpecker"} $(check_suppression "woodpecker")
 alert_suppression_enabled{runner="woodpecker-runner"} $(check_suppression "woodpecker-runner")
 alert_suppression_enabled{runner="forgejo-actions-runner"} $(check_suppression "forgejo-actions-runner")
-alert_suppression_enabled{runner="github-actions-runner"} $(check_suppression "github-actions-runner")
 EOF
+
+    # Dynamically discover GitHub Actions runners
+    for marker in "${SUPPRESSION_DIR}"/github-actions-runner-*.down; do
+        if [ -f "${marker}" ]; then
+            runner_name=$(basename "${marker}" .down)
+            echo "alert_suppression_enabled{runner=\"${runner_name}\"} 1" >> "${METRICS_FILE}.tmp"
+        fi
+    done
+
+    # Also check for the default github-actions-runner (backward compatibility)
+    echo "alert_suppression_enabled{runner=\"github-actions-runner\"} $(check_suppression "github-actions-runner")" >> "${METRICS_FILE}.tmp"
+} || true
 
 mv "${METRICS_FILE}.tmp" "${METRICS_FILE}"
 

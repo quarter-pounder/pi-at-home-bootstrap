@@ -191,8 +191,8 @@ groups:
       - alert: RunnerContainerDown
         expr: |
           label_replace(
-            up{job="cadvisor",container_label_com_docker_compose_service=~"woodpecker|woodpecker-runner|forgejo-actions-runner|github-actions-runner"} == 0,
-            "runner_name", "$1", "container_label_com_docker_compose_service", "(.*)"
+            up{job="cadvisor",name=~"woodpecker|woodpecker-runner|forgejo-actions-runner|github-actions-runner.*"} == 0,
+            "runner_name", "$1", "name", "(.*)"
           )
         for: 2m
         labels:
@@ -237,13 +237,22 @@ groups:
           description: "Forgejo Actions runner container has been down for more than 5 minutes"
 
       - alert: GitHubActionsRunnerDown
-        expr: up{job="cadvisor",container_label_com_docker_compose_service="github-actions-runner"} == 0 and (alert_suppression_enabled{runner="github-actions-runner"} == 0 or absent(alert_suppression_enabled{runner="github-actions-runner"}))
+        expr: |
+          label_replace(
+            up{job="cadvisor",name=~"github-actions-runner.*"} == 0,
+            "runner_name", "$1", "name", "(.*)"
+          ) and on(runner_name) label_replace(
+            (alert_suppression_enabled{runner=~"github-actions-runner.*"} == 0 or absent(alert_suppression_enabled{runner=~"github-actions-runner.*"})),
+            "runner_name", "$1", "runner", "(.*)"
+          )
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "GitHub Actions runner is down"
+        {% raw %}
+          summary: "GitHub Actions runner {{ $labels.runner_name }} is down"
           description: "GitHub Actions runner container has been down for more than 5 minutes"
+        {% endraw %}
 {% if EXTERNAL_RUNNER_METRICS_IP %}
       - alert: ExternalRunnerDown
         expr: up{job="external-runner"} == 0

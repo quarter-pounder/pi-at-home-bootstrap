@@ -1,6 +1,11 @@
 {% set smtp_host = SMTP_ADDRESS if SMTP_ADDRESS else 'localhost' %}
 {% set smtp_port = SMTP_PORT if SMTP_PORT else '25' %}
 {% set smtp_from = SMTP_FROM if SMTP_FROM else ('alerts@' ~ (DOMAIN if DOMAIN else 'local')) %}
+{% set smtp_username = SMTP_USERNAME|default('') %}
+{% set smtp_password = SMTP_PASSWORD|default('') %}
+{% set smtp_domain = SMTP_DOMAIN|default('localhost') %}
+{% set smtp_auth = SMTP_AUTH|default('none') %}
+{% set smtp_has_auth = smtp_username and smtp_password %}
 {% set dr_url = (DR_WEBHOOK_URL|default('')) %}
 {% set dr_enabled = dr_url|length > 0 %}
 {% set primary_receiver = 'dr-webhook' if dr_enabled else ('email' if ALERT_EMAIL else 'null') %}
@@ -9,6 +14,15 @@
 global:
   smtp_smarthost: '{{ smtp_host }}:{{ smtp_port }}'
   smtp_from: '{{ smtp_from }}'
+{% if smtp_has_auth %}
+  smtp_auth_username: '{{ smtp_username }}'
+  smtp_auth_password: '{{ smtp_password }}'
+  smtp_auth_secret: '{{ smtp_password }}'
+{% endif %}
+  smtp_hello: '{{ smtp_domain }}'
+{% if SMTP_STARTTLS|default('false') == 'true' %}
+  smtp_require_tls: true
+{% endif %}
 
 inhibit_rules:
   - source_match:
