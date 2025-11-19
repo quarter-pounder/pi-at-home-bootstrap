@@ -127,16 +127,18 @@ def resolve_variables(env: Dict[str, str]) -> Dict[str, str]:
     return resolved
 
 
-def load_env_layers(root: Path, env_name: str) -> Dict[str, str]:
+def load_env_layers(root: Path, env_name: str, extra_env: Path | None = None) -> Dict[str, str]:
     base = parse_env_file(root / "config-registry" / "env" / "base.env")
     host = parse_env_file(root / ".env")
     overrides = parse_env_file(root / "config-registry" / "env" / "overrides" / f"{env_name}.env")
     secrets = decrypt_secrets(root)
+    extra = parse_env_file(extra_env) if extra_env else {}
     combined: Dict[str, str] = {}
     combined.update(base)
     combined.update(overrides)
     combined.update(host)
     combined.update(secrets)
+    combined.update(extra)  # Extra env loaded last to override everything
     return resolve_variables(combined)
 
 
@@ -177,7 +179,7 @@ def derive_output_path(path: Path, root: Path) -> Path:
     return candidate
 
 
-def render(domain: str, env_name: str, dry_run: bool = False) -> None:
+def render(domain: str, env_name: str, dry_run: bool = False, extra_env: Path | None = None) -> None:
     root = ROOT
     src = root / "domains" / domain / "templates"
     if not src.exists():
@@ -190,7 +192,7 @@ def render(domain: str, env_name: str, dry_run: bool = False) -> None:
     existing_files = {p for p in dst.rglob("*") if p.is_file()}
     generated_files: set[Path] = set()
 
-    env_vars = load_env_layers(root, env_name)
+    env_vars = load_env_layers(root, env_name, extra_env=extra_env)
     ports = load_ports(root)
     domains_data = list(load_domains(root))
     domain_entry = next((d for d in domains_data if d.get("name") == domain), {})
@@ -280,10 +282,11 @@ def main() -> None:
     parser.add_argument("--domain", required=True, help="Domain name (matches folder under domains/)")
     parser.add_argument("--env", default="dev", help="Environment override to load")
     parser.add_argument("--dry-run", action="store_true", help="Print available context keys and exit")
+    parser.add_argument("--extra-env", type=Path, help="Additional env file to load (overrides all others)")
     args = parser.parse_args()
 
     try:
-        render(args.domain, args.env, dry_run=args.dry_run)
+        render(args.domain, args.env, dry_run=args.dry_run, extra_env=args.extra_env)
     except FileNotFoundError as exc:
         log_warn(str(exc))
         sys.exit(1)
