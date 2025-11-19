@@ -404,19 +404,35 @@ log_success "Image written successfully"
 
 # Verify write integrity
 log_info "Verifying written image (this may take several minutes)..."
-ORIGINAL_HASH=$(sha256sum "${IMG}" | cut -d' ' -f1)
+ORIGINAL_HASH=$(sha256sum "${IMG}" 2>/dev/null | awk '{print $1}' || echo "")
+if [[ -z "$ORIGINAL_HASH" ]]; then
+  log_error "Failed to calculate original image hash"
+  exit 1
+fi
 
 # Read back exactly IMG_SIZE bytes and calculate hash
 # Use dd with count to read exact size, pipe through sha256sum
 BLOCK_SIZE=4194304  # 4MB
 BLOCK_COUNT=$(( (IMG_SIZE + BLOCK_SIZE - 1) / BLOCK_SIZE ))  # Round up
 
+WRITTEN_HASH=""
 if command -v pv >/dev/null 2>&1; then
+  # Use pv for progress, redirect stderr to avoid interfering with pipeline
   WRITTEN_HASH=$(dd if="${NVME_DEVICE}" bs="${BLOCK_SIZE}" count="${BLOCK_COUNT}" 2>/dev/null | \
-    head -c "${IMG_SIZE}" | pv -s "${IMG_SIZE}" -q | sha256sum | cut -d' ' -f1)
+    head -c "${IMG_SIZE}" 2>/dev/null | \
+    pv -s "${IMG_SIZE}" -q 2>/dev/null | \
+    sha256sum 2>/dev/null | awk '{print $1}' || echo "")
 else
   WRITTEN_HASH=$(dd if="${NVME_DEVICE}" bs="${BLOCK_SIZE}" count="${BLOCK_COUNT}" 2>/dev/null | \
-    head -c "${IMG_SIZE}" | sha256sum | cut -d' ' -f1)
+    head -c "${IMG_SIZE}" 2>/dev/null | \
+    sha256sum 2>/dev/null | awk '{print $1}' || echo "")
+fi
+
+if [[ -z "$WRITTEN_HASH" ]]; then
+  log_error "Failed to calculate written image hash"
+  log_warn "Skipping write verification - image may be corrupted"
+  log_warn "Consider re-running the migration script"
+  exit 1
 fi
 
 if [[ "${WRITTEN_HASH}" != "${ORIGINAL_HASH}" ]]; then
