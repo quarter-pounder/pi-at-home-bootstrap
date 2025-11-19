@@ -9,57 +9,57 @@ log_info "Verifying installation..."
 ERRORS=0
 WARNINGS=0
 
-# Local helpers that provide counting
-ok()   { log_success "$*"; }
-warn() { log_warn "$*"; ((WARNINGS++)); }
-bad()  { log_error "$*"; ((ERRORS++)); }
+# Local helpers that wrap logging functions without clashing with utils.sh
+pass_msg() { log_success "$@"; }
+warn_msg() { log_warn "$@"; ((WARNINGS++)); }
+fail_msg() { log_error "$@"; ((ERRORS++)); }
 
 # Docker installation
 check_docker_installed() {
   if command -v docker >/dev/null 2>&1; then
-    ok "Docker installed"
+    pass_msg "Docker installed"
     local docker_version; docker_version=$(docker --version)
     log_info "  Version: $docker_version"
   else
-    bad "Docker not found"
+    fail_msg "Docker not found"
   fi
 }
 
 # Docker Compose
 check_docker_compose() {
   if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-    ok "Docker Compose available"
+    pass_msg "Docker Compose available"
     local compose_version; compose_version=$(docker compose version)
     log_info "  Version: $compose_version"
   else
-    bad "Docker Compose not available"
+    fail_msg "Docker Compose not available"
   fi
 }
 
 # Docker daemon status
 check_docker_daemon() {
   if sudo systemctl is-active --quiet docker; then
-    ok "Docker daemon running (systemctl)"
+    pass_msg "Docker daemon running (systemctl)"
   else
-    bad "Docker daemon not running (systemctl)"
+    fail_msg "Docker daemon not running (systemctl)"
   fi
 }
 
 # Docker group membership
 check_docker_group() {
   if groups | grep -q docker; then
-    ok "User in docker group"
+    pass_msg "User in docker group"
   else
-    warn "User not in docker group (logout/login required)"
+    warn_msg "User not in docker group (logout/login required)"
   fi
 }
 
 # Docker functionality test (consolidated with check_docker_info)
 check_docker_functionality() {
   if docker info >/dev/null 2>&1; then
-    ok "Docker functionality test passed (info accessible)"
+    pass_msg "Docker functionality test passed (info accessible)"
   else
-    bad "Docker functionality test failed (info not accessible)"
+    fail_msg "Docker functionality test failed (info not accessible)"
     return 1
   fi
 }
@@ -68,9 +68,9 @@ check_docker_functionality() {
 check_tools() {
   for tool in curl wget git jq yq envsubst ansible-vault; do
     if command -v "$tool" >/dev/null 2>&1; then
-      ok "Tool: $tool"
+      pass_msg "Tool: $tool"
     else
-      bad "Missing tool: $tool"
+      fail_msg "Missing tool: $tool"
     fi
   done
 }
@@ -78,25 +78,25 @@ check_tools() {
 # /srv directory and mount
 check_srv_directory() {
   if [[ -d /srv ]]; then
-    ok "/srv directory exists"
+    pass_msg "/srv directory exists"
 
     if mountpoint -q /srv 2>/dev/null; then
-      ok "/srv is a mount point"
+      pass_msg "/srv is a mount point"
 
       # Check if mounted on NVMe
       SRV_DEVICE=$(df /srv | awk 'NR==2 {print $1}')
       if [[ -n "$SRV_DEVICE" ]]; then
         if echo "$SRV_DEVICE" | grep -q "nvme"; then
-          ok "/srv mounted on NVMe device: $SRV_DEVICE"
+          pass_msg "/srv mounted on NVMe device: $SRV_DEVICE"
         else
-          warn "/srv mounted on $SRV_DEVICE (NVMe recommended for performance)"
+          warn_msg "/srv mounted on $SRV_DEVICE (NVMe recommended for performance)"
         fi
       fi
     else
-      warn "/srv is not a mount point (consider mounting dedicated partition)"
+      warn_msg "/srv is not a mount point (consider mounting dedicated partition)"
     fi
   else
-    warn "/srv directory missing (will be created as needed)"
+    warn_msg "/srv directory missing (will be created as needed)"
   fi
 }
 
@@ -106,11 +106,11 @@ check_disk_space() {
     local free_b; free_b=$(df -B1 /srv | awk 'NR==2{print $4}')
     local free_gb=$((free_b / 1024 / 1024 / 1024))
     if (( free_gb >= 50 )); then
-      ok "Disk space on /srv: ${free_gb}GB available"
+      pass_msg "Disk space on /srv: ${free_gb}GB available"
     elif (( free_gb >= 20 )); then
-      warn "Disk space on /srv: ${free_gb}GB (50GB+ recommended)"
+      warn_msg "Disk space on /srv: ${free_gb}GB (50GB+ recommended)"
     else
-      bad "Disk space on /srv: ${free_gb}GB (insufficient)"
+      fail_msg "Disk space on /srv: ${free_gb}GB (insufficient)"
     fi
   fi
 }
@@ -120,34 +120,34 @@ check_memory() {
   local mem_mb; mem_mb=$(free -m | awk '/^Mem:/{print $2}')
   local mem_gb; mem_gb=$(awk "BEGIN {printf \"%.1f\", $mem_mb/1024}")
   if (( mem_mb >= 4096 )); then
-    ok "Memory: ${mem_gb}GB"
+    pass_msg "Memory: ${mem_gb}GB"
   elif (( mem_mb >= 2048 )); then
-    warn "Memory: ${mem_gb}GB (4GB+ recommended)"
+    warn_msg "Memory: ${mem_gb}GB (4GB+ recommended)"
   else
-    bad "Memory: ${mem_gb}GB (insufficient)"
+    fail_msg "Memory: ${mem_gb}GB (insufficient)"
   fi
 
   local swap_mb; swap_mb=$(free -m | awk '/^Swap:/{print $2}')
   local swap_gb; swap_gb=$(awk "BEGIN {printf \"%.1f\", $swap_mb/1024}")
   if (( swap_mb > 0 )); then
-    ok "Swap: ${swap_gb}GB"
+    pass_msg "Swap: ${swap_gb}GB"
   else
-    warn "No swap configured (consider adding swap for stability)"
+    warn_msg "No swap configured (consider adding swap for stability)"
   fi
 }
 
 # Docker info validation (storage driver check)
 check_docker_info() {
   if ! docker info >/dev/null 2>&1; then
-    bad "Cannot access Docker info"
+    fail_msg "Cannot access Docker info"
     return 1
   fi
 
   local storage_driver; storage_driver=$(docker info 2>/dev/null | awk -F': ' '/Storage Driver/{print $2}' || echo "unknown")
   if [[ "$storage_driver" == "overlay2" ]]; then
-    ok "Docker storage driver: overlay2"
+    pass_msg "Docker storage driver: overlay2"
   else
-    warn "Docker storage driver: $storage_driver (overlay2 recommended)"
+    warn_msg "Docker storage driver: $storage_driver (overlay2 recommended)"
   fi
 }
 
@@ -155,9 +155,9 @@ check_docker_info() {
 check_network() {
   if ip link show | grep -q "state UP"; then
     local up_interfaces; up_interfaces=$(ip link show | grep "state UP" | wc -l)
-    ok "Network interfaces up: $up_interfaces"
+    pass_msg "Network interfaces up: $up_interfaces"
   else
-    warn "No network interfaces detected as UP"
+    warn_msg "No network interfaces detected as UP"
   fi
 }
 
@@ -175,9 +175,9 @@ test_disk_throughput() {
   rm -f "$test_file"
 
   if [[ "$output" =~ ([0-9\.]+)\ MB/s ]]; then
-    ok "Disk write test: ${BASH_REMATCH[1]} MB/s"
+    pass_msg "Disk write test: ${BASH_REMATCH[1]} MB/s"
   else
-    warn "Disk write test failed or skipped"
+    warn_msg "Disk write test failed or skipped"
   fi
 }
 
