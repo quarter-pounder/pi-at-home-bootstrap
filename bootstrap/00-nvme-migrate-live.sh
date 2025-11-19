@@ -187,8 +187,17 @@ log_info "Target NVMe disk: $NVME_DEVICE"
 # Sanity checks on sizes
 # ---------------------------------------------------------------------------
 
-ROOT_SIZE=$(lsblk -bno SIZE "$ROOT_DISK")
-NVME_SIZE=$(lsblk -bno SIZE "$NVME_DEVICE")
+ROOT_SIZE=$(blockdev --getsize64 "$ROOT_DISK" 2>/dev/null || echo "0")
+NVME_SIZE=$(blockdev --getsize64 "$NVME_DEVICE" 2>/dev/null || echo "0")
+
+if (( ROOT_SIZE == 0 )); then
+  log_error "Failed to determine root disk size"
+  exit 1
+fi
+if (( NVME_SIZE == 0 )); then
+  log_error "Failed to determine NVMe disk size"
+  exit 1
+fi
 
 log_info "Root disk size:  $((ROOT_SIZE/1024/1024/1024)) GiB"
 log_info "NVMe disk size:  $((NVME_SIZE/1024/1024/1024)) GiB"
