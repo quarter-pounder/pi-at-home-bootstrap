@@ -365,6 +365,18 @@ fi
 IMG_SIZE=$(stat -c%s "${IMG}")
 log_info "Image size: $((${IMG_SIZE}/1024/1024/1024))GB"
 
+# Verify NVMe is large enough
+NVME_SIZE=$(blockdev --getsize64 "${NVME_DEVICE}" 2>/dev/null || echo "0")
+if (( NVME_SIZE == 0 )); then
+  log_error "Failed to determine NVMe device size"
+  exit 1
+fi
+if (( NVME_SIZE < IMG_SIZE )); then
+  log_error "NVMe device too small: $((${NVME_SIZE}/1024/1024/1024))GB < $((${IMG_SIZE}/1024/1024/1024))GB required"
+  exit 1
+fi
+log_info "NVMe size check passed: $((${NVME_SIZE}/1024/1024/1024))GB (image: $((${IMG_SIZE}/1024/1024/1024))GB)"
+
 # Unmount NVMe partitions
 log_info "Unmounting existing partitions on ${NVME_DEVICE}..."
 for part in "${NVME_DEVICE}"p* "${NVME_DEVICE}"[0-9]*; do
@@ -390,14 +402,80 @@ fi
 sync
 log_success "Image written successfully"
 
+# Verify write integrity
+log_info "Verifying written image (this may take several minutes)..."
+ORIGINAL_HASH=$(sha256sum "${IMG}" | cut -d' ' -f1)
+
+# Read back exactly IMG_SIZE bytes and calculate hash
+# Use dd with count to read exact size, pipe through sha256sum
+BLOCK_SIZE=4194304  # 4MB
+BLOCK_COUNT=$(( (IMG_SIZE + BLOCK_SIZE - 1) / BLOCK_SIZE ))  # Round up
+
+if command -v pv >/dev/null 2>&1; then
+  WRITTEN_HASH=$(dd if="${NVME_DEVICE}" bs="${BLOCK_SIZE}" count="${BLOCK_COUNT}" 2>/dev/null | \
+    head -c "${IMG_SIZE}" | pv -s "${IMG_SIZE}" -q | sha256sum | cut -d' ' -f1)
+else
+  WRITTEN_HASH=$(dd if="${NVME_DEVICE}" bs="${BLOCK_SIZE}" count="${BLOCK_COUNT}" 2>/dev/null | \
+    head -c "${IMG_SIZE}" | sha256sum | cut -d' ' -f1)
+fi
+
+if [[ "${WRITTEN_HASH}" != "${ORIGINAL_HASH}" ]]; then
+  log_error "Write verification failed! Image may be corrupted."
+  log_error "Original: ${ORIGINAL_HASH:0:16}..."
+  log_error "Written:  ${WRITTEN_HASH:0:16}..."
+  log_error "DO NOT BOOT FROM THIS NVMe DRIVE - it may be corrupted"
+  exit 1
+fi
+log_success "Write verification passed - image integrity confirmed"
+
 # Refresh partition table
 log_info "Refreshing partition table..."
-partprobe "${NVME_DEVICE}" || partx -u "${NVME_DEVICE}" || true
+if ! partprobe "${NVME_DEVICE}" 2>/dev/null; then
+  if ! partx -u "${NVME_DEVICE}" 2>/dev/null; then
+    log_warn "Partition table refresh failed, trying alternative method..."
+    sleep 2
+    udevadm settle || true
+  fi
+fi
 sleep 3
+
+# Verify partitions exist
+if [[ ! -b "${NVME_DEVICE}p1" ]] && [[ ! -b "${NVME_DEVICE}1" ]]; then
+  log_error "Boot partition not detected after refresh. Check NVMe connection."
+  exit 1
+fi
+if [[ ! -b "${NVME_DEVICE}p2" ]] && [[ ! -b "${NVME_DEVICE}2" ]]; then
+  log_error "Root partition not detected after refresh. Check NVMe connection."
+  exit 1
+fi
+
+# Determine partition naming (p1/p2 vs 1/2)
+BOOT_PART="${NVME_DEVICE}p1"
+ROOT_PART="${NVME_DEVICE}p2"
+if [[ ! -b "${BOOT_PART}" ]]; then
+  BOOT_PART="${NVME_DEVICE}1"
+fi
+if [[ ! -b "${ROOT_PART}" ]]; then
+  ROOT_PART="${NVME_DEVICE}2"
+fi
+
+log_success "Partitions detected: ${BOOT_PART}, ${ROOT_PART}"
+
+# Check boot partition filesystem
+log_info "Checking boot partition filesystem..."
+if fsck -n "${BOOT_PART}" >/dev/null 2>&1; then
+  log_success "Boot partition filesystem is valid"
+else
+  log_warn "Boot partition filesystem check returned warnings (may be normal for new image)"
+fi
 
 # Mount boot partition
 mkdir -p "${BOOT_MNT}"
-mount "${NVME_DEVICE}p1" "${BOOT_MNT}"
+if ! mount "${BOOT_PART}" "${BOOT_MNT}"; then
+  log_error "Failed to mount boot partition ${BOOT_PART}"
+  exit 1
+fi
+log_success "Boot partition mounted"
 
 # Cloud-init configuration (optional)
 if [[ -f legacy/cloudinit/user-data.template ]]; then
@@ -491,19 +569,76 @@ fi
 
 chown -R root:root "${BOOT_MNT}" 2>/dev/null || true
 
+# Validate critical boot files
+log_info "Validating boot partition files..."
+REQUIRED_BOOT_FILES=("config.txt" "start4.elf" "fixup4.dat")
+MISSING_FILES=()
+for file in "${REQUIRED_BOOT_FILES[@]}"; do
+  if [[ ! -f "${BOOT_MNT}/${file}" ]]; then
+    MISSING_FILES+=("${file}")
+  fi
+done
+
+if (( ${#MISSING_FILES[@]} > 0 )); then
+  log_error "Critical boot files missing: ${MISSING_FILES[*]}"
+  log_error "Boot partition may be corrupted or incomplete"
+  exit 1
+fi
+
+# Verify kernel/initrd based on layout
+if [[ -n "${OS_PREFIX}" ]]; then
+  if [[ ! -f "${BOOT_MNT}/${OS_PREFIX}vmlinuz" ]] && [[ ! -f "${BOOT_MNT}/vmlinuz" ]]; then
+    log_error "Kernel (vmlinuz) not found in boot partition"
+    exit 1
+  fi
+  if [[ ! -f "${BOOT_MNT}/${OS_PREFIX}initrd.img" ]] && [[ ! -f "${BOOT_MNT}/initrd.img" ]]; then
+    log_error "Initrd (initrd.img) not found in boot partition"
+    exit 1
+  fi
+  log_success "Kernel and initrd found (os_prefix: ${OS_PREFIX})"
+else
+  if [[ ! -f "${BOOT_MNT}/vmlinuz" ]]; then
+    log_error "Kernel (vmlinuz) not found in boot partition"
+    exit 1
+  fi
+  if [[ ! -f "${BOOT_MNT}/initrd.img" ]]; then
+    log_error "Initrd (initrd.img) not found in boot partition"
+    exit 1
+  fi
+  log_success "Kernel and initrd found (legacy layout)"
+fi
+
+log_success "Boot partition validation passed - all critical files present"
+
 # EEPROM configuration
 log_info "Checking and updating EEPROM boot order..."
 if command -v rpi-eeprom-config >/dev/null 2>&1; then
   TMP=$(mktemp)
-  rpi-eeprom-config > "$TMP"
-  if grep -q '^BOOT_ORDER=' "$TMP"; then
-    sed -i 's/^BOOT_ORDER=.*/BOOT_ORDER=0xf416/' "$TMP"
+  if ! rpi-eeprom-config > "$TMP" 2>/dev/null; then
+    log_warn "Failed to read EEPROM config - may require manual configuration"
+    rm -f "$TMP"
   else
-    echo "BOOT_ORDER=0xf416" >> "$TMP"
+    if grep -q '^BOOT_ORDER=' "$TMP"; then
+      sed -i 's/^BOOT_ORDER=.*/BOOT_ORDER=0xf416/' "$TMP"
+    else
+      echo "BOOT_ORDER=0xf416" >> "$TMP"
+    fi
+    if rpi-eeprom-config --apply "$TMP" 2>/dev/null; then
+      # Verify it was applied
+      sleep 2
+      if rpi-eeprom-config 2>/dev/null | grep -q 'BOOT_ORDER=0xf416'; then
+        log_success "EEPROM configured for NVMe-first boot (0xf416)"
+      else
+        log_warn "EEPROM update may have failed - verify manually"
+        log_info "Check with: sudo rpi-eeprom-config"
+        log_info "Set manually with: sudo rpi-eeprom-config --edit"
+      fi
+    else
+      log_warn "EEPROM update failed - configure manually if needed"
+      log_info "Set BOOT_ORDER=0xf416 using: sudo rpi-eeprom-config --edit"
+    fi
+    rm -f "$TMP"
   fi
-  rpi-eeprom-config --apply "$TMP"
-  rm "$TMP"
-  log_success "EEPROM configured for NVMe-first boot (0xf416)"
 else
   log_warn "rpi-eeprom-config not available — configure manually if needed"
   log_info "Set BOOT_ORDER=0xf416 using: sudo rpi-eeprom-config --edit"
@@ -511,9 +646,11 @@ fi
 
 # Validation summary
 log_info "Validation summary:"
+log_info "Boot partition files:"
 ls -lh "${BOOT_MNT}" | grep -E "vmlinuz|initrd|bcm2712|start4|fixup4|config|cmdline" || true
 echo ""
-blkid | grep -E "$(basename "${NVME_DEVICE}")p[12]" || true
+log_info "Partition information:"
+blkid | grep -E "$(basename "${BOOT_PART}")|$(basename "${ROOT_PART}")" || true
 
 umount "${BOOT_MNT}"
 sync
@@ -522,9 +659,12 @@ echo ""
 log_success "NVMe image prepared successfully!"
 echo ""
 echo "Next steps:"
-echo "  1. Power off: sudo poweroff"
-echo "  2. Remove the SD card"
-echo "  3. Boot from NVMe"
-echo "  4. SSH in and verify with: lsblk"
-echo "  5. Continue setup after cloud-init completes"
+echo "  1. Reboot: sudo reboot"
+echo "  2. The system will automatically boot from NVMe (boot order: 0xf416)"
+echo "  3. SSH in and verify with: lsblk"
+echo "  4. Continue setup after cloud-init completes"
+echo ""
+echo "Note: The SD card can remain installed as a backup. The boot order"
+echo "      (0xf416) prioritizes NVMe, so it will boot from NVMe if available,"
+echo "      and only fall back to SD card if NVMe is not present."
 echo ""
