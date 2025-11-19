@@ -20,15 +20,6 @@ pass_msg() { log_success "$@"; }
 warn_msg() { log_warn "$@"; ((WARNINGS++)); }
 fail_msg() { log_error "$@"; ((ERRORS++)); }
 
-need_cmd() {
-  local c=$1; local pkg=${2:-$1}
-  if command -v "$c" >/dev/null 2>&1; then
-    pass_msg "Command: $c"
-  else
-    fail_msg "Missing command: $c (install: $pkg)"
-  fi
-}
-
 bytes_free() { df -B1 "${1:-.}" | awk 'NR==2{print $4}'; }
 
 # OS / arch / resources
@@ -66,7 +57,7 @@ check_disk() {
   else fail_msg "Disk space: $((free_b/1024/1024/1024))GB (insufficient)"; fi
 }
 
-# Connectivity / tools
+# Connectivity
 check_internet() {
   if curl -fsSL --max-time 5 --retry 2 https://github.com >/dev/null 2>&1 && \
      curl -fsSL --max-time 5 --retry 2 https://get.docker.com >/dev/null 2>&1; then
@@ -74,15 +65,6 @@ check_internet() {
   else
     fail_msg "No reliable internet connectivity"
   fi
-}
-
-check_tools() {
-  need_cmd curl curl
-  need_cmd wget wget
-  need_cmd envsubst gettext-base
-  need_cmd jq jq
-  need_cmd yq yq || need_cmd yq4 yq
-  need_cmd ansible-vault ansible
 }
 
 # Environment validation
@@ -98,7 +80,11 @@ check_env() {
     for v in "${required[@]}"; do
       [[ -n "${!v:-}" ]] || missing+=("$v")
     done
-    if (( ${#missing[@]} )); then fail_msg "Missing required variables: ${missing[*]}"; else pass_msg "Core variables present"; fi
+    if (( ${#missing[@]} )); then
+      warn_msg "Base env missing values: ${missing[*]} (set them in config-registry/env/base.env before deploying)"
+    else
+      pass_msg "Core variables present"
+    fi
   else
     warn_msg "Base environment file not found (normal during bootstrap)"
   fi
@@ -125,7 +111,6 @@ check_arch
 check_memory
 check_disk
 check_internet
-check_tools
 check_sudo
 check_pi_model
 
