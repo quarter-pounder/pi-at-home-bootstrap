@@ -1,13 +1,14 @@
 # Bootstrap
 
-> This Bootstrap initializes a clean Ubuntu host into a Docker-ready Raspberry Pi environment.
-Tested on: Ubuntu 22.04 LTS / 24.04 LTS (ARM64, Raspberry Pi 5)
+> Initializes a clean Ubuntu host into a Docker-ready Raspberry Pi environment.
+Tested on Ubuntu 22.04 LTS / 24.04 LTS (ARM64, Raspberry Pi 5 8GB).
 
 ## Overview
 
-Bootstrap prepares a clean Ubuntu system for the pi-forge infrastructure. It installs core dependencies, Docker, optimizes Docker for Raspberry Pi, and verifies the installation.
-All scripts are designed to be idempotent.
-Re-running them on an existing setup will not cause data loss or corruption.
+Bootstrap prepares an Ubuntu installation for the pi-forge stack. It installs core packages, sets up Docker, tunes Docker for Raspberry Pi performance, and validates the full environment.
+
+All scripts are idempotent except the 00-* migration helpers.
+Re-running normal bootstrap steps will not overwrite user data or damage an existing setup.
 
 ## Scripts
 
@@ -15,111 +16,105 @@ Re-running them on an existing setup will not cause data loss or corruption.
 
 ```mermaid
 graph TD
-  A[00 - NVMe Migration] --> B[01 - Preflight Checks]
-  B --> C[02 - Install Core Packages]
-  C --> D[03 - Install Docker]
-  D --> E[04 - Optimize Docker]
-  E --> F[05 - Verify Setup]
-  F --> G[06 - Security Hardening]
+  subgraph Optional — NVMe preparation
+    A[00 - Flash NVMe (fresh image)]
+    B[00 - Clone SD → NVMe (live)]
+  end
+  C[01 - Preflight Checks]
+  D[02 - Install Core Packages]
+  E[03 - Install Docker]
+  F[04 - Optimize Docker]
+  G[05 - Verify Setup]
+  H[06 - Security Hardening]
+  A --> C
+  B --> C
 ```
 
+> **Reality check:** the 00-* scripts behave more like homemade Pi Imager in bash. They work, but cloning a running SD-card rootfs to NVMe is inherently brittle. Flashing Ubuntu directly onto NVMe with Raspberry Pi Imager (or Etcher) is always the better path. The scripts exist so to make it clear that this is optional and not the recommended route.
+
 1. **`00-migrate-to-nvme.sh`** (Optional)
-   - Migrates Raspberry Pi 5 from SD card to NVMe boot
-   - Self-contained: installs its own dependencies (`curl`, `xz-utils`, `parted`, `fdisk`, `dosfstools`, `e2fsprogs`)
-   - Requires: root privileges
-   - Creates cloud-init configuration for first boot
-   - Configures EEPROM for NVMe-first boot (0xf416)
-   - **Note:** This script should only be run if migrating from SD to NVMe
+   - Writes a fresh Ubuntu image to an NVMe drive (non-idempotent)
+   - Generates cloud-init data from `config-registry/env/base.env` when available
+   - Verifies SHA256, updates EEPROM boot order
+   - Overwrites the entire device; treat it as a one-shot imaging tool
 
-2. **`01-preflight.sh`**
-   - Performs system validation checks
-   - Checks: OS (Ubuntu), architecture (ARM64), memory, disk space, internet connectivity
-   - Validates required tools are available
-   - Verifies sudo access (doesn't require it, but recommended)
-   - Detects Raspberry Pi model
-   - Optionally loads `config-registry/env/base.env` if present
-   - Shows summary of pass/fail/error/warning counts
-   - Can run with or without sudo (checks sudo availability)
+1. **`00-nvme-migrate-live.sh`** (Optional, fragile)
+   - Attempts to clone a running SD installation onto NVMe with `rsync`
+   - Preserves `/etc/fstab`, `/boot/firmware`, swapfiles, Alertmanager markers, etc.
+   - Performs extensive validation (fsck, PARTUUID swap, label checks) before updating boot order
+   - **Not idempotent:** any writes during the copy can corrupt the target; use only if you can’t take the Pi offline to flash a fresh image
 
-3. **`02-install-core.sh`**
+1. **`01-preflight.sh`**
+   - Sanity-checks the base OS only (Ubuntu release, architecture, RAM, disk space, connectivity, sudo)
+   - Warns about missing values in `config-registry/env/base.env` but does **not** require it
+   - Designed to run before any packages are installed, so no tooling checks happen here
+
+1. **`02-install-core.sh`**
    - Installs core system dependencies
-   - Packages: `curl`, `wget`, `git`, `jq`, `yq`, `gettext-base`, `ansible`, `rsync`, `htop`, `vim`, `unzip`, `ca-certificates`, `gnupg`, `lsb-release`, `software-properties-common`
+   - Packages: `curl`, `wget`, `git`, `jq`, `yq` (Go build), `gettext-base`, `ansible`, `rsync`, `htop`, `vim`, `unzip`, `ca-certificates`, `gnupg`, `lsb-release`, `software-properties-common`
    - Raspberry Pi specific: `rpi-eeprom`, `nvme-cli`, `util-linux`, `dosfstools`, `e2fsprogs`, `parted`, `pv`
-   - Requires: sudo privileges
+   - Requires: sudo
 
-4. **`03-install-docker.sh`**
+1. **`03-install-docker.sh`**
    - Installs Docker Engine and Docker Compose
    - Adds current user to `docker` group
    - Enables Docker service (does not start yet)
-   - Requires: sudo privileges
+   - Requires: sudo
    - **Note:** Docker daemon configuration is handled by `04-optimize-docker.sh`
 
-5. **`04-optimize-docker.sh`**
+1. **`04-optimize-docker.sh`**
    - Configures Docker daemon for optimal Raspberry Pi performance
    - Settings: `overlay2` storage driver, log rotation, IP pools, `live-restore`, disabled `userland-proxy`, optimized ulimits
    - Backs up existing `daemon.json` if present
    - Starts and verifies Docker daemon
    - Requires: root privileges (uses `require_root`)
 
-6. **`05-verify.sh`**
+1. **`05-verify.sh`**
    - Comprehensive verification of bootstrap installation
    - Checks: Docker installation, Docker Compose, daemon status, group membership, functionality
    - Validates: tools, `/srv` directory and mount point, disk space, memory/swap, storage driver, network interfaces
    - Optional: disk throughput test (skip with `SKIP_THROUGHPUT_TEST=1`)
    - Requires: none (some checks use sudo internally)
 
-7. **`06-security-hardening.sh`** (Optional)
-   - Applies SSH hardening (disables password login, restricts users)
-   - Configures fail2ban with sensible defaults
+1. **`06-security-hardening.sh`** (Optional but recommended)
+   - SSH hardening (disables password login, restricts users)
+   - fail2ban with conservative defaults
    - Enables unattended security upgrades
    - Applies kernel/sysctl hardening flags
-   - Requires: sudo privileges (installs/updates configs under `/etc`)
+   - Requires: sudo (installs/updates configs under `/etc`)
 
-## Quick Start
-
-### Option 1: Using the Installer Script
+## Quick Start (Manual Execution)
 
 ```bash
-curl -sSL <raw-url-to-install.sh> | bash -s <repo-url>
-cd pi-forge
-# Follow the printed instructions
-```
 
-### Option 2: Manual Execution
-
-```bash
-# Clone the repository
 git clone <repo-url> pi-forge
 cd pi-forge
 
-# Optional: Migrate to NVMe (if needed)
-sudo bash bootstrap/00-migrate-to-nvme.sh
-
-# Run bootstrap scripts in order
+# Bootstrap
 sudo bash bootstrap/01-preflight.sh
 sudo bash bootstrap/02-install-core.sh
 sudo bash bootstrap/03-install-docker.sh
 sudo bash bootstrap/04-optimize-docker.sh
 bash bootstrap/05-verify.sh
-sudo bash bootstrap/06-security-hardening.sh   # Optional but recommended
+sudo bash bootstrap/06-security-hardening.sh
 
-# Logout and login to activate Docker group membership
+# Re-login to pick up docker group membership
 ```
 
 ## Dependencies & Requirements
 
-Bootstrap scripts can run on a minimal Ubuntu 22.04+ system (ARM64).
-All required packages are installed automatically as part of the process.
+Runs on Ubuntu 22.04+ ARM64 with no prerequisites besides apt and sudo.
+All required dependencies are installed during bootstrap.
 
 | Component | Provided by | Notes |
 |------------|--------------|-------|
 | Basic tools (`curl`, `git`, `wget`) | `02-install-core.sh` | Needed for downloads and cloning |
-| Package manager (`apt-get`, `sudo`) | Ubuntu default | Checked before execution |
+| Package manager (`apt`, `sudo`) | Ubuntu default | Checked before execution |
 | Optional environment (`base.env`) | User-defined | Used for cloud-init or pre-seeding |
 
 ## Configuration
 
-### Optional: Pre-configure Environment
+### Pre-configure Environment (Optional)
 
 If `config-registry/env/base.env` exists before running bootstrap:
 
@@ -127,36 +122,33 @@ If `config-registry/env/base.env` exists before running bootstrap:
 - `00-migrate-to-nvme.sh` will use it for cloud-init configuration
 - Otherwise, bootstrap runs with defaults
 
-### After Bootstrap
+After bootstrap, re-login so Docker group membership takes effect
 
-1. Logout and login to activate Docker group membership
-2. Verify: `docker ps` should work without sudo
-
-### Secrets Preparation
+### Secrets (Vault)
 
 - Generate `.vault_pass` at repository root before rendering configuration
 - Manage encrypted variables with `make vault-create`, `make vault-edit`, and `make vault-view`
-- Additional guidance: `docs/operations/secrets.md`
+- More details: `docs/operations/secrets.md`
 
 ## Logging
 
-- `00-migrate-to-nvme.sh`: Logs to `/var/log/nvme-migrate.log`
-- All scripts: Use consistent `log_info`, `log_warn`, `log_error`, `log_success` functions
+- Migration logs: /var/log/nvme-migrate.log
+- All scripts use the same logging helpers (log_info, log_warn, etc.)
 - Color output: Enabled for TTY, disabled for non-TTY
 
 ## Error Handling
 
-- All scripts use `set -Eeuo pipefail` for strict error handling
-- Scripts use INT/TERM traps for graceful interruption handling
-- `00-migrate-to-nvme.sh` includes cleanup trap (EXIT)
+- All scripts use strict mode: `set -Eeuo pipefail`
+- INT/TERM traps for graceful exit
+- Migration scripts include cleanup traps
 - Scripts fail fast on errors with clear error messages
-- Verification script provides detailed diagnostics
+- Verification prints actionable diagnostics
 
 ## Troubleshooting
 
 ### Docker Group Membership
 
-If `docker ps` requires sudo after bootstrap:
+`docker ps` requires sudo:
 
 ```bash
 # Logout and login, or:
@@ -168,42 +160,41 @@ newgrp docker
 If verification fails due to disk space:
 
 - Ensure `/srv` is mounted on NVMe (not root filesystem)
-- Check available space: `df -h /srv`
+- Check free space: `df -h /srv`
 - Minimum recommended: 50GB+
 
 ### Network Issues
 
 If package installation fails:
 
-- Check internet connectivity: `ping -c 3 8.8.8.8`
-- Verify DNS resolution: `nslookup ubuntu.com`
-- Check apt sources: `cat /etc/apt/sources.list`
+- Test connectivity
+- Test DNS resolution
+- Inspect apt sources and netplan configuration
 
-### NVMe Migration Issues
+### NVMe Migration Failures
 
 If migration script fails:
 
-- Verify NVMe device is detected: `lsblk | grep nvme`
+- Check detection: `lsblk | grep nvme`
 - Check device size: `lsblk -o NAME,SIZE,TYPE | grep nvme`
 - Ensure sufficient space for image download (4GB+)
-- Review logs: `tail -f /var/log/nvme-migrate.log`
+- Check logs: `tail -f /var/log/nvme-migrate.log`
 
 ## Files
 
-- `install.sh` - One-liner installer script
-- `utils.sh` - Common utility functions (logging, error handling)
-- `00-migrate-to-nvme.sh` - NVMe migration utility
-- `01-preflight.sh` - System validation
-- `02-install-core.sh` - Core package installation
+- `utils.sh` - shared helpers
+- `00-migrate-to-nvme.sh` & `00-nvme-migrate-live.sh` - NVMe imaging/migration
+- `01-preflight.sh` - environment checks
+- `02-install-core.sh` - dependency installation
 - `03-install-docker.sh` - Docker installation
-- `04-optimize-docker.sh` - Docker optimization
-- `05-verify.sh` - Installation verification
-- `06-security-hardening.sh` - Applies SSH/fail2ban/sysctl hardening
+- `04-optimize-docker.sh` - daemon tuning
+- `05-verify.sh` - validation
+- `06-security-hardening.sh` - SSH/fail2ban/sysctl hardening
 
 ## Design Principles
 
-1. **Independence:** Bootstrap is self-contained, no dependencies on config-registry or legacy code
-2. **Minimal Dependencies:** Only essential system packages required
-3. **Idempotency:** Scripts can be safely re-run (with appropriate checks)
-4. **Fail Fast:** Strict error handling with clear error messages
+1. Bootstrap remains self-contained (no dependency on domains or config-registry)
+2. Only essential packages are installed
+3. **Idempotency:** 01–06 may be re-run safely at any time
+4. **Fail Fast:** noisy errors, early exits
 5. **Verification:** Checks at each step
