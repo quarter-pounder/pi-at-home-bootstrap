@@ -561,43 +561,83 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# EEPROM boot order
+# EEPROM boot order (only after verifying NVMe is bootable)
 # ---------------------------------------------------------------------------
 
-log_info "Checking EEPROM boot order for NVMe preference..."
-if command -v rpi-eeprom-config >/dev/null 2>&1; then
-  TMP=$(mktemp)
-  if rpi-eeprom-config >"$TMP" 2>/dev/null; then
-    if grep -q '^BOOT_ORDER=' "$TMP"; then
-      CURRENT_BO=$(grep '^BOOT_ORDER=' "$TMP" | head -1 | cut -d= -f2 | tr -d '[:space:]')
-      log_info "Current BOOT_ORDER=$CURRENT_BO"
-      if [[ "$CURRENT_BO" != "0xf416" ]]; then
-        sed -i 's/^BOOT_ORDER=.*/BOOT_ORDER=0xf416/' "$TMP"
-        log_info "Applying BOOT_ORDER=0xf416 (NVMe first, fallback to others)..."
-        if rpi-eeprom-config --apply "$TMP"; then
-          sleep 2
-          if rpi-eeprom-config | grep -q 'BOOT_ORDER=0xf416'; then
-            log_success "EEPROM updated: BOOT_ORDER=0xf416"
+log_info "Verifying NVMe is bootable before changing boot order..."
+
+# Verify critical boot files exist
+BOOT_VERIFIED=true
+if [[ ! -f "/mnt/nvme-boot/config.txt" ]] || [[ ! -f "/mnt/nvme-boot/start4.elf" ]] || [[ ! -f "/mnt/nvme-boot/fixup4.dat" ]]; then
+  log_error "Critical boot files missing - NVMe may not be bootable"
+  BOOT_VERIFIED=false
+fi
+
+# Verify root= parameter exists in cmdline.txt
+if [[ -n "$CMDLINE" ]] && [[ -f "$CMDLINE" ]]; then
+  if ! grep -q "root=" "$CMDLINE" 2>/dev/null; then
+    log_error "root= parameter missing in cmdline.txt - NVMe may not be bootable"
+    BOOT_VERIFIED=false
+  fi
+else
+  log_error "cmdline.txt not found - NVMe may not be bootable"
+  BOOT_VERIFIED=false
+fi
+
+# Verify filesystem labels match fstab
+ROOT_LABEL=$(blkid -s LABEL -o value "$NVME_ROOT_PART" 2>/dev/null || echo "")
+BOOT_LABEL=$(blkid -s LABEL -o value "$NVME_BOOT_PART" 2>/dev/null || echo "")
+if [[ "$ROOT_LABEL" != "writable" ]] || [[ "$BOOT_LABEL" != "system-boot" ]]; then
+  log_error "Filesystem labels incorrect - NVMe may not be bootable"
+  log_error "Root label: ${ROOT_LABEL} (expected: writable)"
+  log_error "Boot label: ${BOOT_LABEL} (expected: system-boot)"
+  BOOT_VERIFIED=false
+fi
+
+if [[ "$BOOT_VERIFIED" == "true" ]]; then
+  log_success "NVMe boot configuration verified - safe to change boot order"
+
+  log_info "Checking EEPROM boot order for NVMe preference..."
+  if command -v rpi-eeprom-config >/dev/null 2>&1; then
+    TMP=$(mktemp)
+    if rpi-eeprom-config >"$TMP" 2>/dev/null; then
+      if grep -q '^BOOT_ORDER=' "$TMP"; then
+        CURRENT_BO=$(grep '^BOOT_ORDER=' "$TMP" | head -1 | cut -d= -f2 | tr -d '[:space:]')
+        log_info "Current BOOT_ORDER=$CURRENT_BO"
+        if [[ "$CURRENT_BO" != "0xf416" ]]; then
+          sed -i 's/^BOOT_ORDER=.*/BOOT_ORDER=0xf416/' "$TMP"
+          log_info "Applying BOOT_ORDER=0xf416 (NVMe first, fallback to others)..."
+          if rpi-eeprom-config --apply "$TMP"; then
+            sleep 2
+            if rpi-eeprom-config | grep -q 'BOOT_ORDER=0xf416'; then
+              log_success "EEPROM updated: BOOT_ORDER=0xf416"
+            else
+              log_warn "EEPROM update may not have taken effect – verify manually."
+            fi
           else
-            log_warn "EEPROM update may not have taken effect – verify manually."
+            log_warn "Failed to apply EEPROM config – configure manually if needed."
           fi
         else
-          log_warn "Failed to apply EEPROM config – configure manually if needed."
+          log_info "BOOT_ORDER already 0xf416 – leaving as-is."
         fi
       else
-        log_info "BOOT_ORDER already 0xf416 – leaving as-is."
+        echo "BOOT_ORDER=0xf416" >>"$TMP"
+        log_info "Setting BOOT_ORDER=0xf416 in EEPROM..."
+        rpi-eeprom-config --apply "$TMP" || log_warn "Failed to apply EEPROM config – check manually."
       fi
     else
-      echo "BOOT_ORDER=0xf416" >>"$TMP"
-      log_info "Setting BOOT_ORDER=0xf416 in EEPROM..."
-      rpi-eeprom-config --apply "$TMP" || log_warn "Failed to apply EEPROM config – check manually."
+      log_warn "Failed to read EEPROM config – you may need to configure boot order manually."
     fi
+    rm -f "$TMP"
   else
-    log_warn "Failed to read EEPROM config – you may need to configure boot order manually."
+    log_warn "rpi-eeprom-config not available – cannot auto-set NVMe-first boot."
   fi
-  rm -f "$TMP"
 else
-  log_warn "rpi-eeprom-config not available – cannot auto-set NVMe-first boot."
+  log_error "NVMe boot configuration verification failed!"
+  log_error "Boot order will NOT be changed to prevent boot failure."
+  log_error "Please fix the issues above and re-run the migration script."
+  log_error "Or manually set boot order after fixing: sudo rpi-eeprom-config -e"
+  log_warn "Current boot order unchanged - system will still boot from SD card"
 fi
 
 # ---------------------------------------------------------------------------
