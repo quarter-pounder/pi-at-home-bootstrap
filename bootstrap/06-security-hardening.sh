@@ -35,7 +35,16 @@ ClientAliveInterval 300
 ClientAliveCountMax 2
 AllowUsers ${SSH_ALLOWED_USERS}
 EOF
-sudo systemctl restart sshd
+if systemctl list-unit-files sshd.service >/dev/null 2>&1; then
+  SSH_SERVICE="sshd"
+elif systemctl list-unit-files ssh.service >/dev/null 2>&1; then
+  SSH_SERVICE="ssh"
+else
+  log_error "Neither sshd.service nor ssh.service found; cannot restart SSH"
+  exit 1
+fi
+
+sudo systemctl restart "${SSH_SERVICE}"
 log_success "SSH hardening applied"
 
 log_info "Configuring fail2ban..."
