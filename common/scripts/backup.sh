@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+log()   { printf '%s [INFO] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
+warn()  { printf '%s [WARN] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >&2; }
+error() { printf '%s [ERR ] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >&2; }
+
 # --- Privilege escalation ----------------------------------------------------
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)"
 RESTIC_REPOSITORY="${RESTIC_REPOSITORY:-/srv/backups/local}"
@@ -19,13 +23,13 @@ PG_DUMP_TIMEOUT="${PG_DUMP_TIMEOUT:-300}"
 
 for cmd in restic docker timeout; do
   command -v "$cmd" >/dev/null 2>&1 || {
-    echo "[ERR] Missing dependency: $cmd" >&2
+    error "Missing dependency: $cmd"
     exit 1
   }
 done
 
 [[ -f "$RESTIC_PASSWORD_FILE" ]] || {
-  echo "[ERR] Restic password file not found: $RESTIC_PASSWORD_FILE" >&2
+  error "Restic password file not found: $RESTIC_PASSWORD_FILE"
   exit 1
 }
 
@@ -39,6 +43,7 @@ cleanup() {
   done
 }
 trap cleanup EXIT
+trap 'error "Backup interrupted"; exit 130' INT TERM
 
 # --- Database dump helper ----------------------------------------------------
 dump_db() {
@@ -47,7 +52,7 @@ dump_db() {
   local outfile="${BACKUP_TMP}/${dbname}-${TIMESTAMP}.sql"
   tmp_files+=("$outfile")
 
-  echo "[Dump] ${dbname} from ${container} → ${outfile} (timeout: ${PG_DUMP_TIMEOUT}s)"
+  log "[Dump] ${dbname} from ${container} → ${outfile} (timeout: ${PG_DUMP_TIMEOUT}s)"
 
   local pg_user="${POSTGRES_SUPERUSER:-postgres}"
   local pg_password="${POSTGRES_SUPERUSER_PASSWORD:-}"
@@ -56,26 +61,34 @@ dump_db() {
     exec_cmd+=(-e "PGPASSWORD=$pg_password")
   fi
 
-  timeout "$PG_DUMP_TIMEOUT" "${exec_cmd[@]}" "$container" pg_dump -U "$pg_user" "$dbname" >"$outfile"
+  if ! timeout "$PG_DUMP_TIMEOUT" "${exec_cmd[@]}" "$container" pg_dump -U "$pg_user" "$dbname" >"$outfile"; then
+    rc=$?
+    if [[ $rc -eq 124 ]]; then
+      error "[Dump] ${dbname} timed out after ${PG_DUMP_TIMEOUT}s"
+    else
+      error "[Dump] ${dbname} failed with exit code $rc"
+    fi
+    exit $rc
+  fi
 }
 
 # --- PostgreSQL dumps (if container present) ---------------------------------
 if docker ps --format '{{.Names}}' | grep -q '^forgejo-postgres$'; then
   dump_db forgejo-postgres forgejo
 else
-  echo "[WARN] forgejo-postgres container not found — skipping DB dumps"
+  warn "forgejo-postgres container not found — skipping DB dumps"
 fi
 
 # --- Initialize repository if missing ---------------------------------------
 export RESTIC_PASSWORD_FILE RESTIC_REPOSITORY
 
 if ! restic -r "$RESTIC_REPOSITORY" snapshots >/dev/null 2>&1; then
-  echo "[Init] Initializing restic repository at $RESTIC_REPOSITORY"
+  log "[Init] Initializing restic repository at $RESTIC_REPOSITORY"
   restic -r "$RESTIC_REPOSITORY" init
 fi
 
 # --- Run backup --------------------------------------------------------------
-echo "[Backup] Starting restic backup to $RESTIC_REPOSITORY"
+log "[Backup] Starting restic backup to $RESTIC_REPOSITORY"
 
 BACKUP_MODE="${BACKUP_MODE:-manual}"
 BACKUP_PRUNE="${BACKUP_PRUNE:-0}"
@@ -115,18 +128,18 @@ restic -r "$RESTIC_REPOSITORY" backup \
 backup_status=$?
 
 if [[ $backup_status -ne 0 ]]; then
-  echo "[ERR] Restic backup failed (exit code $backup_status); skipping prune" >&2
+  error "Restic backup failed (exit code $backup_status); skipping prune"
   exit $backup_status
 fi
 
 if [[ "$BACKUP_PRUNE" -eq 1 ]]; then
-  echo "[Cleanup] Pruning old backups"
+  log "[Cleanup] Pruning old backups"
   restic -r "$RESTIC_REPOSITORY" forget --prune \
     --keep-daily 7 \
     --keep-weekly 4 \
     --keep-monthly 6
 else
-  echo "[Cleanup] Skipping prune run (BACKUP_PRUNE=$BACKUP_PRUNE)"
+  log "[Cleanup] Skipping prune run (BACKUP_PRUNE=$BACKUP_PRUNE)"
 fi
 
-echo "[Done] Backup complete."
+log "[Done] Backup complete."
