@@ -4,11 +4,31 @@ set -euo pipefail
 # This helper is intended to run directly on the host (cron/systemd) so that
 # vcgencmd and /sys data can be collected without relying on a container.
 
+# Ensure PATH includes common vcgencmd locations
+export PATH="/usr/bin:/opt/vc/bin:/bin:/usr/local/bin:${PATH:-}"
+
 TEXTFILE_DIR="${NODE_EXPORTER_TEXTFILE_DIR:-/srv/monitoring/node-exporter/textfile}"
 OUTPUT_FILE="${TEXTFILE_DIR}/pi_telemetry.prom"
 TMP_FILE="${OUTPUT_FILE}.tmp"
 
 mkdir -p "${TEXTFILE_DIR}"
+
+# Find vcgencmd in common locations
+find_vcgencmd() {
+  local paths=("/usr/bin/vcgencmd" "/opt/vc/bin/vcgencmd" "$(which vcgencmd 2>/dev/null || true)")
+  for path in "${paths[@]}"; do
+    if [[ -n "${path:-}" ]] && [[ -x "${path}" ]]; then
+      echo "${path}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+VCGENCMD_BIN=""
+if ! VCGENCMD_BIN=$(find_vcgencmd); then
+  VCGENCMD_BIN=""
+fi
 
 now() {
   date +%s
@@ -26,22 +46,24 @@ read_temperature() {
 }
 
 read_voltage() {
-  if command -v vcgencmd >/dev/null 2>&1; then
+  if [[ -n "${VCGENCMD_BIN:-}" ]]; then
     local vcgencmd_out
-    vcgencmd_out=$(vcgencmd measure_volts core 2>/dev/null || true)
-    if [[ "${vcgencmd_out}" =~ ([0-9]+\.[0-9]+)V ]]; then
+    vcgencmd_out=$("${VCGENCMD_BIN}" measure_volts core 2>/dev/null || true)
+    if [[ "${vcgencmd_out}" =~ volt=([0-9]+\.[0-9]+)V ]]; then
+      printf "%s" "${BASH_REMATCH[1]}"
+    elif [[ "${vcgencmd_out}" =~ ([0-9]+\.[0-9]+)V ]]; then
       printf "%s" "${BASH_REMATCH[1]}"
     fi
   fi
 }
 
 render_throttle_flags() {
-  if ! command -v vcgencmd >/dev/null 2>&1; then
+  if [[ -z "${VCGENCMD_BIN:-}" ]]; then
     return 1
   fi
 
   local throttled_raw
-  throttled_raw=$(vcgencmd get_throttled 2>/dev/null || true)
+  throttled_raw=$("${VCGENCMD_BIN}" get_throttled 2>/dev/null || true)
   if [[ ! "${throttled_raw}" =~ 0x([0-9a-fA-F]+) ]]; then
     return 1
   fi

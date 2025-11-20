@@ -91,25 +91,25 @@ groups:
         {% endraw %}
 
       - alert: PiLowVoltage
-        expr: pi_core_voltage_volts < 4.8
+        expr: pi_core_voltage_volts < 0.75
         for: 2m
         labels:
           severity: warning
         annotations:
         {% raw %}
           summary: "Low core voltage on {{ $labels.instance }}"
-          description: "Core voltage dropped below 4.8V (current value: {{ $value }}V)."
+          description: "Core voltage dropped below 0.75V (current value: {{ $value }}V)."
         {% endraw %}
 
       - alert: PiCriticalVoltage
-        expr: pi_core_voltage_volts < 4.7
+        expr: pi_core_voltage_volts < 0.70
         for: 1m
         labels:
           severity: critical
         annotations:
         {% raw %}
           summary: "CRITICAL: Core voltage critically low on {{ $labels.instance }}"
-          description: "Core voltage dropped below 4.7V (current value: {{ $value }}V). Immediate action required."
+          description: "Core voltage dropped below 0.70V (current value: {{ $value }}V). Immediate action required."
         {% endraw %}
 
       - alert: PiKernelErrorsDetected
