@@ -13,6 +13,11 @@ if ! sudo -n true 2>/dev/null && ! sudo -v 2>/dev/null; then
   exit 1
 fi
 
+# Load environment variables
+if [[ -f config-registry/env/base.env ]] || [[ -f .env ]]; then
+  load_env_layers "$(pwd)"
+fi
+
 USERNAME_VALUE="${USERNAME:-$USER}"
 SSH_ALLOWED_USERS="${SSH_ALLOWED_USERS:-$USERNAME_VALUE}"
 DOMAIN_VALUE="${DOMAIN:-}"

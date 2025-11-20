@@ -69,11 +69,9 @@ check_internet() {
 
 # Environment validation
 check_env() {
-  if [[ -f config-registry/env/base.env ]]; then
-    pass_msg "Base environment file exists"
-    set -a
-    source config-registry/env/base.env
-    set +a
+  if [[ -f config-registry/env/base.env ]] || [[ -f .env ]]; then
+    pass_msg "Environment file(s) found"
+    load_env_layers "$(pwd)"
 
     local required=(HOSTNAME USERNAME TIMEZONE DOMAIN)
     local missing=()
@@ -81,7 +79,7 @@ check_env() {
       [[ -n "${!v:-}" ]] || missing+=("$v")
     done
     if (( ${#missing[@]} )); then
-      warn_msg "Base env missing values: ${missing[*]} (set them in config-registry/env/base.env before deploying)"
+      warn_msg "Base env missing values: ${missing[*]} (set them in config-registry/env/base.env or .env before deploying)"
     else
       pass_msg "Core variables present"
     fi

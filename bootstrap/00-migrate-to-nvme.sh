@@ -185,11 +185,9 @@ trap 'error_handler ${LINENO}' ERR
 trap cleanup EXIT
 
 # Load environment if available
-if [[ -f config-registry/env/base.env ]]; then
-  log_info "Loading environment from config-registry/env/base.env"
-  set -a
-  source config-registry/env/base.env
-  set +a
+if [[ -f config-registry/env/base.env ]] || [[ -f .env ]]; then
+  log_info "Loading environment variables..."
+  load_env_layers "$(pwd)"
 fi
 
 # Detect and confirm
@@ -498,10 +496,8 @@ if [[ -f legacy/cloudinit/user-data.template ]]; then
   log_info "Injecting cloud-init configuration..."
 
   # Load environment variables for substitution
-  if [[ -f config-registry/env/base.env ]]; then
-    set -a
-    source config-registry/env/base.env
-    set +a
+  if [[ -f config-registry/env/base.env ]] || [[ -f .env ]]; then
+    load_env_layers "$(pwd)"
   fi
 
   # Set CFG_ variables with fallbacks

@@ -33,3 +33,44 @@ confirm_continue() {
   read -p "$prompt" -r
   [[ $REPLY =~ ^yes$ ]] || { warn "User cancelled."; exit 0; }
 }
+
+# Load environment variables in the correct order (matching render_config.py)
+# Order: base.env -> .env -> secrets.env.vault (if available)
+load_env_layers() {
+  local root_dir="${1:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+
+  # Load base.env
+  if [[ -f "${root_dir}/config-registry/env/base.env" ]]; then
+    debug "Loading ${root_dir}/config-registry/env/base.env"
+    set -a
+    source "${root_dir}/config-registry/env/base.env"
+    set +a
+  fi
+
+  # Load .env (overrides base.env)
+  if [[ -f "${root_dir}/.env" ]]; then
+    debug "Loading ${root_dir}/.env"
+    set -a
+    source "${root_dir}/.env"
+    set +a
+  fi
+
+  # Try to load secrets.env.vault if ansible-vault is available
+  local vault_file="${root_dir}/config-registry/env/secrets.env.vault"
+  local pass_file="${root_dir}/.vault_pass"
+  if [[ -f "${vault_file}" ]] && command -v ansible-vault >/dev/null 2>&1 && [[ -f "${pass_file}" ]]; then
+    if [[ "${VAULT_SKIP_DECRYPT:-0}" != "1" ]]; then
+      debug "Decrypting and loading ${vault_file}"
+      local decrypted
+      if decrypted=$(ansible-vault view "${vault_file}" --vault-password-file "${pass_file}" 2>/dev/null); then
+        set -a
+        eval "$(echo "${decrypted}" | grep -v '^#' | grep -v '^$' | sed 's/^/export /')"
+        set +a
+      else
+        warn "Failed to decrypt secrets.env.vault (skipping)"
+      fi
+    else
+      debug "Skipping vault decryption (VAULT_SKIP_DECRYPT=1)"
+    fi
+  fi
+}
