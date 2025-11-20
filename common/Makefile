@@ -1,4 +1,5 @@
 .ONESHELL:
+SHELL := /bin/bash
 .SILENT:
 .DEFAULT_GOAL := help
 
