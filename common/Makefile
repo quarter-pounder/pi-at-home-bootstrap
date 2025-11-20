@@ -409,13 +409,32 @@ deploy-github-runner:
 
 .PHONY: backup backup-cloud backup-prune
 backup:
-	@BACKUP_MODE=${BACKUP_MODE:-manual} bash $(BACKUP_SCRIPT)
+	@if [ -f "$(ROOT_DIR)/.env" ]; then \
+		set -a; \
+		source "$(ROOT_DIR)/config-registry/env/base.env"; \
+		source "$(ROOT_DIR)/.env"; \
+		set +a; \
+	fi; \
+	BACKUP_MODE=${BACKUP_MODE:-manual} bash $(BACKUP_SCRIPT)
 
 backup-prune:
-	@BACKUP_MODE=prune BACKUP_PRUNE=1 bash $(BACKUP_SCRIPT)
+	@if [ -f "$(ROOT_DIR)/.env" ]; then \
+		set -a; \
+		source "$(ROOT_DIR)/config-registry/env/base.env"; \
+		source "$(ROOT_DIR)/.env"; \
+		set +a; \
+	fi; \
+	BACKUP_MODE=prune BACKUP_PRUNE=1 bash $(BACKUP_SCRIPT)
 
 backup-cloud:
-	@if [ -z "$(RESTIC_REMOTE)" ]; then \
-		echo "RESTIC_REMOTE not set"; exit 1; \
-	fi
-	@BACKUP_MODE=cloud RESTIC_REPOSITORY="$(RESTIC_REMOTE)" bash $(BACKUP_SCRIPT)
+	@if [ -f "$(ROOT_DIR)/.env" ]; then \
+		set -a; \
+		source "$(ROOT_DIR)/config-registry/env/base.env"; \
+		source "$(ROOT_DIR)/.env"; \
+		set +a; \
+	fi; \
+	if [ -z "$${RESTIC_REMOTE:-}" ]; then \
+		echo "[Backup][err] RESTIC_REMOTE not set (define in .env)"; \
+		exit 1; \
+	fi; \
+	BACKUP_MODE=cloud RESTIC_REPOSITORY="$${RESTIC_REMOTE}" bash $(BACKUP_SCRIPT)
