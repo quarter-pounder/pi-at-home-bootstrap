@@ -76,7 +76,9 @@ services:
       - {{ NODE_EXPORTER_TEXTFILE_DIR }}:/textfile_collector
       - /srv/monitoring/alert-suppression:/srv/monitoring/alert-suppression
     networks:
-      - monitoring-network
+      monitoring-network:
+        aliases:
+          - node-exporter
     pid: host
 
   alert-suppression-exporter:
