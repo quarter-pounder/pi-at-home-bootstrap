@@ -65,7 +65,7 @@ env:
 		echo "[Env][info] .env not found; copy config-registry/env/base.env to .env and customize it"; \
 		exit 1; \
 	fi
-	@cd $(ROOT_DIR) && set -a && source config-registry/env/base.env && source .env && set +a
+	@cd $(ROOT_DIR) && set -a && . config-registry/env/base.env && . .env && set +a
 
 generate-metadata:
 	@cd $(ROOT_DIR) && $(PYTHON) $(METADATA_SCRIPT) generate
@@ -412,8 +412,8 @@ deploy-github-runner:
 backup:
 	@if [ -f "$(ROOT_DIR)/.env" ]; then \
 		set -a; \
-		source "$(ROOT_DIR)/config-registry/env/base.env"; \
-		source "$(ROOT_DIR)/.env"; \
+		. "$(ROOT_DIR)/config-registry/env/base.env"; \
+		. "$(ROOT_DIR)/.env"; \
 		set +a; \
 	fi; \
 	BACKUP_MODE=${BACKUP_MODE:-manual} bash $(BACKUP_SCRIPT)
@@ -421,8 +421,8 @@ backup:
 backup-prune:
 	@if [ -f "$(ROOT_DIR)/.env" ]; then \
 		set -a; \
-		source "$(ROOT_DIR)/config-registry/env/base.env"; \
-		source "$(ROOT_DIR)/.env"; \
+		. "$(ROOT_DIR)/config-registry/env/base.env"; \
+		. "$(ROOT_DIR)/.env"; \
 		set +a; \
 	fi; \
 	BACKUP_MODE=prune BACKUP_PRUNE=1 bash $(BACKUP_SCRIPT)
@@ -430,8 +430,8 @@ backup-prune:
 backup-cloud:
 	@if [ -f "$(ROOT_DIR)/.env" ]; then \
 		set -a; \
-		source "$(ROOT_DIR)/config-registry/env/base.env"; \
-		source "$(ROOT_DIR)/.env"; \
+		. "$(ROOT_DIR)/config-registry/env/base.env"; \
+		. "$(ROOT_DIR)/.env"; \
 		set +a; \
 	fi; \
 	if [ -z "$${RESTIC_REMOTE:-}" ]; then \
