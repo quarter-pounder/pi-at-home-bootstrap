@@ -12,6 +12,9 @@ services:
     volumes:
       - /srv/postgres/data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+{% if POSTGRES_PGPASS_FILE %}
+      - {{ POSTGRES_PGPASS_FILE }}:/var/lib/postgresql/.pgpass:ro
+{% endif %}
     networks:
       - postgres-network
       - forgejo-network

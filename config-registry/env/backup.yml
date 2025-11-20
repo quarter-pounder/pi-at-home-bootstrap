@@ -1,0 +1,16 @@
+backups:
+  full:
+    include:
+      - /srv/forgejo/data
+      - /srv/forgejo-actions-runner
+      - /srv/adblocker
+      - /srv/registry
+      - /srv/monitoring/prometheus
+      - /srv/monitoring/alertmanager
+      - /srv/monitoring/grafana
+    tmp_dumps: /srv/backups/tmp
+  cloud:
+    include:
+      - /srv/forgejo/data
+    tmp_dumps: /srv/backups/tmp
+

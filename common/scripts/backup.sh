@@ -21,7 +21,7 @@ TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 # --- Prerequisites -----------------------------------------------------------
 PG_DUMP_TIMEOUT="${PG_DUMP_TIMEOUT:-300}"
 
-for cmd in restic docker timeout; do
+for cmd in restic docker timeout yq; do
   command -v "$cmd" >/dev/null 2>&1 || {
     error "Missing dependency: $cmd"
     exit 1
@@ -33,10 +33,9 @@ done
   exit 1
 }
 
-mkdir -p "$RESTIC_REPOSITORY" "$BACKUP_TMP"
-
 # --- Cleanup handling --------------------------------------------------------
 tmp_files=()
+PGPASS_AVAILABLE=false
 cleanup() {
   for f in "${tmp_files[@]:-}"; do
     [[ -f "$f" ]] && rm -f "$f"
@@ -54,11 +53,24 @@ dump_db() {
 
   log "[Dump] ${dbname} from ${container} → ${outfile} (timeout: ${PG_DUMP_TIMEOUT}s)"
 
-  local pg_user="${POSTGRES_SUPERUSER:-postgres}"
-  local pg_password="${POSTGRES_SUPERUSER_PASSWORD:-}"
-  local exec_cmd=(docker exec -i)
-  if [[ -n "$pg_password" ]]; then
-    exec_cmd+=(-e "PGPASSWORD=$pg_password")
+  local pg_user="${POSTGRES_SUPERUSER:-}"
+  if [[ -z "$pg_user" ]]; then
+    pg_user=$(docker exec "$container" printenv POSTGRES_USER 2>/dev/null || echo "postgres")
+  fi
+
+  local exec_cmd=()
+  if $PGPASS_AVAILABLE; then
+    exec_cmd=(docker exec -u postgres)
+  else
+    local pg_password="${POSTGRES_SUPERUSER_PASSWORD:-}"
+    if [[ -z "$pg_password" ]]; then
+      pg_password=$(docker exec "$container" printenv POSTGRES_PASSWORD 2>/dev/null || echo "")
+    fi
+    if [[ -n "$pg_password" ]]; then
+      exec_cmd=(docker exec -i -e "PGPASSWORD=$pg_password")
+    else
+      exec_cmd=(docker exec -i)
+    fi
   fi
 
   if ! timeout "$PG_DUMP_TIMEOUT" "${exec_cmd[@]}" "$container" pg_dump -U "$pg_user" "$dbname" >"$outfile"; then
@@ -74,6 +86,12 @@ dump_db() {
 
 # --- PostgreSQL dumps (if container present) ---------------------------------
 if docker ps --format '{{.Names}}' | grep -q '^forgejo-postgres$'; then
+  if docker exec -u postgres forgejo-postgres test -f /var/lib/postgresql/.pgpass 2>/dev/null; then
+    PGPASS_AVAILABLE=true
+    log "[DB] Detected .pgpass inside forgejo-postgres; password prompts will be skipped"
+  else
+    warn "[DB] .pgpass not found inside forgejo-postgres; falling back to container credentials"
+  fi
   dump_db forgejo-postgres forgejo
 else
   warn "forgejo-postgres container not found — skipping DB dumps"
@@ -87,36 +105,13 @@ if ! restic -r "$RESTIC_REPOSITORY" snapshots >/dev/null 2>&1; then
   restic -r "$RESTIC_REPOSITORY" init
 fi
 
-# --- Run backup --------------------------------------------------------------
-log "[Backup] Starting restic backup to $RESTIC_REPOSITORY"
-
-BACKUP_MODE="${BACKUP_MODE:-manual}"
-BACKUP_PRUNE="${BACKUP_PRUNE:-0}"
-BACKUP_DATE="${BACKUP_DATE:-$(date +%Y%m%d)}"
-BACKUP_HOST="${BACKUP_HOST:-$(hostname)}"
-
-FULL_PATHS=(
-  /srv/forgejo/data
-  /srv/forgejo-actions-runner
-  /srv/adblocker
-  /srv/registry
-  /srv/monitoring/prometheus
-  /srv/monitoring/alertmanager
-  /srv/monitoring/grafana
-)
-
-CLOUD_PATHS=(
-  /srv/forgejo/data
-)
-
-if [[ "$BACKUP_MODE" == "cloud" ]]; then
-  BACKUP_PATHS=("${CLOUD_PATHS[@]}")
-else
-  BACKUP_PATHS=("${FULL_PATHS[@]}")
-fi
-
+# --- Finalize include list ---------------------------------------------------
+BACKUP_PATHS=("${BASE_BACKUP_PATHS[@]}")
 BACKUP_PATHS+=("${tmp_files[@]-}")
 BACKUP_PATHS+=("${ROOT}/config-registry/env/secrets.env.vault")
+
+# --- Run backup --------------------------------------------------------------
+log "[Backup] Starting restic backup to $RESTIC_REPOSITORY"
 
 restic -r "$RESTIC_REPOSITORY" backup \
   --tag "$BACKUP_DATE" \

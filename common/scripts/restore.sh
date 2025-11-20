@@ -12,7 +12,7 @@ SNAPSHOT_ID="$1"
 DEST="${2:-/srv/restores/${SNAPSHOT_ID}}"
 
 # --- Prerequisites ------------------------------------------------------------
-for cmd in restic mkdir; do
+for cmd in restic mkdir rsync; do
   command -v "$cmd" >/dev/null 2>&1 || {
     echo "[ERR] Missing dependency: $cmd" >&2
     exit 1
