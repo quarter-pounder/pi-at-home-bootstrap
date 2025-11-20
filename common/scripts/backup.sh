@@ -55,7 +55,6 @@ dump_db() {
 # --- PostgreSQL dumps (if container present) ---------------------------------
 if docker ps --format '{{.Names}}' | grep -q '^forgejo-postgres$'; then
   dump_db forgejo-postgres forgejo
-  dump_db forgejo-postgres woodpecker
 else
   echo "[WARN] forgejo-postgres container not found — skipping DB dumps"
 fi
@@ -78,7 +77,7 @@ BACKUP_HOST="${BACKUP_HOST:-$(hostname)}"
 
 FULL_PATHS=(
   /srv/forgejo/data
-  /srv/woodpecker/server
+  /srv/forgejo-actions-runner
   /srv/adblocker
   /srv/registry
   /srv/monitoring/prometheus
