@@ -49,7 +49,14 @@ dump_db() {
 
   echo "[Dump] ${dbname} from ${container} → ${outfile} (timeout: ${PG_DUMP_TIMEOUT}s)"
 
-  timeout "$PG_DUMP_TIMEOUT" docker exec -i "$container" pg_dump -U postgres "$dbname" >"$outfile"
+  local pg_user="${POSTGRES_SUPERUSER:-postgres}"
+  local pg_password="${POSTGRES_SUPERUSER_PASSWORD:-}"
+  local exec_cmd=(docker exec -i)
+  if [[ -n "$pg_password" ]]; then
+    exec_cmd+=(-e "PGPASSWORD=$pg_password")
+  fi
+
+  timeout "$PG_DUMP_TIMEOUT" "${exec_cmd[@]}" "$container" pg_dump -U "$pg_user" "$dbname" >"$outfile"
 }
 
 # --- PostgreSQL dumps (if container present) ---------------------------------
