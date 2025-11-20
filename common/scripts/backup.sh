@@ -76,20 +76,35 @@ BACKUP_PRUNE="${BACKUP_PRUNE:-0}"
 BACKUP_DATE="${BACKUP_DATE:-$(date +%Y%m%d)}"
 BACKUP_HOST="${BACKUP_HOST:-$(hostname)}"
 
+FULL_PATHS=(
+  /srv/forgejo/data
+  /srv/woodpecker/server
+  /srv/adblocker
+  /srv/registry
+  /srv/monitoring/prometheus
+  /srv/monitoring/alertmanager
+  /srv/monitoring/grafana
+)
+
+CLOUD_PATHS=(
+  /srv/forgejo/data
+)
+
+if [[ "$BACKUP_MODE" == "cloud" ]]; then
+  BACKUP_PATHS=("${CLOUD_PATHS[@]}")
+else
+  BACKUP_PATHS=("${FULL_PATHS[@]}")
+fi
+
+BACKUP_PATHS+=("${tmp_files[@]-}")
+BACKUP_PATHS+=("${ROOT}/config-registry/env/secrets.env.vault")
+
 restic -r "$RESTIC_REPOSITORY" backup \
   --tag "$BACKUP_DATE" \
   --tag "$BACKUP_MODE" \
   --hostname "$BACKUP_HOST" \
   --verbose \
-  /srv/forgejo/data \
-  /srv/woodpecker/server \
-  /srv/adblocker \
-  /srv/registry \
-  /srv/monitoring/prometheus \
-  /srv/monitoring/alertmanager \
-  /srv/monitoring/grafana \
-  "${tmp_files[@]-}" \
-  "${ROOT}/config-registry/env/secrets.env.vault"
+  "${BACKUP_PATHS[@]}"
 
 backup_status=$?
 
