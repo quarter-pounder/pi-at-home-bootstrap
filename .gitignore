@@ -35,6 +35,7 @@ tmp/
 *.tar.gz
 config-registry/env/secrets.env
 config-registry/env/secrets.env.vault
+config-registry/env/restic.password
 config-registry/state/
 .vault_pass
 terraform.tfstate*
