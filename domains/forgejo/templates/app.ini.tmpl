@@ -52,13 +52,18 @@ LOG_PACKAGE_ACCESS = true
 [mailer]
 ENABLED = {{ 'true' if SMTP_ADDRESS else 'false' }}
 PROTOCOL = smtp
-FROM = {{ SMTP_FROM if SMTP_FROM else 'noreply@' ~ DOMAIN }}
+{% if SMTP_FROM and '@' in SMTP_FROM %}
+FROM = {{ SMTP_FROM }}
+{% elif DOMAIN %}
+FROM = noreply@{{ DOMAIN }}
+{% else %}
+FROM = noreply@localhost
+{% endif %}
 SMTP_ADDR = {{ SMTP_ADDRESS if SMTP_ADDRESS else '' }}
 SMTP_PORT = {{ SMTP_PORT if SMTP_PORT else '' }}
 USER = {{ SMTP_USERNAME if SMTP_USERNAME else '' }}
 PASSWD = {{ SMTP_PASSWORD if SMTP_PASSWORD else '' }}
-SKIP_VERIFY = {{ 'true' if SMTP_SSL_VERIFY_MODE == 'none' else 'false' }}
-USE_CERTIFICATE = false
+FORCE_TRUST_SERVER_CERT = {{ 'true' if SMTP_SSL_VERIFY_MODE == 'none' else 'false' }}
 USE_CLIENT_CERT = false
 
 [log]
