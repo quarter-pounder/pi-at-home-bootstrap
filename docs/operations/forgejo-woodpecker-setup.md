@@ -1,83 +1,147 @@
 # Forgejo + Woodpecker Setup Runbook
 
-This checklist assumes bootstrap is complete (`make deploy` succeeded for `postgres`, `forgejo`, `woodpecker`, and `woodpecker-runner`). Secrets live in `config-registry/env/secrets.env.vault`; use `make vault-edit` to modify them.
+This runbook assumes bootstrap is complete and the following domains are deployed:
+
+- `postgres`
+- `forgejo`
+- `woodpecker`
+- `woodpecker-runner`
+
+Secrets live in `config-registry/env/secrets.env.vault`.
+Use `make vault-edit` to update them.
+
+---
 
 ## 1. Populate Vault Secrets
 
+Set or update the following keys before rendering and deploying:
+
 | Key | Description |
 | --- | --- |
-| `FORGEJO_ADMIN_PASSWORD` | Initial admin account password rendered into the container. |
+| `FORGEJO_ADMIN_PASSWORD` | Initial admin password. |
 | `FORGEJO_APP_SECRET` | Forgejo session signing secret. |
 | `FORGEJO_LFS_JWT_SECRET` | Secret for LFS operations. |
-| `FORGEJO_METRICS_TOKEN` | Bearer token Prometheus uses to scrape Forgejo metrics. |
-| `SMTP_PASSWORD` / `SMTP_USERNAME` | Gmail (or other provider) credentials. Use an App Password when 2FA is enabled. |
-| `POSTGRES_SUPERUSER_PASSWORD` | Password for `postgres` user. |
-| `POSTGRES_PASSWORD_FORGEJO` | Database password Forgejo uses. |
-| `POSTGRES_PASSWORD_WOODPECKER` | Database password Woodpecker uses. |
-| `WOODPECKER_AGENT_SECRET` | Shared secret between Woodpecker server and runner. |
-| `WOODPECKER_FORGEJO_CLIENT_ID` | OAuth client ID issued by Forgejo (see below). |
+| `FORGEJO_METRICS_TOKEN` | Token Prometheus uses for the `/metrics` endpoint. |
+| `SMTP_USERNAME` / `SMTP_PASSWORD` | SMTP credentials (Gmail App Password if 2FA enabled). |
+| `POSTGRES_SUPERUSER_PASSWORD` | Password for the `postgres` superuser. |
+| `POSTGRES_PASSWORD_FORGEJO` | Password for Forgejo’s database user. |
+| `POSTGRES_PASSWORD_WOODPECKER` | Password for Woodpecker’s database user. |
+| `WOODPECKER_AGENT_SECRET` | Shared secret between server and runner. |
+| `WOODPECKER_FORGEJO_CLIENT_ID` | OAuth client ID from Forgejo. |
 | `WOODPECKER_FORGEJO_CLIENT_SECRET` | OAuth client secret. |
 | `REGISTRY_HTTP_SECRET` | Token secret for the container registry. |
-| `CLOUDFLARE_TUNNEL_TOKEN` / `CLOUDFLARE_API_TOKEN` | Only if Cloudflare Tunnel is managed from this host. |
+| `CLOUDFLARE_TUNNEL_TOKEN` / `CLOUDFLARE_API_TOKEN` | If Cloudflare Tunnel is managed from this host. |
 
-After editing the vault:
+After editing:
 
 ```bash
-make render DOMAIN=forgejo
-make deploy DOMAIN=forgejo
-make render DOMAIN=woodpecker
-make deploy DOMAIN=woodpecker
+make render DOMAIN=forgejo && make deploy DOMAIN=forgejo
+make render DOMAIN=woodpecker && make deploy DOMAIN=woodpecker
 ```
+
+---
 
 ## 2. Forgejo Bootstrap Checklist
 
-1. **Confirm admin account**
-   - Log in at `https://forgejo.<DOMAIN>` with `FORGEJO_ADMIN_USERNAME` / `FORGEJO_ADMIN_PASSWORD`.
-   - Change the password in the UI if desired; update the vault to match.
-2. **SSH host keys**
-   - Forgejo stores keys under `/srv/forgejo/data/ssh`. If migrating from another instance, copy the existing `id_rsa`/`id_ed25519` pairs before redeploying.
-3. **SMTP test**
-   - Navigate to **Site Administration → Configuration → Mailer**.
-   - Click *Test configuration*; expect a success toast. The Gmail App Password is required when 2FA is enabled.
-4. **Repository mirror (optional)**
-   - Create a personal access token on GitHub with `repo` scope.
-   - In Forgejo, create a new repository mirror pointing at the GitHub URL using that token.
-   - Store the token in the vault (`FORGEJO_GITHUB_MIRROR_TOKEN`, if you wish to reuse it later).
-5. **Metrics**
-   - `Settings → Applications → Manage Access Tokens` → create a PAT named `prometheus` with `scope=read:metrics` if you prefer PAT-based scraping. Otherwise rely on `FORGEJO_METRICS_TOKEN` in the environment.
+### 2.1 Admin account
+- Log in at `https://forgejo.<DOMAIN>` using
+  `FORGEJO_ADMIN_USERNAME` + `FORGEJO_ADMIN_PASSWORD`
+- If you update the password in the UI, update the vault accordingly.
+
+### 2.2 SSH host keys
+- Keys are stored under `/srv/forgejo/data/ssh/`.
+- When migrating from an older instance, copy existing host keys before redeploying.
+
+### 2.3 SMTP test
+Navigate to:
+
+```
+Site Administration → Configuration → Mailer
+```
+
+Click **Test configuration**. Using Gmail requires an **App Password** if 2FA is enabled.
+
+### 2.4 Optional: Repository mirroring
+- Create a GitHub PAT with `repo` scope.
+- In Forgejo, configure a mirror pointing to the GitHub repo.
+- Optionally store the PAT in the vault (`FORGEJO_GITHUB_MIRROR_TOKEN`).
+
+### 2.5 Metrics
+If using a personal access token instead of the environment secret:
+- Go to `Settings → Applications → Manage Access Tokens`
+- Generate a token with `read:metrics`
+Otherwise rely on `FORGEJO_METRICS_TOKEN` already set in the vault.
+
+---
 
 ## 3. Woodpecker OAuth Integration
 
-1. **Create OAuth application in Forgejo**
-   - Go to **Settings → Applications → Manage OAuth2 Applications**.
-   - Name: `Woodpecker`
-   - Redirect URI: `${WOODPECKER_HOST}/authorize` (defaults to `https://ci.<DOMAIN>/authorize`).
-   - Submit and copy the `Client ID` and `Client Secret`.
-2. **Store credentials in the vault**
-   - `WOODPECKER_FORGEJO_CLIENT_ID`
-   - `WOODPECKER_FORGEJO_CLIENT_SECRET`
-   - `WOODPECKER_AGENT_SECRET` (generate with `openssl rand -hex 32` if missing).
-3. **Redeploy Woodpecker services**
+### 3.1 Create OAuth application in Forgejo
+Navigate to:
 
-   ```bash
-   make render DOMAIN=woodpecker
-   make deploy DOMAIN=woodpecker
+```
+Settings → Applications → Manage OAuth2 Applications
+```
 
-   make render DOMAIN=woodpecker-runner
-   make deploy DOMAIN=woodpecker-runner
-   ```
+Create:
 
-4. **Initial login**
-   - Visit `https://ci.<DOMAIN>` and click *Sign in with Forgejo*.
-   - Approve the OAuth consent screen. The first authenticated user listed in `WOODPECKER_ADMIN_USERS` becomes admin.
-5. **Runner verification**
-   - `docker logs woodpecker-runner` should show `agent connected` messages.
-   - In the Woodpecker UI, the runner appears under **Agents** with status `running`.
+- **Name:** `Woodpecker`
+- **Redirect URI:** `${WOODPECKER_HOST}/authorize`
+  (Default: `https://ci.<DOMAIN>/authorize`)
+
+Copy the **Client ID** and **Client Secret**.
+
+### 3.2 Store values in vault
+
+```text
+WOODPECKER_FORGEJO_CLIENT_ID
+WOODPECKER_FORGEJO_CLIENT_SECRET
+WOODPECKER_AGENT_SECRET
+```
+
+Generate the agent secret if missing:
+
+```bash
+openssl rand -hex 32
+```
+
+### 3.3 Redeploy services
+
+```bash
+make render DOMAIN=woodpecker && make deploy DOMAIN=woodpecker
+make render DOMAIN=woodpecker-runner && make deploy DOMAIN=woodpecker-runner
+```
+
+### 3.4 First login
+- Visit `https://ci.<DOMAIN>`
+- Click **Sign in with Forgejo**
+- Approve OAuth consent
+- The first user in `WOODPECKER_ADMIN_USERS` becomes the Woodpecker admin
+
+### 3.5 Runner health
+Check logs:
+
+```bash
+docker logs woodpecker-runner
+```
+
+Expect to see:
+
+```
+agent connected
+```
+
+In the Woodpecker UI, the runner appears under **Agents** with status `running`.
+
+---
 
 ## 4. Post-Checks
 
-- Prometheus target `woodpecker:9000` is `UP` (requires successful OAuth secret deployment).
-- Grafana dashboards show Forgejo/Woodpecker availability and request metrics.
-- Alertmanager receives email notifications (check Gmail mailer logs in Forgejo).
+- Prometheus successfully scrapes `woodpecker:9000`
+- Grafana panels show Forgejo + Woodpecker availability
+- Alertmanager receives emails for alert triggers
+- `woodpecker-runner` remains connected after restarting the server container
 
-Keep this file synced when configuration flows change. Suggestions and improvements welcome.
+---
+
+Keep this runbook updated when configuration flows change.

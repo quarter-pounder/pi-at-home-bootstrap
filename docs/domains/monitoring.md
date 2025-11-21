@@ -1,11 +1,14 @@
 # Monitoring Domain
 
-The monitoring domain deploys Prometheus, Alertmanager, Grafana, Loki, node-exporter, cAdvisor, and Grafana Alloy to observe the Forgejo stack and the Raspberry Pi host.
+The monitoring domain deploys Prometheus, Alertmanager, Grafana, Loki, node-exporter, cAdvisor, and Grafana Alloy to observe the Forgejo stack, CI/CD runners, and the Raspberry Pi host. Alloy streams Docker logs directly to Loki with explicit labels.
 
 ## Contract
+
 - **Lifecycle**: `make deploy DOMAIN=monitoring`
 - **State**: `/srv/monitoring/{prometheus,alertmanager,grafana,loki}`
-- **Networks**: `monitoring-network` (local bridge) and `forgejo-network` (shared with Forgejo, PostgreSQL, Woodpecker)
+- **Networks**:
+  - `monitoring-network` – local bridge for exporters and core services
+  - `forgejo-network` – shared with Forgejo, PostgreSQL, and Woodpecker
 - **Outputs**:
   - Prometheus on `PORT_MONITORING_PROMETHEUS`
   - Alertmanager on `PORT_MONITORING_ALERTMANAGER`
@@ -13,55 +16,204 @@ The monitoring domain deploys Prometheus, Alertmanager, Grafana, Loki, node-expo
   - Loki on `PORT_MONITORING_LOKI`
   - Alloy HTTP server on `PORT_MONITORING_ALLOY`
 
+---
+
+## Services
+
+### Core Services
+- **Prometheus**: Metrics collection and alerting
+- **Alertmanager**: Alert routing and inhibition
+- **Grafana**: Dashboards and visualization
+- **Loki**: Log aggregation
+- **Alloy**: Log collection from Docker containers
+- **node-exporter**: Host level CPU, disk, and memory metrics
+- **cAdvisor**: Container metrics (CPU, memory, network, filesystem)
+
+### Helper Services
+- **alert-suppression-exporter**: Generates metrics for alert suppression when services are manually downed
+- **container-name-exporter**: Maps Docker container IDs to names for dashboard queries
+
+---
+
 ## Prometheus Targets
-Prometheus now discovers services over the shared Docker bridge instead of hitting host ports. The scrape jobs include:
-- `forgejo:3000/metrics` (bearer token from `FORGEJO_METRICS_TOKEN`)
+
+Prometheus discovers services over the shared Docker bridge. The scrape jobs include:
+
+- `forgejo:3000/metrics` (bearer token: `FORGEJO_METRICS_TOKEN`)
 - `woodpecker:9000/metrics`
 - `node-exporter:9100`
 - `cadvisor:8080`
 - `prometheus:9090`
+- External runner node-exporter (if `EXTERNAL_RUNNER_METRICS_IP` is set)
 
-## Grafana Provisioning
-Grafana provisions datasources with stable UIDs (`prometheus`, `loki`) and loads dashboards from `generated/monitoring/dashboards/`:
-- **Pi System Overview** – CPU, memory, filesystem, and temperature panels.
-- **Forgejo & Woodpecker Overview** – Service availability stats plus request/scheduler throughput.
+---
 
-Provisioned dashboards are available inside the "Pi Forge" folder on first boot.
+## Grafana Dashboards
 
-## TLS Termination
-Grafana continues to serve HTTP internally. Use Cloudflare Tunnel (or another edge proxy) to provide external HTTPS; set `DOMAIN` so that `GF_SERVER_ROOT_URL` renders the correct external URL.
+Grafana is provisioned with stable datasource UIDs (`prometheus`, `loki`).
+Dashboards load from:
+`generated/monitoring/dashboards/`
+
+### Services Overview
+
+Includes:
+
+- **Summary**: Attention required panel, service status overview
+- **Core Domains**: Forgejo, Prometheus, Loki CPU and memory usage
+- **Resource Usage**: CPU and memory per service
+- **Adblocker**: Pi-hole and Unbound container availability and status
+- **Pi System**: CPU temperature, core voltage, throttle flags
+- **Logs**: Error logs and all logs from Loki
+
+### Runners Overview
+
+Includes:
+
+- **Currently Online Runners**: Count of active runners
+- **Status per runner**: Offline / Idle / Active
+  - Woodpecker Runner
+  - Forgejo Actions Runner
+  - GitHub Actions Runner
+  - External Runner (if configured)
+- **CPU usage** (cores and %)
+- **Memory usage** (bytes and %)
+- **Network I/O**
+
+All panel queries rely directly on cAdvisor’s `name` label for reliability.
+
+---
+
+## Container Metrics
+
+cAdvisor exposes container metrics with a `name` label matching the Docker container name.
+
+Container metrics include:
+- CPU usage (`container_cpu_usage_seconds_total`)
+- Memory usage (`container_memory_usage_bytes`)
+- Network I/O (`container_network_receive_bytes_total`, `container_network_transmit_bytes_total`)
+- Filesystem usage
+
+The `container-name-exporter` service maintains a mapping of container IDs to names (`container_name_info` metric) for reference, but dashboard queries primarily use the `name` label from cadvisor directly.
+
+---
 
 ## Host Exporters
-The node-exporter textfile collector publishes Raspberry Pi specifics:
-- `generated/monitoring/exporters/pi-temp-exporter.sh` – SoC temperature (`pi_cpu_temperature_celsius`).
-- `generated/monitoring/exporters/pi-health-exporter.sh` – Throttling flags and core voltage (`pi_throttled_flag`, `pi_core_voltage_volts`).
-- `generated/monitoring/exporters/pi-dmesg-exporter.sh` – Kernel error counters (`pi_dmesg_error_total`).
 
-Install the helpers and schedule them via cron (run as root to access hardware commands):
+### Pi Telemetry Script
+
+The host cron job collects Raspberry Pi hardware metrics using `vcgencmd` and writes them to node-exporter’s textfile directory:
+
+- `pi_cpu_temperature_celsius`
+- `pi_core_voltage_volts`
+- `pi_throttle_flags` (undervoltage, throttled, etc.)
+
+The script is located at `scripts/host/pi-telemetry.sh` and should be run via cron on the host (not in a container) to access `vcgencmd`:
 
 ```bash
 sudo mkdir -p /srv/monitoring/node-exporter/textfile
 sudo chmod 755 /srv/monitoring/node-exporter/textfile
 
-sudo cp generated/monitoring/exporters/pi-temp-exporter.sh /usr/local/bin/pi-temp-exporter
-sudo cp generated/monitoring/exporters/pi-health-exporter.sh /usr/local/bin/pi-health-exporter
-sudo cp generated/monitoring/exporters/pi-dmesg-exporter.sh /usr/local/bin/pi-dmesg-exporter
-sudo chmod +x /usr/local/bin/pi-*-exporter
+sudo cp scripts/host/pi-telemetry.sh /usr/local/bin/pi-telemetry
+sudo chmod +x /usr/local/bin/pi-telemetry
 
-cat <<'EOF' | sudo tee /etc/cron.d/pi-node-exporters
-* * * * * root /usr/local/bin/pi-temp-exporter >/tmp/pi-temp-exporter.log 2>&1
-* * * * * root /usr/local/bin/pi-health-exporter >/tmp/pi-health-exporter.log 2>&1
-*/5 * * * * root /usr/local/bin/pi-dmesg-exporter >/tmp/pi-dmesg-exporter.log 2>&1
+cat <<'EOF' | sudo tee /etc/cron.d/pi-telemetry
+* * * * * root /usr/local/bin/pi-telemetry >/tmp/pi-telemetry.log 2>&1
 EOF
 ```
 
-Adjust intervals or logging as needed. All scripts tolerate missing `vcgencmd` or insufficient privileges by emitting `NaN`; Prometheus treats those as "no data".
+The script automatically discovers `vcgencmd` in common locations (`/usr/bin`, `/opt/vc/bin`) and handles missing commands by emitting `NaN` values.
+
+---
+
+## Alert Suppression
+
+When a domain is intentionally brought down with:
+
+```
+make down DOMAIN=<name>
+```
+
+a suppression marker is created under:
+
+```
+/srv/monitoring/alert-suppression/
+```
+
+`alert-suppression-exporter` exposes:
+
+```
+alert_suppression_enabled{name="<service>"} 1
+```
+
+Alertmanager uses these metrics to suppress targeted alerts—primarily for runners—to avoid false positives.
+
+Supported suppression targets:
+
+- `woodpecker`
+- `woodpecker-runner`
+- `forgejo-actions-runner`
+- `github-actions-runner`
+
+---
 
 ## Alerts
-`prometheus-alerts.yml` reuses the legacy thresholds and adds Pi-specific safety checks:
-- Temperature: warning at 80 °C, critical at 85 °C.
-- Active throttling (`pi_throttled_flag{condition="throttled_now"}`) and under-voltage assertions fire critical alerts immediately.
-- Voltage thresholds warn below 4.8 V and escalate below 4.7 V.
-- Kernel error bursts trigger when `pi_dmesg_error_total` increases within five minutes.
 
-These alerts complement the DR webhook rules; Alertmanager forwards incidents through the same receivers configured earlier.
+Defined in `prometheus-alerts.yml`.
+
+### Core alert families:
+
+- **ContainerDown** — for all non-runner containers
+- **RunnerContainerDown** — with alert-suppression support
+- **HighCPUUsage** — sustained CPU load
+- **HighMemoryUsage** — memory pressure
+- **PiTemperature** — warning at 80°C, critical at 85°C
+- **PiThrottling** — undervoltage or active throttling
+- **PiVoltage** — core voltage below threshold
+
+Alertmanager routes to email and/or webhook receivers as configured.
+
+---
+
+## DNS Note
+
+Prometheus resolves container names through Pi-hole running on the host.
+If Pi-hole is down, targets like `woodpecker` or `forgejo` may fail DNS resolution and appear as DOWN.
+Keep Pi-hole up or ensure fallback DNS exists.
+
+---
+
+## TLS Termination
+
+Grafana runs HTTP internally. External HTTPS is provided by Cloudflare Tunnel (or another reverse proxy).
+`GF_SERVER_ROOT_URL` is templated based on `DOMAIN`.
+
+---
+
+## cAdvisor Memory Metrics
+
+Memory metrics require cgroup memory support.
+Ensure the kernel command line does **not** contain:
+
+```
+cgroup_disable=memory
+```
+
+Check with:
+
+```bash
+cat /proc/cmdline
+```
+
+If memory metrics show 0MB or missing, check `domains/monitoring/CADVISOR_MEMORY_FIX.md`.
+
+---
+
+## Current Status
+
+- All monitoring services operational
+- Dashboards fully populated (metrics + logs)
+- Alloy → Loki log pipeline healthy
+- Pi telemetry reporting correctly
+- Prometheus scraping all targets successfully
+- Runner dashboards accurately show Offline / Idle / Active
+- Alert suppression functioning as intended

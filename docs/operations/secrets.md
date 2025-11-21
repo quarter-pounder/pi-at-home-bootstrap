@@ -1,8 +1,10 @@
 # Encrypted Secrets Workflow
 
+The secrets layer provides encrypted environment variables for every domain. All rendered templates receive decrypted values automatically during `make render`, with clear warnings if prerequisites are missing.
+
 ## Files
-- `config-registry/env/secrets.env.vault` – Encrypted environment variables rendered into templates.
-- `.vault_pass` – Local vault password file (ignored by Git); stored at repository root.
+- `config-registry/env/secrets.env.vault`: Encrypted environment variables rendered into templates.
+- `.vault_pass`: Local vault password file (ignored by Git); stored at repository root.
 
 ## Bootstrap Preparation
 1. Generate a strong password and place it in `.vault_pass`:
@@ -13,9 +15,9 @@
 2. Ensure the host has `ansible-vault` available (installed via `bootstrap/02-install-core.sh`).
 
 ## Managing Secrets
-- `make vault-create` – Creates `secrets.env.vault`. Uses `.vault_pass` when present; otherwise prompts for a password.
-- `make vault-edit` – Opens the vault for editing with `ansible-vault edit`.
-- `make vault-view` – Displays decrypted contents without writing to disk.
+- `make vault-create`: Creates `secrets.env.vault`. Uses `.vault_pass` when present; otherwise prompts for a password.
+- `make vault-edit`: Opens the vault for editing with `ansible-vault edit`.
+- `make vault-view`: Displays decrypted contents without writing to disk.
 
 ### Editing Workflow
 1. Ensure `.vault_pass` exists (or be ready to enter the password when prompted).
@@ -23,7 +25,8 @@
    ```bash
    make vault-edit
    ```
-   This invokes `ansible-vault edit`, which decrypts the file to a temporary buffer and launches the editor defined by `$EDITOR` (defaults to `vi`).
+   This opens ansible-vault edit using $EDITOR (defaults to vi, don't even think about nano).
+
 3. Add or update key/value pairs in `KEY=value` form, e.g.:
    ```
    FORGEJO_ADMIN_PASSWORD=change-me
@@ -38,9 +41,16 @@
    ```
 4. Save and exit; `ansible-vault` re-encrypts the file automatically.
 
-> Tip: set `EDITOR="nano"` or another favorite editor before running `make vault-edit` if plain `vi` is unfamiliar.
+> Tip: set `EDITOR="nano"` or another favorite editor before running `make vault-edit` if you really love nano.
 
-The renderer automatically decrypts `secrets.env.vault` when both files exist. Missing prerequisites trigger warnings but do not abort template generation.
+**Automatic Secret Loading**
+
+During template rendering, secrets are decrypted when:
+   - the vault exists,
+	- .vault_pass exists,
+	- and ansible-vault is installed
+
+If any component is missing, the renderer logs warnings but does not abort.
 
 ### Required secrets
 ```
@@ -57,6 +67,7 @@ SMTP_FROM=Forgejo <forgejo@example.com>
 ```
 
 ## Recommended Keys
+
 Store the following sensitive values inside the vault (non-exhaustive):
 - `FORGEJO_ADMIN_PASSWORD`
 - `FORGEJO_APP_SECRET`

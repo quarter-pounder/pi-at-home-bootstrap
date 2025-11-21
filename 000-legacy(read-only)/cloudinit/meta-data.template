@@ -1,3 +1,0 @@
-instance-id: ${CFG_HOSTNAME}-001
-local-hostname: ${CFG_HOSTNAME}
-

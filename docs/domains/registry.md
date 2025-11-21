@@ -32,8 +32,8 @@ Standalone Docker Distribution instance backed by Forgejo for token auth. Runs b
   - Requires `REGISTRY_HTTP_SECRET` to be populated (ideally stored in `secrets.env.vault`)
 
 ## Operational Notes
-- Set `REGISTRY_HTTP_SECRET` to a long random string before render; pushes/pulls will fail if it is blank.
-- The registry expects Forgejo to be reachable as `http://forgejo` on the shared Docker network; ensure Forgejo is deployed and attached to `forgejo-network`.
-- Prometheus/Grafana scrape coverage is handled by the monitoring domain; no exporters run inside the registry container today.
-- Additional secret-handling guidance: `docs/operations/secrets.md`
+- **Secret requirement:** Set `REGISTRY_HTTP_SECRET` to a long random string (e.g., `openssl rand -hex 32`). Without it, pushes/pulls will fail with 401 errors.
+- **Forgejo dependency:** The registry resolves Forgejo internally as `http://forgejo` via the shared Docker network. Forgejo must be deployed and reachable before registry authentication can succeed.
+- **Monitoring:** The registry has no built-in exporters. Monitoring coverage (availability, container metrics, logs) comes from the monitoring domain.
+- For secret-handling conventions and vault usage: see `docs/operations/secrets.md`.
 
