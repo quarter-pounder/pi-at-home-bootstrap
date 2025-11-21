@@ -228,7 +228,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "(max(up{job=\"external-runner\"}) or vector(0)) * (1 + ((avg(rate(node_cpu_seconds_total{job=\"external-runner\",mode!=\"idle\"}[2m])) or vector(0)) >= bool 0.1))",
+          "expr": "(max(up{job=\"external-runner\"}) or vector(0)) * (1 + ((sum(rate(node_cpu_seconds_total{job=\"external-runner\",mode!=\"idle\"}[2m])) or vector(0)) >= bool 0.1))",
           "refId": "A"
         }
       ],
