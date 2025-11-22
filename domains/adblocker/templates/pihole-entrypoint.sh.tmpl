@@ -1,10 +1,11 @@
-#!/bin/bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
 # Wait for unbound to be ready and resolve its IP
 echo "[i] Waiting for unbound to be ready..."
 UNBOUND_IP=""
-for i in {1..30}; do
+i=0
+while [ $i -lt 30 ]; do
   if getent hosts unbound >/dev/null 2>&1; then
     UNBOUND_IP=$(getent hosts unbound | awk '{print $1}' | head -n1)
     if [ -n "$UNBOUND_IP" ]; then
@@ -15,6 +16,7 @@ for i in {1..30}; do
     fi
   fi
   sleep 1
+  i=$((i + 1))
 done
 
 if [ -z "${UNBOUND_IP:-}" ]; then
