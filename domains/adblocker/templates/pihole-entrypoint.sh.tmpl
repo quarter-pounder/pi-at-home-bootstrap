@@ -1,19 +1,31 @@
 #!/bin/sh
 set -eu
 
-# Wait for unbound to be ready and resolve its IP
 echo "[i] Waiting for unbound to be ready..."
 UNBOUND_IP=""
 i=0
 while [ $i -lt 30 ]; do
-  if getent hosts unbound >/dev/null 2>&1; then
-    UNBOUND_IP=$(getent hosts unbound | awk '{print $1}' | head -n1)
-    if [ -n "$UNBOUND_IP" ]; then
-      echo "[i] Resolved unbound IP: $UNBOUND_IP"
-      export PIHOLE_DNS_="${UNBOUND_IP}#53;1.1.1.1;1.0.0.1"
-      export DNS1="${UNBOUND_IP}#53"
-      break
-    fi
+  if command -v nslookup >/dev/null 2>&1; then
+    UNBOUND_IP=$(nslookup unbound 127.0.0.11 2>/dev/null | grep -A1 "Name:" | grep "Address" | awk '{print $2}' | head -n1)
+  fi
+
+  if [ -z "$UNBOUND_IP" ] && command -v nslookup >/dev/null 2>&1; then
+    UNBOUND_IP=$(nslookup adblocker-unbound 127.0.0.11 2>/dev/null | grep -A1 "Name:" | grep "Address" | awk '{print $2}' | head -n1)
+  fi
+
+  if [ -z "$UNBOUND_IP" ] && command -v getent >/dev/null 2>&1; then
+    UNBOUND_IP=$(getent hosts unbound 2>/dev/null | awk '{print $1}' | head -n1)
+  fi
+
+  if [ -z "$UNBOUND_IP" ] && command -v getent >/dev/null 2>&1; then
+    UNBOUND_IP=$(getent hosts adblocker-unbound 2>/dev/null | awk '{print $1}' | head -n1)
+  fi
+
+  if [ -n "$UNBOUND_IP" ] && [ "$UNBOUND_IP" != "127.0.0.1" ] && [ "$UNBOUND_IP" != "::1" ]; then
+    echo "[i] Resolved unbound IP: $UNBOUND_IP"
+    export PIHOLE_DNS_="${UNBOUND_IP}#53;1.1.1.1;1.0.0.1"
+    export DNS1="${UNBOUND_IP}#53"
+    break
   fi
   sleep 1
   i=$((i + 1))
@@ -25,15 +37,14 @@ if [ -z "${UNBOUND_IP:-}" ]; then
   export DNS1="1.1.1.1"
 fi
 
-# Find and call Pi-hole's original entrypoint
-PIHOLE_ENTRYPOINT="/usr/local/bin/_entrypoint.sh"
-if [ ! -f "$PIHOLE_ENTRYPOINT" ]; then
-  PIHOLE_ENTRYPOINT="/entrypoint.sh"
-fi
-if [ ! -f "$PIHOLE_ENTRYPOINT" ]; then
+if [ -f "/init" ]; then
+  exec /init "$@"
+elif [ -f "/s6-init" ]; then
+  exec /s6-init "$@"
+elif [ -f "/usr/local/bin/_entrypoint.sh" ]; then
+  exec /usr/local/bin/_entrypoint.sh "$@"
+else
   echo "[!] Error: Could not find Pi-hole entrypoint"
   exit 1
 fi
-
-exec "$PIHOLE_ENTRYPOINT" "$@"
 
