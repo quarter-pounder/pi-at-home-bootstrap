@@ -1,24 +1,32 @@
 #!/bin/sh
 set -eu
 
+# Wait a moment for network to be ready
+sleep 2
+
 echo "[i] Waiting for unbound to be ready..."
 UNBOUND_IP=""
 i=0
-while [ $i -lt 30 ]; do
-  if command -v nslookup >/dev/null 2>&1; then
-    UNBOUND_IP=$(nslookup unbound 127.0.0.11 2>/dev/null | grep -A1 "Name:" | grep "Address" | awk '{print $2}' | head -n1)
-  fi
-
-  if [ -z "$UNBOUND_IP" ] && command -v nslookup >/dev/null 2>&1; then
-    UNBOUND_IP=$(nslookup adblocker-unbound 127.0.0.11 2>/dev/null | grep -A1 "Name:" | grep "Address" | awk '{print $2}' | head -n1)
-  fi
-
-  if [ -z "$UNBOUND_IP" ] && command -v getent >/dev/null 2>&1; then
+while [ $i -lt 60 ]; do
+  # Try getent first (most reliable in containers)
+  if command -v getent >/dev/null 2>&1; then
     UNBOUND_IP=$(getent hosts unbound 2>/dev/null | awk '{print $1}' | head -n1)
   fi
 
+  # Try container name with getent
   if [ -z "$UNBOUND_IP" ] && command -v getent >/dev/null 2>&1; then
     UNBOUND_IP=$(getent hosts adblocker-unbound 2>/dev/null | awk '{print $1}' | head -n1)
+  fi
+
+  # Try ping to resolve IP
+  if [ -z "$UNBOUND_IP" ] && command -v ping >/dev/null 2>&1; then
+    PING_OUTPUT=$(ping -c 1 -W 2 unbound 2>&1 || true)
+    UNBOUND_IP=$(echo "$PING_OUTPUT" | grep -oE '\(([0-9]{1,3}\.){3}[0-9]{1,3}\)' | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
+  fi
+
+  # Try host command
+  if [ -z "$UNBOUND_IP" ] && command -v host >/dev/null 2>&1; then
+    UNBOUND_IP=$(host unbound 127.0.0.11 2>/dev/null | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
   fi
 
   if [ -n "$UNBOUND_IP" ] && [ "$UNBOUND_IP" != "127.0.0.1" ] && [ "$UNBOUND_IP" != "::1" ]; then
@@ -26,6 +34,10 @@ while [ $i -lt 30 ]; do
     export PIHOLE_DNS_="${UNBOUND_IP}#53;1.1.1.1;1.0.0.1"
     export DNS1="${UNBOUND_IP}#53"
     break
+  fi
+
+  if [ $i -eq 0 ] || [ $((i % 10)) -eq 0 ]; then
+    echo "[i] Attempt $((i + 1))/60: Waiting for unbound (trying to resolve)..."
   fi
   sleep 1
   i=$((i + 1))
