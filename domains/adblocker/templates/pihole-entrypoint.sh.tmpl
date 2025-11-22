@@ -1,0 +1,37 @@
+#!/bin/bash
+set -euo pipefail
+
+# Wait for unbound to be ready and resolve its IP
+echo "[i] Waiting for unbound to be ready..."
+UNBOUND_IP=""
+for i in {1..30}; do
+  if getent hosts unbound >/dev/null 2>&1; then
+    UNBOUND_IP=$(getent hosts unbound | awk '{print $1}' | head -n1)
+    if [ -n "$UNBOUND_IP" ]; then
+      echo "[i] Resolved unbound IP: $UNBOUND_IP"
+      export PIHOLE_DNS_="${UNBOUND_IP}#53;1.1.1.1;1.0.0.1"
+      export DNS1="${UNBOUND_IP}#53"
+      break
+    fi
+  fi
+  sleep 1
+done
+
+if [ -z "${UNBOUND_IP:-}" ]; then
+  echo "[!] Warning: Could not resolve unbound IP, using fallback DNS"
+  export PIHOLE_DNS_="1.1.1.1;1.0.0.1"
+  export DNS1="1.1.1.1"
+fi
+
+# Find and call Pi-hole's original entrypoint
+PIHOLE_ENTRYPOINT="/usr/local/bin/_entrypoint.sh"
+if [ ! -f "$PIHOLE_ENTRYPOINT" ]; then
+  PIHOLE_ENTRYPOINT="/entrypoint.sh"
+fi
+if [ ! -f "$PIHOLE_ENTRYPOINT" ]; then
+  echo "[!] Error: Could not find Pi-hole entrypoint"
+  exit 1
+fi
+
+exec "$PIHOLE_ENTRYPOINT" "$@"
+
