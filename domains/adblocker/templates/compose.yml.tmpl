@@ -32,6 +32,9 @@ services:
       start_period: 45s
     cap_add:
       - NET_ADMIN
+    dns:
+      - unbound
+      - 1.1.1.1
     networks:
       - adblocker-network
     depends_on:
